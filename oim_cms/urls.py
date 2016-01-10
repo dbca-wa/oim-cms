@@ -1,0 +1,45 @@
+from django.conf.urls import include, url, handler404
+from django.conf import settings
+from django.contrib import admin
+
+from wagtail.wagtailadmin import urls as wagtailadmin_urls
+from wagtail.wagtaildocs import urls as wagtaildocs_urls
+from wagtail.wagtailcore import urls as wagtail_urls
+
+from core import views
+from oim_cms import api
+
+admin.site.site_header = 'OIM CMS Database Administration'
+
+api_patterns = [
+    url(r'^freshdesk', api.freshdesk, name="api_freshdesk"),
+    url(r'^itsystems', include(api.ITSystemResource.urls())),
+    url(r'^itsystems.csv', api.ITSystemResource.as_csv),
+    url(r'^devices', include(api.HardwareResource.urls())),
+    url(r'^users', include(api.UserResource.urls())),
+    url(r'^options', include(api.OptionResource.urls())),
+    url(r'^whoami', api.whoamiResource.as_detail(), name="api_whoami"),
+]
+
+urlpatterns = [
+    url(r'^django-admin/', include(admin.site.urls)),
+
+    url(r'^admin/', include(wagtailadmin_urls)),
+    url(r'^draft/(?P<path>.*)', views.draft, name='draft'),
+    url(r'^search', views.search, name='search'),
+    url(r'^logout', views.logout_view, name='logout'),
+    url(r'^documents/', include(wagtaildocs_urls)),
+
+    url(r'^api/', include(api_patterns)),
+    url(r'^api/{}/'.format(settings.API_SECRET), include(api_patterns)),
+
+    url(r'', include('social.apps.django_app.urls', namespace='social')),
+    url(r'', include('django.contrib.auth.urls', namespace='auth')),
+    url(r'', include(wagtail_urls)),
+
+    url(r'^redirect/', views.redirect, name='redirect'),
+    url(r'^auth', views.auth, name='auth'),
+    url(r'^rolecheck', views.rolecheck, name='rolecheck'),
+]
+
+handler404 = views.error404

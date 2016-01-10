@@ -1,0 +1,10 @@
+{% load core_tags static wagtailcore_tags %}
+
+<div class="row hide-for-print"><ul class="breadcrumbs">
+{% for menuitem in menuitems %}
+<li {% if forloop.last %}class="current"{% endif %}><a href="{% pageurl menuitem %}">{{ menuitem.title }}</a></li>
+{% endfor %}
+<li id="logout-breadcrumb" class="right show-for-medium-up">{{ request.user.email }} - <a href="{% url 'logout' %}">logout</a>
+</li>
+</ul>
+</div>

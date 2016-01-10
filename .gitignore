@@ -1,0 +1,6 @@
+.env*
+.hg*
+media/
+static/
+venv/
+*.pyc

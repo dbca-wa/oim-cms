@@ -1,0 +1,14 @@
+{% load core_tags wagtailcore_tags %}
+
+{% if error %}<div data-alert class="alert-box alert">{{ error }}</div>{% endif %}
+<dl class="accordion" data-accordion="">
+{% for page in pages %}
+  <dd class="accordion-navigation">
+    <a aria-expanded="false" href="#panel_page{{ page.id }}">{{ page.specific }} ({{ page.date }})</a>
+    <div id="panel_page{{ page.id }}" class="content{% if forloop.first %} active{% endif %}">
+        {% if page.specific.search_description %}{{ page.specific.search_description|safe }}{% else %}{{ page.specific|get_excerpt|safe }}{% endif %}
+        <h6><a href="{% pageurl page.specific %}">Read more...</a></h6>
+    </div>
+  </dd>
+{% endfor %}
+</dl>

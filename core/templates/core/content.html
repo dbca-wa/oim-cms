@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load core_tags wagtailcore_tags %}
+
+{% block header %}
+{{ block.super }}
+{% breadcrumbs calling_page=self %}
+{% endblock %}
+
+{% block content %}
+    <div class="row main-content"><div class="large-12 columns">
+        {% include "core/tags/include_content.html" %}
+    </div></div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% load core_tags static wagtailcore_tags %}
+{% get_site_root as site_root %}
+
+<nav class="tab-bar show-for-small hide-for-print draft-bg-change">
+    <section class="left-small">
+        <a class="left-off-canvas-toggle menu-icon"><span></span></a>
+    </section>
+    <section class="middle tab-bar-section mobile-title">
+        Office for Information Management
+    </section>
+    <section class="right-small tab-bar-section mobile-title">
+        <h4><a href="{% url 'logout' %}"><i style="color:white;" class="white fa fa-sign-out"></i></a></h4>
+    </section>
+</nav>
+<aside class="left-off-canvas-menu" aria-hidden="true">
+    <ul class="off-canvas-list">
+        <li><label>Navigation</label></li>
+        <li><a href="/">Home</a></li>
+        <li class="has-form">
+            <form method="get" action="{% url 'search' %}" role="search">
+                <input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
+            </form>
+        </li>
+        {% for menuitem in menuitems %}
+        <li class="{% if menuitem.show_dropdown %}has-submenu{% endif %}">
+            <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+            {% if menuitem.show_dropdown %}
+                {% mobile_menu_children parent=menuitem %}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</aside>
+
+<div class="hide-for-small hide-for-print row draft-bg-change">
+<div class="large-12 columns header">
+    <div class="large-4 columns">
+        <a target="_blank" href="http://www.dpaw.wa.gov.au"><img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife" /></a>
+    </div><div class="large-6 columns draft-content">
+        <a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet" /></a>
+    </div><div class="large-1 columns">
+        <a class="right" href="/products/"><img src="//static.dpaw.wa.gov.au/images/oim_tree.svg" /></a>
+    </div>
+</div>
+</div>
+
+<div class="header-topbar hide-for-print">
+<nav class="top-bar hide-for-small row" data-topbar>
+    <section class="top-bar-section">
+        <ul class="left">
+            <li><a href="/">Home</a></li>
+            {% for menuitem in menuitems %}
+            <li class="divider"></li>
+            <li class="{% if menuitem.show_dropdown %}has-dropdown{% endif %}">
+                <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+                {% if menuitem.show_dropdown %}
+                    {% top_menu_children parent=menuitem %}
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        <ul class="right">
+            <li class="has-form">
+        {% block search %}
+            <form method="get" action="{% url 'search' %}" role="search">
+                <input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
+            </form>
+        {% endblock %}
+            </li>
+        </ul>
+    </section>
+</nav></div>
+
+<a class="exit-off-canvas" href="#"></a>
+

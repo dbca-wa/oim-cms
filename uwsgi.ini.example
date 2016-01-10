@@ -1,0 +1,26 @@
+[uwsgi]
+# Django-related settings
+chdir           = %d
+home            = %dvenv
+module          = oim_cms.wsgi
+
+# process-related settings
+processes       = 4
+gevent          = 100
+gevent-early-monkey-patch = true
+max-requests    = 1000
+cache2          = name=default,bitmap=1,items=10000,blocksize=1000,blocks=200000,purge_lru=1
+vacuum          = true
+memory-report   = true
+disable-logging = true
+procname-prefix = %d
+auto-procname   = true
+hook-pre-app    = exec:venv/bin/python manage.py collectstatic --noinput
+static-map      = /static=%dstatic
+static-map      = /media/images=%dmedia/images
+static-cache-paths = 30
+touch-reload    = uwsgi.ini
+
+socket          = :@(%d.env.port)
+die-on-term     = true
+
