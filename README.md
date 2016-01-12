@@ -14,4 +14,4 @@ Install required libraries using `pip`:
 Notes
 -----
 
-This project is focused on parks and wildlife use cases at this point in time, for more information please contact asi at dpaw dot wa dot gov dot au.
+This project is focused on parks and wildlife use cases at this point in time, for more information please contact asi@dpaw.wa.gov.au.
