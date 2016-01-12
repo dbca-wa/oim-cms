@@ -8,7 +8,7 @@ from reversion.admin import VersionAdmin
 from mptt.admin import MPTTModelAdmin
 from leaflet.admin import LeafletGeoAdmin
 
-from .models import Hardware, Device, SoftwareLicense, CostCentre, Backup, ITSystem, OrgUnit, Location, SecondaryLocation
+from .models import Hardware, Device, SoftwareLicense, CostCentre, Backup, ITSystem, OrgUnit, Location, SecondaryLocation, Process, Function
 
 
 class HardwareAdmin(VersionAdmin):
@@ -19,13 +19,13 @@ class HardwareAdmin(VersionAdmin):
 
 
 class ITSystemAdmin(VersionAdmin):
-    list_display = ('system_id', 'name', 'acronym', 'status', 'description_html', 'cost_centre', 'owner', 'custodian', 'preferred_contact', 'access', 'authentication')
+    list_display = ('system_id', 'name', 'acronym', 'status', 'function', 'process', 'cost_centre', 'owner', 'custodian', 'preferred_contact', 'access', 'authentication')
     list_filter = ('access', 'authentication', 'status')
-    search_fields = ('system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description', 'custodian__username', 'custodian__email', 'link', 'documentation')
+    search_fields = ('system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description', 'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
     raw_id_fields = ("devices", "owner", "custodian", "data_custodian", "preferred_contact", "cost_centre")
     readonly_fields = ("extra_data_pretty", "description_html")
     fields = (
-        ("system_id", "acronym"), ("name", "status"),
+        ("system_id", "acronym"), ("name", "status"), ("process", "function"),
         ("cost_centre", "owner"), ("custodian", "data_custodian"),
         ("preferred_contact", "link"), ("documentation", "status_html"),
         ("authentication", "access"), ("description_html", "extra_data_pretty"),
@@ -118,4 +118,6 @@ admin.site.register(OrgUnit, OrgUnitAdmin)
 admin.site.register(Location, LocationAdmin)
 admin.site.register(SecondaryLocation, VersionAdmin)
 admin.site.register(SoftwareLicense, VersionAdmin)
+admin.site.register(Process, VersionAdmin)
+admin.site.register(Function, VersionAdmin)
 admin.site.register(ITSystem, ITSystemAdmin)

@@ -6,9 +6,28 @@ from django.contrib.gis.db import models
 
 from mptt.models import MPTTModel, TreeForeignKey
 from dateutil.relativedelta import relativedelta
+from datetime import timedelta
 
 from tracking import models as tracking
 
+class Function(models.Model):
+    name = models.CharField(max_length=256, unique=True)
+
+    def __str__(self):
+        return self.name
+
+class Process(models.Model):
+    name = models.CharField(max_length=256, unique=True)
+    function = models.ForeignKey(Function, on_delete=models.PROTECT, null=True, blank=True)
+    mtd = models.DurationField(help_text="Maximum Tolerable Downtime (days hh:mm:ss)", default=timedelta(days=14))
+    rto = models.DurationField(help_text="Recovery Time Objective (days hh:mm:ss)", default=timedelta(days=7))
+    rpo = models.DurationField(help_text="Recovery Point Objective/Data Loss Interval (days hh:mm:ss)", default=timedelta(hours=24))
+    users = models.PositiveSmallIntegerField(default=1)
+    #TODO: Add validation for durationfields
+
+
+    def __str__(self):
+        return self.name
 
 class Location(models.Model):
     name = models.CharField(max_length=256, unique=True)
@@ -220,6 +239,8 @@ class ITSystem(tracking.CommonFields):
     access = models.PositiveSmallIntegerField(choices=ACCESS_CHOICES, default=3)
     access_display = models.CharField(max_length=128, null=True, editable=False)
     request_access = models.TextField(blank=True)
+    process = models.ForeignKey(Process, on_delete=models.PROTECT, null=True, blank=True)
+    function = models.ForeignKey(Function, on_delete=models.PROTECT, null=True, blank=True)
 
     def description_html(self):
         return mark_safe(self.description)
