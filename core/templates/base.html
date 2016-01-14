@@ -14,6 +14,7 @@
         <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
         <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation/5.5.3/js/foundation.min.js"></script>
         <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js"></script>
+        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/js/egg.js"></script>
         <link rel="icon" href="//static.dpaw.wa.gov.au/images/favicon.svg" sizes="any" type="image/svg+xml" />
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/font-awesome/4.5.0/css/font-awesome.min.css" />
@@ -26,8 +27,8 @@
     </head>
 
     <body class="{% block body_class %}{% endblock %}">
+        {% if 'fullscreen' not in request.GET %}
         {% wagtailuserbar %}
-
         <div class="off-canvas-wrap" data-offcanvas>
 	        <div class="inner-wrap">
                 <div class="content" id="content">
@@ -35,8 +36,10 @@
                         {% get_site_root as site_root %}
                         {% top_menu parent=site_root calling_page=self %}
                     {% endblock %}
+        {% endif %}
 
                     {% block content %}{% endblock %}
+        {% if 'fullscreen' not in request.GET %}
                 </div>
 
                 <div class="footer hide-for-print"><div class="footer-inner">
@@ -45,6 +48,11 @@
 
             </div><!--inner-wrap-->
         </div><!--off-canvas-wrap-->
+        {% endif %}
+        {% if 'fullscreen' in request.GET %}
+            <div class="hide">{% include_content "footer" %}</div>
+            <style type="text/css">.row {min-width:100% !important;}</style>
+        {% endif %}
 
 
         <script type="text/javascript" src="{% static 'js/oim_cms.js' %}"></script>

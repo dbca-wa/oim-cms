@@ -38,6 +38,7 @@ class Location(models.Model):
     fax = models.CharField(max_length=128, null=True, blank=True)
     email = models.CharField(max_length=128, null=True, blank=True)
     point = models.PointField(null=True, blank=True)
+    url = models.CharField(max_length=2000, help_text="URL to webpage with more information", null=True, blank=True)
 
     def __str__(self):
         return "{} ({})".format(self.name, self.address)
