@@ -4,3 +4,4 @@ media/
 static/
 venv/
 *.pyc
+*.swp

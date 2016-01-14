@@ -89,7 +89,11 @@ class DepartmentUser(MPTTModel):
                 unit["unit_type"] = self.org_unit.TYPE_CHOICES_DICT[unit["unit_type"]]
             self.org_data["cost_centre"] = {
                 "name": self.org_unit.name,
-                "code": self.cost_centre.code
+                "code": self.cost_centre.code,
+                "manager" : str(self.cost_centre.manager),
+                "business_manager" : str(self.cost_centre.business_manager),
+                "admin" : str(self.cost_centre.admin),
+                "tech_contact" : str(self.cost_centre.tech_contact),
             }
         super(DepartmentUser, self).save(*args, **kwargs)
 
