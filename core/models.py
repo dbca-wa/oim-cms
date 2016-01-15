@@ -26,7 +26,6 @@ from ipware.ip import get_ip
 
 from wagtail.wagtailimages.formats import Format, register_image_format
 
-#This is used to add in image format sizes when adding an image through the richtext editor
 '''To add a new size format use the following format
    register_image_format(Format('name', 'label', 'class_names', 'filter_spec'))
 
@@ -54,12 +53,12 @@ class UserSession(models.Model):
 
 
 def user_logged_in_handler(sender, request, user, **kwargs):
-    #logging.error('user_logged_in_handler')
+    logging.debug('user_logged_in_handler')
     request.session.save()
     usersession, created = UserSession.objects.get_or_create(user=user, session_id=request.session.session_key)
     usersession.ip = get_ip(request)
     if DepartmentUser.objects.filter(email__iexact=user.email).exists():
-        #logging.error('user_logged_in_handler departmentuser {}'.format(user.email))
+        logging.debug('user_logged_in_handler departmentuser {}'.format(user.email))
         usersession.department_user = DepartmentUser.objects.filter(email__iexact=user.email)[0]
         if (user.username != usersession.department_user.username):
             test = get_user_model().objects.filter(username=usersession.department_user.username)
@@ -68,7 +67,7 @@ def user_logged_in_handler(sender, request, user, **kwargs):
             user.username = usersession.department_user.username
             user.save()
     usersession.save()
-    #logging.error('user_logged_in_handler saving stuff')
+    logging.debug('user_logged_in_handler saving stuff')
     management.call_command("clearsessions", verbosity=0)
 
 user_logged_in.connect(user_logged_in_handler)
@@ -87,7 +86,14 @@ class Content(Page):
         ('content_list', blocks.CharBlock()),
     ], null=True, blank=True)
     date = models.DateField("Content updated date", default=timezone.now)
+    template_filename = models.CharField(max_length=64, choices=(
+        ("content.html", "content.html"),
+        ("f6-content.html", "f6-content.html"),
+    ), default="content.html")
     tags = ClusterTaggableManager(through=ContentTag, blank=True)
+
+    def get_template(self, request, *args, **kwargs):
+        return "{}/{}".format(self.__class__._meta.app_label, self.template_filename)
 
     promote_panels = Page.promote_panels + [
         FieldPanel('date'),
@@ -96,6 +102,10 @@ class Content(Page):
 
     content_panels = Page.content_panels + [
         StreamFieldPanel('body'),
+    ]
+
+    settings_panels = Page.settings_panels + [
+        FieldPanel("template_filename")
     ]
 
     search_fields = Page.search_fields + (

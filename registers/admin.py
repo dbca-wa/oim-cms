@@ -104,6 +104,8 @@ class CostCentreAdmin(VersionAdmin):
 
 
 class LocationAdmin(LeafletGeoAdmin, VersionAdmin):
+    list_display = ('name', 'address', 'phone', 'fax', 'email', 'point')
+    search_fields = ('name', 'address', 'phone', 'fax', 'email')
     settings_overrides = {
         'DEFAULT_CENTER': (-31.0, 115.0),
         'DEFAULT_ZOOM': 5

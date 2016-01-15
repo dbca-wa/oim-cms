@@ -54,6 +54,17 @@ def has_menu_children(page):
     return page.get_children().live().in_menu().exists()
 
 
+@register.simple_tag()
+def page_menuitems(x):
+    menuitems = []
+    while x:
+        menuitems.append(x)
+        x = x.get_parent()
+
+    menuitems.pop()
+    menuitems.reverse()
+    return menuitems
+
 @register.inclusion_tag('core/tags/breadcrumbs.html', takes_context=True)
 def breadcrumbs(context, calling_page):
     x = calling_page
