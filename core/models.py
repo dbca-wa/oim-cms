@@ -93,7 +93,8 @@ class Content(Page):
     tags = ClusterTaggableManager(through=ContentTag, blank=True)
 
     def get_template(self, request, *args, **kwargs):
-        return "{}/{}".format(self.__class__._meta.app_label, self.template_filename)
+        template_name = request.GET.get("template", self.template_filename)
+        return "{}/{}".format(self.__class__._meta.app_label, template_name)
 
     promote_panels = Page.promote_panels + [
         FieldPanel('date'),

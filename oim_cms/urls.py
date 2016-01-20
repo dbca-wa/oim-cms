@@ -13,6 +13,7 @@ admin.site.site_header = 'OIM CMS Database Administration'
 
 api_patterns = [
     url(r'^freshdesk', api.freshdesk, name="api_freshdesk"),
+    url(r'^ec2_instances', include(api.EC2InstanceResource.urls())),
     url(r'^itsystems', include(api.ITSystemResource.urls())),
     url(r'^itsystems.csv', api.ITSystemResource.as_csv),
     url(r'^locations', include(api.LocationResource.urls())),

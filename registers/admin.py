@@ -15,7 +15,6 @@ class HardwareAdmin(VersionAdmin):
     list_display = ('device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4', 'ports', 'serials')
     list_filter = ('device_type', 'ports', 'cost_centre',)
     search_fields = ('name', 'username', 'email', 'ipv4', 'serials', 'ports')
-    list_editable = ('cost_centre',)
 
 
 class ITSystemAdmin(VersionAdmin):

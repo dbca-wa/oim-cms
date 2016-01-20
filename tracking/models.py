@@ -181,3 +181,12 @@ class Mobile(CommonFields):
 
     def __unicode__(self):
         return unicode(self.identity)
+
+class EC2Instance(CommonFields):
+    name = models.CharField("Instance Name", max_length=200)
+    ec2id = models.CharField("EC2 Instance ID", max_length=200, unique=True)
+    launch_time = models.DateTimeField(editable=False, null=True, blank=True)
+    scheduled_shutdown = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return self.name

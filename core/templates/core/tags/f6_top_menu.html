@@ -1,0 +1,26 @@
+{% load core_tags static wagtailcore_tags %}
+<div class="columns">
+    <ul class="dropdown menu" data-dropdown-menu="">
+        <li><a href="/">Home</a></li>
+        {% for menuitem in menuitems %}
+        <li>
+            <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+            {% if menuitem.show_dropdown %}
+                {% f6_top_menu_children parent=menuitem %}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+<div class="columns shrink">
+    <ul class="menu">
+        <li class="has-form">
+    {% block search %}
+        <form method="get" action="{% url 'search' %}" role="search">
+            <input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
+        </form>
+    {% endblock %}
+        </li>
+    </ul>
+</div>
+

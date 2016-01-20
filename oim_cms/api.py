@@ -1,6 +1,6 @@
 from registers.models import CostCentre, ITSystem, Hardware, OrgUnit, Location, SecondaryLocation
 from core.models import UserSession
-from tracking.models import DepartmentUser
+from tracking.models import DepartmentUser, EC2Instance
 from django.utils.text import slugify
 from django.utils.timezone import make_aware
 
@@ -114,6 +114,35 @@ class HardwareResource(DjangoResource):
         data = list(Hardware.objects.filter(pk=computer.pk).values(*self.VALUES_ARGS))[0]
         data.update(json.loads(data["local_info"]))
         return data
+
+
+class EC2InstanceResource(CSVDjangoResource):
+    VALUES_ARGS = (
+        'pk', 'name', 'ec2id', 'launch_time', 'scheduled_shutdown'
+    )
+
+    def is_authenticated(self):
+        return True
+
+    def list_qs(self):
+        FILTERS = {}
+        if "ec2id" in self.request.GET:
+            FILTERS["ec2id"] = self.request.GET["ec2id"]
+        return EC2Instance.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
+
+    @skip_prepare
+    def list(self):
+        data = list(self.list_qs())
+        return data
+
+    @skip_prepare
+    def create(self):
+        instance, created = EC2Instance.objects.get_or_create(ec2id=self.data["InstanceId"])
+        instance.name = [x["Value"] for x in self.data["Tags"] if x["Key"] == "Name"][0]
+        instance.launch_time = self.data["LaunchTime"]
+        instance.extra_data = self.data
+        instance.save()
+        return instance.extra_data
 
 
 class LocationResource(CSVDjangoResource):
