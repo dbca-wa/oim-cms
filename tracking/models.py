@@ -19,7 +19,10 @@ class CommonFields(models.Model):
     def extra_data_pretty(self):
         if not self.extra_data:
             return self.extra_data
-        return format_html(json2html.convert(json=self.extra_data))
+        try:
+            return format_html(json2html.convert(json=self.extra_data))
+        except Exception as e:
+            return repr(e)
 
     def save(self, *args, **kwargs):
         if self.cost_centre and not self.org_unit:

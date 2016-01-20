@@ -20,7 +20,25 @@
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation/6.1.1/foundation-flex.min.css">
         <link rel="stylesheet" type="text/css" media="all" href="//cdn.jsdelivr.net/foundation-icons/3.0/foundation-icons.min.css" />
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css" />
-        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/css/oim-f6.css" />
+        <style type="text/css">
+            .header_row { padding: 1rem 0; }
+            .main_menu, .footer { background-color: #004d88; }
+            .main_menu .top-bar, .main_menu .top-bar ul, .main_menu .top-bar a, .footer .row { color: #fff; background-color: #003862; }
+            .footer .row a { color: rgb(179, 221, 239); }
+            .main_menu .top-bar a:hover, .footer .row a:hover { 
+                color: #fff;
+                background-color: #004d88; }
+            .main_menu .dropdown.menu .submenu { background-color: #003862; border: none;}
+            .breadcrumbs_row {
+                border-style: solid;
+                border-width: 1px;
+                padding: 0.5625rem 0.875rem 0.5625rem;
+                background-color: #f4f4f4;
+                border-color: #dcdcdc;
+                border-radius: 3px;
+            }
+            .breadcrumbs_row .breadcrumbs { margin: 0; }
+        </style>
 
         {% block extra_css %}
 
@@ -31,20 +49,21 @@
         {% wagtailuserbar %}
             {% if 'fullscreen' not in request.GET %}
                 {% block header %}
-                <div class="row">
+                <div class="row header_row">
                     <div class="columns shrink"><a target="_blank" href="http://www.dpaw.wa.gov.au"><img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife"></a></div>
                     <div class="columns"></div>
                     <div class="columns shrink"><a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a></div>
                     <div class="columns"></div>
                     <div class="columns shrink"><a class="right" href="/products/"><img src="//static.dpaw.wa.gov.au/images/oim_tree.svg"></a></div>
                 </div>
-                <div class="row">
-                    {% get_site_root as site_root %}
-                    {% f6_top_menu parent=site_root calling_page=self %}
+                <div class="main_menu">
+                    <div class="row">
+                        {% get_site_root as site_root %}
+                        {% f6_top_menu parent=site_root calling_page=self %}
+                    </div>
                 </div>
-                <div class="row">
-                    <div class="columns">
-                        <ul class="breadcrumbs">
+                <div class="row breadcrumbs_row align-middle">
+                        <ul class="breadcrumbs columns">
                         {% page_menuitems self as menuitems %}
                         {% for menuitem in menuitems %}
                             <li>{% if not forloop.last %}<a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>{% else %}{{ menuitem.title }}{% endif %}</li>
@@ -53,25 +72,24 @@
                                 <i class="fi-arrows-expand"></i></a>
                             </li>
                         </ul>
-                    </div>
-                    <div class="columns shrink">
-                        <ul class="breadcrumbs">
+                        <ul class="breadcrumbs columns shrink">
                             <li>{{ request.user.email }}</li>
                             <li><a title="Logout" href="{% url 'logout' %}"><i class="fi-power"></i></a></li>
                         </ul>
-                    </div>
                 </div>
                 {% endblock %}
             {% endif %}
             <div class="main">
                 {% block content %}{% endblock %}
             </div>
-            {% if 'fullscreen' in request.GET %}
-                <div class="hide">{% include_content "footer" %}</div>
-                <style type="text/css">.row {min-width:100% !important;}</style>
-            {% else %}
-                {% block footer %}{% include_content "f6-footer" %}{% endblock %}
-            {% endif %}
+            <div class="footer">
+                {% if 'fullscreen' in request.GET %}
+                    <div class="hide">{% include_content "footer" %}</div>
+                    <style type="text/css">.row {min-width:100% !important;}</style>
+                {% else %}
+                    {% block footer %}{% include_content "f6-footer" %}{% endblock %}
+                {% endif %}
+            </div>
         {% block extra_js %}
         {% endblock %}
         <script type="text/javascript" src="{% static 'js/f6_oim_cms.js' %}"></script>

@@ -124,7 +124,7 @@ def top_menu(context, parent, calling_page=None):
 
 # Retrieves the children of the top menu items for the drop downs
 @register.inclusion_tag('core/tags/f6_top_menu_children.html', takes_context=True)
-def f6_top_menu_children(context, parent):
+def f6_top_menu_children(context, parent, vertical):
     menuitems_children = parent.get_children().live().in_menu()
 
     #This would help to create multilevel nav bars
@@ -132,6 +132,7 @@ def f6_top_menu_children(context, parent):
         menuitem.show_dropdown = has_menu_children(menuitem)
 
     return {
+        'vertical': vertical,
         'parent': parent,
         'menuitems_children': menuitems_children,
         # required by the pageurl tag that we want to use within this template

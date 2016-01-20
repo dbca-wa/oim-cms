@@ -1,26 +1,45 @@
 {% load core_tags static wagtailcore_tags %}
-<div class="columns">
-    <ul class="dropdown menu" data-dropdown-menu="">
-        <li><a href="/">Home</a></li>
-        {% for menuitem in menuitems %}
-        <li>
-            <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
-            {% if menuitem.show_dropdown %}
-                {% f6_top_menu_children parent=menuitem %}
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
+<div class="top-bar columns">
+    <div class="top-bar-left show-for-large">
+        <ul class="dropdown menu" data-dropdown-menu>
+            <li><a href="/">Home</a></li>
+            {% for menuitem in menuitems %}
+            <li>
+                <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+                {% if menuitem.show_dropdown %}
+                    {% f6_top_menu_children parent=menuitem vertical=False %}
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="top-bar-left hide-for-large" id="drilldown-main-menu">
+        <ul class="vertical menu" data-drilldown>
+            <li><a href="/">Home</a></li>
+            {% for menuitem in menuitems %}
+            <li>
+                <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+                {% if menuitem.show_dropdown %}
+                    {% f6_top_menu_children parent=menuitem vertical=True %}
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="top-bar-right">
+        <ul class="menu">
+            <li>
+            <div data-responsive-toggle="drilldown-main-menu" data-hide-for="large">
+                <a data-toggle><i class="fi-list"></i> Menu</a>&nbsp;&nbsp;
+            </div>
+            </li>
+            <li class="has-form">
+        {% block search %}
+            <form method="get" action="{% url 'search' %}" role="search">
+                <input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
+            </form>
+        {% endblock %}
+            </li>
+        </ul>
+    </div>
 </div>
-<div class="columns shrink">
-    <ul class="menu">
-        <li class="has-form">
-    {% block search %}
-        <form method="get" action="{% url 'search' %}" role="search">
-            <input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
-        </form>
-    {% endblock %}
-        </li>
-    </ul>
-</div>
-

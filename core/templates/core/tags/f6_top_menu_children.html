@@ -1,6 +1,6 @@
 {% load core_tags wagtailcore_tags %}
 
-<ul class="menu">
+<ul class="{% if vertical %}vertical {% endif %}menu">
     {% for child in menuitems_children %}
 
     {% if child.show_dropdown %}
