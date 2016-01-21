@@ -39,6 +39,29 @@ def rolecheck(request):
     return HttpResponse() if test else HttpResponseForbidden()
 
 
+def auth_ip(request):
+    # if user is using SSO, do a normal auth check
+    if request.user.is_authenticated():
+        return auth(request)
+
+    # get the IP of the current user, try and match it up to a session
+    current_ip = get_ip(request)
+    # we can assume that the Session and UserSession tables only contain current sessions
+    qs = UserSession.objects.filter(session__isnull=False, ip=current_ip).order_by("-session__expire_date")
+
+    if qs.exists():
+        user = qs[0].user
+        response = HttpResponse(json.dumps({'email': user.email, 'client_logon_ip': current_ip}))
+        response["X-email"] = user.email
+        response["X-client-logon-ip"] = current_ip
+        return response
+
+    
+    response = HttpResponse(json.dumps({'client_logon_ip': current_ip}))
+    response["X-client-logon-ip"] = current_ip
+    return response  
+
+
 def auth(request):
     if request.user.is_authenticated():
         usersession = UserSession.objects.get(session_id=request.session.session_key)

@@ -38,7 +38,8 @@ urlpatterns = [
     url(r'', include(wagtail_urls)),
 
     url(r'^redirect/', views.redirect, name='redirect'),
-    url(r'^auth', views.auth, name='auth'),
+    url(r'^auth$', views.auth, name='auth'),
+    url(r'^auth_ip$', views.auth_ip, name='auth_ip'),
     url(r'^rolecheck', views.rolecheck, name='rolecheck'),
 ]
 
