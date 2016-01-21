@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import DepartmentUser, Computer, Mobile
+from .models import DepartmentUser, Computer, Mobile, EC2Instance
 
 
 class DepartmentUserAdmin(admin.ModelAdmin):
@@ -7,14 +7,15 @@ class DepartmentUserAdmin(admin.ModelAdmin):
     list_filter = ['active', 'vip', 'executive', 'date_ad_updated']
     search_fields = ['name', 'email', 'username', 'employee_id']
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
-    readonly_fields = ['username', 'email', 'org_data_pretty', 'ad_data_pretty']
+    readonly_fields = ['username', 'email', 'org_data_pretty', 'ad_data_pretty', 'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date']
     fields = (
         ('email', 'username'), ('given_name', 'surname'),
         ('employee_id', 'cost_centre'), ('name', 'org_unit'),
         ('telephone', 'mobile_phone'), ('vip', 'executive'),
         ('title', 'parent'),
         ('other_phone', 'extra_data'),
-        ('org_data_pretty', 'ad_data_pretty')
+        ('org_data_pretty', 'ad_data_pretty'),
+        ('active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date'),
     )
 
 
@@ -28,6 +29,13 @@ class MobileAdmin(admin.ModelAdmin):
     search_fields = ('identity', 'model', 'imei', 'serial_number', 'asset_id', 'finance_asset_id')
 
 
+class EC2InstanceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'ec2id', 'launch_time', 'scheduled_shutdown')
+    search_fields = ('name', 'ec2id', 'launch_time', 'scheduled_shutdown')
+    readonly_fields = ["extra_data_pretty", "extra_data"]
+
+
 admin.site.register(DepartmentUser, DepartmentUserAdmin)
 admin.site.register(Computer, ComputerAdmin)
 admin.site.register(Mobile, MobileAdmin)
+admin.site.register(EC2Instance, EC2InstanceAdmin)

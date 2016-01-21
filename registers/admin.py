@@ -15,7 +15,6 @@ class HardwareAdmin(VersionAdmin):
     list_display = ('device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4', 'ports', 'serials')
     list_filter = ('device_type', 'ports', 'cost_centre',)
     search_fields = ('name', 'username', 'email', 'ipv4', 'serials', 'ports')
-    list_editable = ('cost_centre',)
 
 
 class ITSystemAdmin(VersionAdmin):
@@ -104,6 +103,8 @@ class CostCentreAdmin(VersionAdmin):
 
 
 class LocationAdmin(LeafletGeoAdmin, VersionAdmin):
+    list_display = ('name', 'address', 'phone', 'fax', 'email', 'point')
+    search_fields = ('name', 'address', 'phone', 'fax', 'email')
     settings_overrides = {
         'DEFAULT_CENTER': (-31.0, 115.0),
         'DEFAULT_ZOOM': 5

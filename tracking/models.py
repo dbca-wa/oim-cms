@@ -19,7 +19,10 @@ class CommonFields(models.Model):
     def extra_data_pretty(self):
         if not self.extra_data:
             return self.extra_data
-        return format_html(json2html.convert(json=self.extra_data))
+        try:
+            return format_html(json2html.convert(json=self.extra_data))
+        except Exception as e:
+            return repr(e)
 
     def save(self, *args, **kwargs):
         if self.cost_centre and not self.org_unit:
@@ -181,3 +184,12 @@ class Mobile(CommonFields):
 
     def __unicode__(self):
         return unicode(self.identity)
+
+class EC2Instance(CommonFields):
+    name = models.CharField("Instance Name", max_length=200)
+    ec2id = models.CharField("EC2 Instance ID", max_length=200, unique=True)
+    launch_time = models.DateTimeField(editable=False, null=True, blank=True)
+    scheduled_shutdown = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return self.name

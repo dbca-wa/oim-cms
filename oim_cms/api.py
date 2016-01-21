@@ -1,6 +1,6 @@
 from registers.models import CostCentre, ITSystem, Hardware, OrgUnit, Location, SecondaryLocation
 from core.models import UserSession
-from tracking.models import DepartmentUser
+from tracking.models import DepartmentUser, EC2Instance
 from django.utils.text import slugify
 from django.utils.timezone import make_aware
 
@@ -116,6 +116,56 @@ class HardwareResource(DjangoResource):
         return data
 
 
+class EC2InstanceResource(CSVDjangoResource):
+    VALUES_ARGS = (
+        'pk', 'name', 'ec2id', 'launch_time', 'scheduled_shutdown'
+    )
+
+    def is_authenticated(self):
+        return True
+
+    def list_qs(self):
+        FILTERS = {}
+        if "ec2id" in self.request.GET:
+            FILTERS["ec2id"] = self.request.GET["ec2id"]
+        return EC2Instance.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
+
+    @skip_prepare
+    def list(self):
+        data = list(self.list_qs())
+        return data
+
+    @skip_prepare
+    def create(self):
+        instance, created = EC2Instance.objects.get_or_create(ec2id=self.data["InstanceId"])
+        instance.name = [x["Value"] for x in self.data["Tags"] if x["Key"] == "Name"][0]
+        instance.launch_time = self.data["LaunchTime"]
+        instance.extra_data = self.data
+        instance.save()
+        return instance.extra_data
+
+
+class LocationResource(CSVDjangoResource):
+    VALUES_ARGS = (
+        'pk', 'name', 'address', 'phone', 'fax', 'email', 'point', 'url', 'bandwidth_url'
+    )
+
+    def list_qs(self):
+        # Only return production apps
+        FILTERS = {}
+        if "location_id" in self.request.GET:
+            FILTERS["pk"] = self.request.GET["location_id"]
+        return Location.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
+
+    @skip_prepare
+    def list(self):
+        data = list(self.list_qs())
+        for row in data:
+            if row["point"]:
+                row["point"] = row["point"].wkt
+        return data
+
+
 class ITSystemResource(CSVDjangoResource):
     VALUES_ARGS = (
         "pk", "name", "acronym", "system_id",
@@ -153,7 +203,7 @@ class ITSystemResource(CSVDjangoResource):
 class UserResource(DjangoResource):
     COMPACT_ARGS = (
         "pk", "name", "title", "employee_id", "email", "telephone", "mobile_phone",
-        "org_data", "parent__email", "parent__name", "username", "org_unit__location__name",
+        "org_data", "parent__email", "parent__name", "username", "org_unit__location__id", "org_unit__location__name",
         "org_unit__location__address", "org_unit__location__pobox", "org_unit__location__phone",
         "org_unit__location__fax", "ad_guid"
     )
@@ -195,7 +245,7 @@ class UserResource(DjangoResource):
 
     @skip_prepare
     def list(self):
-        FILTERS = DepartmentUser.ACTIVE_FILTER
+        FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
         if "org_structure" in self.request.GET:
             return self.org_structure()
         if "all" in self.request.GET:
