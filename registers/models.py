@@ -85,6 +85,7 @@ class OrgUnit(MPTTModel):
         (4, "Cost Centre"),
         (5, "Office"),
         (6, "District"),
+        (7, "Section"),
     )
     TYPE_CHOICES_DICT = dict(TYPE_CHOICES)
     unit_type = models.PositiveSmallIntegerField(choices=TYPE_CHOICES, default=4)
