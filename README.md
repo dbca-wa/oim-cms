@@ -14,4 +14,17 @@ Install required libraries using `pip`:
 Notes
 -----
 
-This project is focused on parks and wildlife use cases at this point in time, for more information please contact asi@dpaw.wa.gov.au.
+This project is focused on Parks and Wildlife use cases at this point in time,
+for more information please contact asi@dpaw.wa.gov.au.
+
+Development
+-----------
+
+This project uses confy to set environment variables (in a `.env` file).
+For local development, minimum required settings are as follows:
+
+    DJANGO_SETTINGS_MODULE=oim_cms.settings
+    DEBUG=True
+    DATABASE_URL="postgis://USER:PASSWORD@HOST:PORT/DATABASE_NAME"
+    SECRET_KEY="ThisIsASecretKey"
+    BASE_URL=HOST:PORT
