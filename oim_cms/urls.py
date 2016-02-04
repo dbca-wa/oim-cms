@@ -1,5 +1,6 @@
 from django.conf.urls import include, url, handler404
 from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 
 from wagtail.wagtailadmin import urls as wagtailadmin_urls
@@ -45,5 +46,8 @@ urlpatterns = [
     url(r'^auth_ip$', views.auth_ip, name='auth_ip'),
     url(r'^rolecheck', views.rolecheck, name='rolecheck'),
 ]
+
+if settings.DEBUG:  # Serve media locally in development.
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 handler404 = views.error404
