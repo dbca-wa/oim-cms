@@ -17,6 +17,8 @@ api_patterns = [
     url(r'^ec2_instances', include(api.EC2InstanceResource.urls())),
     url(r'^itsystems', include(api.ITSystemResource.urls())),
     url(r'^itsystems.csv', api.ITSystemResource.as_csv),
+    url(r'^mudmaps', include(api.MudMapResource.urls())),
+    url(r'^mudmaps.csv', api.MudMapResource.as_csv),
     url(r'^locations', include(api.LocationResource.urls())),
     url(r'^locations.csv', api.LocationResource.as_csv),
     url(r'^devices', include(api.HardwareResource.urls())),

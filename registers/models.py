@@ -11,6 +11,21 @@ from datetime import timedelta
 from tracking import models as tracking
 
 class Function(models.Model):
+    SERVICE_CHOICES = (
+        (1, "Service 1"),
+        (2, "Service 2"),
+        (3, "Service 3"),
+        (4, "Service 4"),
+        (5, "Service 5"),
+        (6, "Service 6"),
+        (7, "Service 7"),
+        (8, "Service 8"),
+        (9, "Common Service 9 - OIM"),
+        (10, "Common Service 10 - ODG"),
+        (11, "Common Service 11 - ???"),
+    )
+    SERVICE_CHOICES_DICT = dict(SERVICE_CHOICES)
+    service = models.PositiveSmallIntegerField(choices=SERVICE_CHOICES, default=4)
     name = models.CharField(max_length=256, unique=True)
 
     def __str__(self):
