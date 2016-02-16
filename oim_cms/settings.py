@@ -51,6 +51,7 @@ INSTALLED_APPS = (
     'tracking',
     'registers',
     'core',
+    'mudmap'
 )
 
 AUTHENTICATION_BACKENDS = (
