@@ -189,7 +189,8 @@ class EC2Instance(CommonFields):
     name = models.CharField("Instance Name", max_length=200)
     ec2id = models.CharField("EC2 Instance ID", max_length=200, unique=True)
     launch_time = models.DateTimeField(editable=False, null=True, blank=True)
-    scheduled_shutdown = models.DateTimeField(null=True, blank=True)
+    next_state = models.BooleanField(default=True, help_text="Checked is on, unchecked is off")
+    running = models.BooleanField(default=True)
     
     def __str__(self):
         return self.name

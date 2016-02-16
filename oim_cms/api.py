@@ -1,6 +1,7 @@
 from registers.models import CostCentre, ITSystem, Hardware, OrgUnit, Location, SecondaryLocation
 from core.models import UserSession
 from tracking.models import DepartmentUser, EC2Instance
+from mudmap.models import MudMap
 from django.utils.text import slugify
 from django.utils.timezone import make_aware
 
@@ -11,7 +12,7 @@ from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
 from django.http import HttpResponseRedirect, HttpResponse
 from django.conf import settings
-from django.db.models import Count
+from django.db.models import Count, F
 
 from django.views.decorators.csrf import csrf_exempt
 from djqscsv import render_to_csv_response
@@ -118,17 +119,17 @@ class HardwareResource(DjangoResource):
 
 class EC2InstanceResource(CSVDjangoResource):
     VALUES_ARGS = (
-        'pk', 'name', 'ec2id', 'launch_time', 'scheduled_shutdown'
+        'pk', 'name', 'ec2id', 'launch_time', 'running', 'next_state'
     )
 
     def is_authenticated(self):
         return True
 
     def list_qs(self):
-        FILTERS = {}
         if "ec2id" in self.request.GET:
-            FILTERS["ec2id"] = self.request.GET["ec2id"]
-        return EC2Instance.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
+            return EC2Instance.objects.filter(ec2id=request.GET["ec2id"]).values(*self.VALUES_ARGS)
+        else:
+            return EC2Instance.objects.exclude(running=F("next_state")).values(*self.VALUES_ARGS)
 
     @skip_prepare
     def list(self):
@@ -137,12 +138,54 @@ class EC2InstanceResource(CSVDjangoResource):
 
     @skip_prepare
     def create(self):
-        instance, created = EC2Instance.objects.get_or_create(ec2id=self.data["InstanceId"])
-        instance.name = [x["Value"] for x in self.data["Tags"] if x["Key"] == "Name"][0]
-        instance.launch_time = self.data["LaunchTime"]
-        instance.extra_data = self.data
-        instance.save()
-        return instance.extra_data
+        if not isinstance(self.data, list):
+            self.data = [self.data]
+            deleted = None
+        else:
+            deleted = EC2Instance.objects.exclude(ec2id__in=[i["InstanceId"] for i in self.data]).delete()
+        for instc in self.data:
+            instance, created = EC2Instance.objects.get_or_create(ec2id=instc["InstanceId"])
+            instance.name = [x["Value"] for x in instc["Tags"] if x["Key"] == "Name"][0]
+            instance.launch_time = instc["LaunchTime"]
+            instance.running = instc["State"]["Name"] == "running"
+            instance.extra_data = instc
+            instance.save()
+        return {"saved": len(self.data), "deleted": deleted}
+
+
+class MudMapResource(CSVDjangoResource):
+    VALUES_ARGS = (
+        'pk', 'name', 'user', 'last_saved'
+    )
+
+    def is_authenticated(self):
+        return True
+        return self.data.get("name", "").startswith(self.request.user.email.lower())
+
+    def list_qs(self):
+        # Only return production apps
+        FILTERS = {}
+        if "mudmap_id" in self.request.GET:
+            FILTERS["pk"] = self.request.GET["mudmap_id"]
+        return MudMap.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
+
+    @skip_prepare
+    def list(self):
+        data = list(self.list_qs())
+        return data
+
+    @skip_prepare
+    def create(self):
+        mudmap, created = MudMap.objects.get_or_create(name=self.data["name"])
+        if "delete" in self.data:
+            mudmap.delete()
+            return {"deleted": self.data["name"]}
+        else:
+            mudmap.geojson = self.data["features"]
+            mudmap.lastsave = self.data["lastsave"]
+            mudmap.user = self.request.user
+            mudmap.save()
+            return {"saved": self.data["name"]}
 
 
 class LocationResource(CSVDjangoResource):
