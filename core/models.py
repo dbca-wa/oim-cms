@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 import hashlib
 import logging 
+import os
 
 from django.conf import settings
 from django.core import management
@@ -117,7 +118,12 @@ class Content(Page):
     def serve(self, request):
         if "draft" in request.GET:
             return HttpResponseRedirect("/admin/pages/{}/view_draft/".format(self.pk))
-        return super(Content, self).serve(request)
+        response = super(Content, self).serve(request)
+        if "embed" in request.GET:
+            with open(os.path.join(settings.MEDIA_ROOT, "images", self.slug + ".html")) as output:
+                output.write(response.content)
+        return response
+
 
     class Meta:
         ordering = ("date",)
