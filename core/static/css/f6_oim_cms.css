@@ -1,0 +1,396 @@
+@media print {
+  html, body {
+    height: inherit; }
+
+  .content {
+    flex: inherit; }
+
+  .inner-wrap {
+    display: inherit; }
+
+  .header_row, .main_menu, .breadcrumbs_row {
+    display: none; } }
+abbr {
+  color: inherit;
+  font-weight: inherit;
+  font-size: inherit; }
+
+#wagtail-userbar {
+  top: 3em; }
+
+h1, h2, h3 {
+  clear: both; }
+
+html, body {
+  height: 100%; }
+
+.off-canvas-wrap, .inner-wrap {
+  height: 100%;
+  overflow: visible; }
+
+.inner-wrap {
+  display: flex;
+  flex-direction: column; }
+
+.content {
+  flex: 1 0 auto; }
+
+.footer {
+  flex: none; }
+
+body, h1, h2, h3, h4, h5, h6 {
+  font-family: "LatoWeb", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif; }
+
+.header_row {
+  padding: 1rem 0; }
+
+.button {
+  background-color: #003862; }
+
+.button-group .button:not(:last-child) {
+  border-right: 1px solid #0069b9; }
+
+.main_menu, .footer {
+  background-color: #004d88; }
+
+.main_menu .top-bar, .main_menu .top-bar ul, .main_menu .top-bar a, .footer .row {
+  color: #ffffff;
+  background-color: #003862; }
+
+.top-bar {
+  padding: 0; }
+
+.main_menu .top-bar a:hover {
+  color: #ffffff;
+  background-color: #004d88; }
+
+[type="search"], textarea {
+  height: 1.9rem;
+  margin-top: 0.25rem; }
+
+.main_menu .dropdown.menu .submenu {
+  background-color: #003862;
+  border: none; }
+
+.footer .inner {
+  padding-top: 0.5rem;
+  margin-bottom: -1rem; }
+
+.footer .row a {
+  color: #b3ddef; }
+
+.footer .row a:hover {
+  color: #ffffff;
+  background-color: #004d88; }
+
+.breadcrumbs_row {
+  padding: 0.5625rem 0.875rem 0.5625rem;
+  background-color: #f5f5f5;
+  margin-bottom: 0.5625rem; }
+
+.breadcrumbs_row .breadcrumbs {
+  margin: 0; }
+
+#logout-breadcrumb::before {
+  content: none; }
+
+#logout-breadcrumb {
+  text-transform: lowercase;
+  color: unset; }
+
+a, .breadcrumbs a {
+  color: #004d88; }
+
+.panel {
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d8d8d8;
+  padding: 1.25rem;
+  background: #f2f2f2;
+  color: #222222; }
+
+.panel-hero {
+  border-radius: 8px;
+  background: linear-gradient(#002060, #001a53);
+  border: 1px solid #162d50; }
+  .panel-hero p, .panel-hero h3, .panel-hero h4, .panel-hero ul, .panel-hero li {
+    color: #ffffff; }
+  .panel-hero a {
+    color: #b3ddef; }
+  .panel-hero a:hover {
+    color: #ffffff; }
+
+.panel-major {
+  border-radius: 8px;
+  background: linear-gradient(#3e75a6, #36658f);
+  border: 1px solid #162d50; }
+  .panel-major p, .panel-major h3, .panel-major h4, .panel-major ul, .panel-major li {
+    color: #ffffff; }
+  .panel-major a {
+    color: #b3ddef; }
+  .panel-major a:hover {
+    color: #ffffff; }
+
+.panel-minor {
+  border-radius: 8px;
+  background: linear-gradient(#a5c2df, #90b4d4);
+  border: 1px solid #162d50; }
+  .panel-minor p, .panel-minor h3, .panel-minor h4, .panel-minor ul, .panel-minor li {
+    color: #222222; }
+
+/*
+
+.dropdown.menu .is-dropdown-submenu-parent.is-down-arrow > a::after { 
+    border-color: $medium-blue transparent transparent; 
+}
+
+
+// mobile page header text fix
+.mobile-title {
+    font-weight: bold;
+
+    @media screen and (max-width: 379px) {
+        font-size: 12px;
+    };
+
+    @media screen and (min-width: 380px) {
+        font-size: 15px;
+    };
+};
+
+
+// mobile menu height fix
+.left-submenu {
+    height: 100%;
+};
+
+
+// header box model
+.header-box {
+    display: flex;
+    flex-wrap: wrap;
+};
+
+.header-left {
+    img {
+        display: block;
+    };
+};
+
+.header-center {
+    flex: 1 1 0%;
+    margin-top: auto;
+    margin-bottom: auto;
+    height: 100%;
+
+    img {
+        display: block;
+        max-width: 624px;
+        width: 100%;
+        height: auto;
+        margin-top: auto;
+        margin-bottom: auto;
+    };
+};
+
+.header-right {
+    margin-top: 1em;
+    text-align: right;
+
+    input {
+        margin-bottom: 0;
+        width: 180px;
+    };
+};
+
+
+// page footer styling
+.footer {
+    background-color: $medium-blue;
+    color: $white;
+
+    a {
+        color: $pale-blue;
+    };
+
+    a:hover {
+        color: $white;
+    };
+};
+
+.footer-inner {
+    padding-top: 1em;
+    margin: 0px auto;
+    max-width: 62.5rem;
+    width: 100%;
+    background-color: $dark-blue;
+};
+
+
+// media struct, use for icon lists
+.media-row {
+    display: flex;
+    flex-wrap: wrap;
+};
+
+.media-icon {
+    text-align: center;
+    padding-right: 0;
+    width: 128px !important;
+    flex: 0 0 auto !important;
+    align-self: center;
+};
+
+.media-body {
+    flex: 1 1 0%;
+};
+
+// image block for product header
+.image-product {
+    display: block;
+    max-height: 40vh;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1.25rem;
+};
+
+// element for image headers
+.richtext-image.full-width {
+    border-radius: 3px;
+    width: 100%;
+    height: auto;
+    margin-bottom: 1.25rem;
+};
+
+.image-header {
+    @extend .richtext-image.full-width;
+    object-fit: cover;
+    max-height: 40vh;
+};
+
+// padding for inline images
+.richtext-image.left {
+    border-radius: 3px;
+    margin-bottom: 0.625rem;
+    margin-right: 1.25rem;
+};
+
+.richtext-image.right {
+    border-radius: 3px;
+    margin-bottom: 0.625rem;
+    margin-left: 1.25rem;
+};
+
+
+
+// button group border fix
+.button-group.radius.stack-for-small > * .button {
+    border-color: scale-color($medium-blue, $lightness: 13%);
+};
+
+
+// numbered list fix
+ol {
+    margin-left: 2.2rem;
+};
+
+
+// search result style
+.search-result {
+    white-space: pre-wrap;
+};
+
+// make standard text links nice and bold
+p a {
+    font-weight: bold;
+};
+
+li a {
+    font-weight: bold;
+};
+
+
+// styling used for the happy little tree on the products page
+.happytree {
+    display: block;
+    margin: auto;
+    max-width: 800px;
+
+};
+
+// needs a happy little workaround for IE11's crap SVG viewBox support
+@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+    .happytree {
+        height: 50vh;
+    };
+};
+
+
+// make accordion panels nicer
+.accordion-navigation {
+    border-radius: 4px;
+    border: 1px solid $medium-blue;
+    >a:before {
+        content: "+";
+        padding-left: 5px;
+        float: right;
+        font-size: 1.6875rem;
+    };
+
+    &.active > a:before {
+        content: "-";
+    };
+};
+
+.accordion-navigation:hover {
+    border: 1px solid $light-blue;
+};
+
+// force padding between entries
+.accordion .accordion-navigation, .accordion dd {
+    margin-bottom: 0.5rem !important;
+};
+
+// inner header object has sufficient margins, ignore pleas for more padding
+.accordion .accordion-navigation > a, .accordion dd > a {
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
+};
+
+// same goes with the inner content object
+.accordion .accordion-navigation > .content, .accordion dd > .content {
+    padding-top: 0;
+    padding-bottom: 0.3rem;
+};
+
+// fix defaults for accordion headers
+.accordion .accordion-navigation > a, .accorion dd > a,
+.accordion .accordion-navigation.active > a, .accordion dd.active > a {
+    font-size: 1.6875rem;
+    line-height: 1.4;
+    padding-bottom: 0.8rem;
+    padding-top: 0.5rem;
+    margin-bottom: 0;
+    margin-top: 0;
+    outline: 0;
+
+    color: $medium-blue;
+};
+
+// make accordion headers light up
+.accordion .accordion-navigation > a:hover, .accordion dd > a:hover {
+    color: $light-blue;
+};
+
+// remove crap foundation coloured backgrounds
+.accordion .accordion-navigation > a:hover, .accordion dd > a:hover,
+.accordion .accordion-navigation > .content.active, .accordion dd > .content.active,
+.accordion .accordion-navigation.active > a, .accordion dd.active > a,
+.accordion .accordion-navigation > a, .accordion dd > a {
+    background: none;
+};
+
+
+*/
+
+/*# sourceMappingURL=f6_oim_cms.css.map */

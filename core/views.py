@@ -15,6 +15,7 @@ from oim_cms.api import whoamiResource
 from core.models import UserSession
 from django_auth_ldap.backend import LDAPBackend
 from ipware.ip import get_ip
+from django.views.decorators.csrf import csrf_exempt
 
 
 def rolecheck(request):
@@ -39,13 +40,31 @@ def rolecheck(request):
     return HttpResponse() if test else HttpResponseForbidden()
 
 
+@csrf_exempt
 def auth_ip(request):
+    # get the IP of the current user, try and match it up to a session
+    current_ip = get_ip(request)
+    
+    # if there's a basic auth header, perform a check
+    basic_auth = request.META.get("HTTP_AUTHORIZATION")
+    if basic_auth:
+        username, password = request.META["HTTP_AUTHORIZATION"].split(
+            " ", 1)[1].strip().decode('base64').split(":", 1)
+        ldapauth = LDAPBackend()
+        if username.find("@") > -1:
+            username = DepartmentUser.objects.get(email__iexact=username).username
+        user = ldapauth.authenticate(username=username,
+                                     password=password)
+        if user:
+            response = HttpResponse(json.dumps({'email': user.email, 'client_logon_ip': current_ip}))
+            response["X-email"] = user.email
+            response["X-client-logon-ip"] = current_ip
+            return response
+
     # if user is using SSO, do a normal auth check
     if request.user.is_authenticated():
         return auth(request)
 
-    # get the IP of the current user, try and match it up to a session
-    current_ip = get_ip(request)
     # we can assume that the Session and UserSession tables only contain current sessions
     qs = UserSession.objects.filter(session__isnull=False, ip=current_ip).order_by("-session__expire_date")
 
@@ -62,6 +81,7 @@ def auth_ip(request):
     return response  
 
 
+@csrf_exempt
 def auth(request):
     if request.user.is_authenticated():
         usersession = UserSession.objects.get(session_id=request.session.session_key)

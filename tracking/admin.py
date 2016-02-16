@@ -30,8 +30,8 @@ class MobileAdmin(admin.ModelAdmin):
 
 
 class EC2InstanceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'ec2id', 'launch_time', 'scheduled_shutdown')
-    search_fields = ('name', 'ec2id', 'launch_time', 'scheduled_shutdown')
+    list_display = ('name', 'ec2id', 'launch_time', 'running', 'next_state')
+    search_fields = ('name', 'ec2id', 'launch_time')
     readonly_fields = ["extra_data_pretty", "extra_data"]
 
 
