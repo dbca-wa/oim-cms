@@ -138,6 +138,11 @@ a, .breadcrumbs a {
   .panel-minor p, .panel-minor h3, .panel-minor h4, .panel-minor ul, .panel-minor li {
     color: #222222; }
 
+.two-columns {
+  -webkit-column-count: 2;
+  -moz-column-count: 2;
+  column-count: 2; }
+
 /*
 
 .dropdown.menu .is-dropdown-submenu-parent.is-down-arrow > a::after { 

@@ -244,9 +244,12 @@ a, .breadcrumbs a {
 
 };
 
-
-
-
+// two-columns using css3
+.two-columns {
+   -webkit-column-count: 2;
+      -moz-column-count: 2;
+           column-count: 2;    
+}
 /*
 
 .dropdown.menu .is-dropdown-submenu-parent.is-down-arrow > a::after { 
