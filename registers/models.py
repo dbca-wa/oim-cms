@@ -85,7 +85,7 @@ class SecondaryLocation(models.Model):
     def save(self, *args, **kwargs):
         for orgunit in self.orgunit_set.all():
             orgunit.save()
-        super(Location, self).save(*args, **kwargs)
+        super(SecondaryLocation, self).save(*args, **kwargs)
 
     def as_dict(self):
         return {k: getattr(self, k) for k in ("name", "phone", "fax", "email") if getattr(self, k)}
