@@ -11,9 +11,10 @@ class DepartmentUserAdmin(admin.ModelAdmin):
     fields = (
         ('email', 'username'), ('given_name', 'surname'),
         ('employee_id', 'cost_centre'), ('name', 'org_unit'),
-        ('telephone', 'mobile_phone'), ('vip', 'executive'),
+        ('telephone', 'mobile_phone'), ('vip', 'executive', 'contractor'),
         ('title', 'parent'),
         ('other_phone', 'extra_data'),
+        ('photo'),
         ('org_data_pretty', 'ad_data_pretty'),
         ('active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date'),
     )

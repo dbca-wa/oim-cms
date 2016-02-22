@@ -245,7 +245,7 @@ class ITSystemResource(CSVDjangoResource):
 
 class UserResource(DjangoResource):
     COMPACT_ARGS = (
-        "pk", "name", "title", "employee_id", "email", "telephone", "mobile_phone",
+        "pk", "name", "title", "employee_id", "email", "telephone", "mobile_phone", "photo", "photo_ad",
         "org_data", "parent__email", "parent__name", "username", "org_unit__location__id", "org_unit__location__name",
         "org_unit__location__address", "org_unit__location__pobox", "org_unit__location__phone",
         "org_unit__location__fax", "ad_guid"

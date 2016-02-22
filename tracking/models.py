@@ -4,6 +4,7 @@ from django.contrib.postgres.fields import JSONField
 from django.utils.html import format_html
 from mptt.models import MPTTModel, TreeForeignKey
 from json2html import json2html
+import os
 
 
 class CommonFields(models.Model):
@@ -33,6 +34,14 @@ class CommonFields(models.Model):
 
     class Meta:
         abstract = True
+
+
+# python 2 can't serialize unbound functions, so here's some dumb glue
+def get_photo_path(instance, filename='photo.jpg'):
+    return os.path.join("user_photo", '{0}.{1}'.format(instance.id, os.path.splitext(filename)))
+
+def get_photo_ad_path(instance, filename='photo.jpg'):
+    return os.path.join("user_photo_ad", '{0}.{1}'.format(instance.id, os.path.splitext(filename)))
 
 
 class DepartmentUser(MPTTModel):
@@ -70,6 +79,9 @@ class DepartmentUser(MPTTModel):
     in_sync = models.BooleanField(default=False, editable=False)
     vip = models.BooleanField(default=False, help_text="An individual who carries out a critical role for the department")
     executive = models.BooleanField(default=False, help_text="An individual who is an executive")
+    contractor = models.BooleanField(default=False, help_text="An individual who is an external contractor")
+    photo = models.ImageField(blank=True, upload_to=get_photo_path)
+    photo_ad = models.ImageField(blank=True, editable=False, upload_to=get_photo_ad_path)
     sso_roles = models.TextField(null=True, editable=False, help_text="Groups/roles separated by semicolon")
 
     def save(self, *args, **kwargs):
@@ -98,10 +110,40 @@ class DepartmentUser(MPTTModel):
                 "admin" : str(self.cost_centre.admin),
                 "tech_contact" : str(self.cost_centre.tech_contact),
             }
+
+        self.update_photo_ad()
         super(DepartmentUser, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.email
+
+    def update_photo_ad(self):
+        if not self.photo:
+            return
+
+        from PIL import Image
+        from cStringIO import StringIO
+        from django.core.files.base import ContentFile
+
+        PHOTO_AD_SIZE = (240, 240)
+        PHOTO_TYPE = self.photo.file.content_type
+
+        if PHOTO_TYPE == 'image/jpeg':
+            PIL_TYPE = 'jpeg'
+        elif DJANGO_TYPE == 'image/png':
+            PIL_TYPE = 'png'
+        else:
+            return
+
+        image = Image.open(StringIO(self.photo.read()))
+        image.thumbnail(PHOTO_AD_SIZE, Image.LANCZOS)
+
+        temp_buffer = StringIO()
+        image.save(temp_buffer, PIL_TYPE, optimize=True)
+        temp_buffer.seek(0)
+
+        self.photo_ad.save(os.path.basename(self.photo.name), ContentFile(temp_buffer.read()), save=False)
+    
 
     def org_data_pretty(self):
         if not self.org_data:
