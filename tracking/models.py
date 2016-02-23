@@ -118,30 +118,49 @@ class DepartmentUser(MPTTModel):
         return self.email
 
     def update_photo_ad(self):
+        # update self.photo_ad to contain a thumbnail less than 240x240 and 10kb
         if not self.photo:
+            if self.photo_ad:
+                self.photo_ad.delete()
             return
 
         from PIL import Image
         from cStringIO import StringIO
         from django.core.files.base import ContentFile
 
-        PHOTO_AD_SIZE = (240, 240)
-        PHOTO_TYPE = self.photo.file.content_type
+        if hasattr(self.photo.file, 'content_type'):
+            PHOTO_TYPE = self.photo.file.content_type
 
-        if PHOTO_TYPE == 'image/jpeg':
-            PIL_TYPE = 'jpeg'
-        elif DJANGO_TYPE == 'image/png':
-            PIL_TYPE = 'png'
+            if PHOTO_TYPE == 'image/jpeg':
+                PIL_TYPE = 'jpeg'
+            elif PHOTO_TYPE == 'image/png':
+                PIL_TYPE = 'png'
+            else:
+                return
         else:
-            return
+            PIL_TYPE = 'jpeg'
+        # good defaults to get ~10kb JPEG images
+        PHOTO_AD_SIZE = (240, 240)
+        PIL_QUALITY = 75
+        # remote file size limit
+        PHOTO_AD_FILESIZE = 10000
 
         image = Image.open(StringIO(self.photo.read()))
         image.thumbnail(PHOTO_AD_SIZE, Image.LANCZOS)
 
-        temp_buffer = StringIO()
-        image.save(temp_buffer, PIL_TYPE, optimize=True)
-        temp_buffer.seek(0)
+        # in case we miss 10kb, drop the quality and recompress
+        for i in range(12):
+            temp_buffer = StringIO()
+            image.save(temp_buffer, PIL_TYPE, quality=PIL_QUALITY, optimize=True)
+            length = temp_buffer.tell()
+            if length <= PHOTO_AD_FILESIZE:
+                break
+            if PIL_TYPE == 'png':
+                PIL_TYPE = 'jpeg'
+            else:
+                PIL_QUALITY -= 5
 
+        temp_buffer.seek(0)
         self.photo_ad.save(os.path.basename(self.photo.name), ContentFile(temp_buffer.read()), save=False)
     
 
