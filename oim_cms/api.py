@@ -4,6 +4,7 @@ from tracking.models import DepartmentUser, EC2Instance
 from mudmap.models import MudMap
 from django.utils.text import slugify
 from django.utils.timezone import make_aware
+from django.conf import settings
 
 import json
 import requests
@@ -16,6 +17,143 @@ from django.db.models import Count, F
 
 from django.views.decorators.csrf import csrf_exempt
 from djqscsv import render_to_csv_response
+
+def format_fileField(request,value):
+    if value:
+        return request.build_absolute_uri("{}{}".format(settings.MEDIA_URL,value))
+    else:
+        return value
+
+class FieldsFormatter(object):
+    """
+    A formatter object to format specified fields with cofigured formatter object.
+
+    This takes a 
+        ``request`` parameter , a http request object
+        ``formatters`` parameter: a dictionary of keys (a dotted lookup path to the desired attribute/key on the object) and values(a formatter object).
+
+    for propertis without a configed formatter method, return the raw value directly.
+
+    This method will replace the old value with formatted value.
+
+    Example::
+
+        preparer = FieldsFormatter(request,fields={
+            # ``user`` is the key the client will see.
+            # ``author.pk`` is the dotted path lookup ``FieldsPreparer``
+            # will traverse on the data to return a value.
+            'photo': format_fileField,
+        })
+
+    """
+    def __init__(self, formatters):
+        super(FieldsFormatter, self).__init__()
+        self._formatters = formatters
+
+    def format(self,request, data):
+        """
+        format data with configured formatter object
+        data can be a list or a single object
+        """
+        if data:
+            if isinstance(data,list):
+                #list object
+                for row in data:
+                    self.format_object(request,row)
+            else:
+                #a single object
+                self.format_object(request,data)
+
+        return data
+
+    def format_object(self,request, data):
+        """
+        format a simgle object.
+
+        Uses the ``lookup_data`` method to traverse dotted paths.
+
+        Replace the value with formatted value, if required.
+
+        """
+        if not self._formatters:
+            # No fields specified. Serialize everything.
+            return data
+
+        for lookup,formatter in self._formatters.items():
+            if not formatter: continue
+            data = self.format_data(request,lookup, data,formatter)
+
+        return data
+
+    def format_data(self, request, lookup, data, formatter):
+        """
+        Given a lookup string, attempts to descend through nested data looking for
+        the value ,format the value and then replace the old value with formatted value.
+
+        Can work with either dictionary-alikes or objects (or any combination of
+        those).
+
+        Lookups should be a string. If it is a dotted path, it will be split on
+        ``.`` & it will traverse through to find the final value. If not, it will
+        simply attempt to find either a key or attribute of that name & return it.
+
+        Example::
+
+            >>> data = {
+            ...     'type': 'message',
+            ...     'greeting': {
+            ...         'en': 'hello',
+            ...         'fr': 'bonjour',
+            ...         'es': 'hola',
+            ...     },
+            ...     'person': Person(
+            ...         name='daniel'
+            ...     )
+            ... }
+            >>> lookup_data('type', data)
+            'message'
+            >>> lookup_data('greeting.en', data)
+            'hello'
+            >>> lookup_data('person.name', data)
+            'daniel'
+
+        """
+        parts = lookup.split('.')
+
+        if not parts or not parts[0]:
+            return formatter(request,data)
+
+        part = parts[0]
+        remaining_lookup = '.'.join(parts[1:])
+
+        if hasattr(data, 'keys') and hasattr(data, '__getitem__'):
+            # Dictionary enough for us.
+            try:
+                value = data[part]
+                if remaining_lookup:
+                    #is an object
+                    self.format_data(request,remaining_lookup, value, formatter)
+                else:
+                    #is a simple type value
+                    data[part] = formatter(request,value)
+            except:
+                #format failed, ignore
+                pass
+        else:
+            try:
+                value = getattr(data,part)
+                # Assume it's an object.
+                if remaining_lookup:
+                    #is an object
+                    self.format_data(request,remaining_lookup, value, formatter)
+                else:
+                    #is a simple type value
+                    setattr(data,part,formatter(request,value))
+            except:
+                #format failed, ignore
+                pass
+
+        return data
 
 
 class CSVDjangoResource(DjangoResource):
@@ -58,7 +196,7 @@ class OptionResource(DjangoResource):
         return getattr(self, "data_" + self.request.GET["list"])()
 
     def data_cost_centre(self):
-        return ["{} {}".format(*c) for c in CostCentre.objects.filter(active=True).values_list("code", "name")]
+        return ["{} {}".format(*c) for c in CostCentre.objects.all().values_list("code", "org_position__name")]
 
     def data_dept_user(self):
         return [u[0] for u in DepartmentUser.objects.filter(active=True, email__iendswith=".wa.gov.au").order_by("email").values_list("email")]
@@ -254,6 +392,11 @@ class UserResource(DjangoResource):
         "ad_dn", "ad_data", "date_updated", "date_ad_updated", "active", "ad_deleted",
         "in_sync", "given_name", "surname", "home_phone", "other_phone")
 
+    formatters = FieldsFormatter(formatters={
+        "photo":format_fileField,
+        "photo_ad":format_fileField
+    })
+
     def is_authenticated(self):
         return True
 
@@ -301,7 +444,7 @@ class UserResource(DjangoResource):
             FILTERS["ad_guid__endswith"] = self.request.GET["ad_guid"]
         if "compact" in self.request.GET:
             self.VALUES_ARGS = self.COMPACT_ARGS
-        return list(DepartmentUser.objects.filter(**FILTERS).order_by("name").values(*self.VALUES_ARGS))
+        return self.formatters.format(self.request,list(DepartmentUser.objects.filter(**FILTERS).order_by("name").values(*self.VALUES_ARGS)))
 
     @skip_prepare
     def create(self):
@@ -322,7 +465,7 @@ class UserResource(DjangoResource):
                 user.ad_updated = True
                 user.save()
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                return data
+                return self.formatters.format(self.request,data)
             modified = make_aware(user._meta.get_field_by_name("date_updated")[0].clean(self.data["Modified"], user))
             if not user.pk or not user.date_ad_updated or modified > user.date_updated:
                 user.email = self.data["EmailAddress"]
@@ -344,4 +487,4 @@ class UserResource(DjangoResource):
         except Exception as e:
             data = self.data
             data["Error"] = repr(e)
-        return data
+        return self.formatters.format(self.request,data)
