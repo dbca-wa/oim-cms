@@ -58,7 +58,7 @@ class OptionResource(DjangoResource):
         return getattr(self, "data_" + self.request.GET["list"])()
 
     def data_cost_centre(self):
-        return ["{} {}".format(*c) for c in CostCentre.objects.filter(active=True).values_list("code", "name")]
+        return ["{} {}".format(*c) for c in CostCentre.objects.all().values_list("code", "org_position__name")]
 
     def data_dept_user(self):
         return [u[0] for u in DepartmentUser.objects.filter(active=True, email__iendswith=".wa.gov.au").order_by("email").values_list("email")]
@@ -266,19 +266,19 @@ class UserResource(DjangoResource):
         slocations = SecondaryLocation.objects.all()
         defaultowner = "support@dpaw.wa.gov.au"
         for obj in orgunits:
-            structure.append({"id": 'db-org_{}'.format(obj.pk), 
+            structure.append({"id": 'db-org_{}'.format(obj.pk),
                 "name": str(obj), "email": slugify(obj.name), "owner": getattr(obj.manager, "email", defaultowner),
                 "members": [d[0] for d in qs.filter(org_unit__in=obj.get_descendants(include_self=True)).values_list("email")]})
         for obj in costcentres:
-            structure.append({"id": 'db-cc_{}'.format(obj.pk), 
+            structure.append({"id": 'db-cc_{}'.format(obj.pk),
                 "name": str(obj), "email": slugify(obj.name), "owner": getattr(obj.manager, "email", defaultowner),
                 "members": [d[0] for d in qs.filter(cost_centre=obj).values_list("email")]})
         for obj in locations:
-            structure.append({"id": 'db-loc_{}'.format(obj.pk), 
+            structure.append({"id": 'db-loc_{}'.format(obj.pk),
                 "name": str(obj), "email": slugify(obj.name) + "-location", "owner": getattr(obj.manager, "email", defaultowner),
                 "members": [d[0] for d in qs.filter(org_unit__location=obj).values_list("email")]})
         for obj in slocations:
-            structure.append({"id": 'db-locs_{}'.format(obj.pk), 
+            structure.append({"id": 'db-locs_{}'.format(obj.pk),
                 "name": str(obj), "email": slugify(obj.name) + "-location", "owner": getattr(obj.manager, "email", defaultowner),
                 "members": [d[0] for d in qs.filter(org_unit__secondary_location=obj).values_list("email")]})
         for row in structure:
