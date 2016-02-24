@@ -28,7 +28,7 @@ class FieldsFormatter(object):
     """
     A formatter object to format specified fields with cofigured formatter object.
 
-    This takes a 
+    This takes a
         ``request`` parameter , a http request object
         ``formatters`` parameter: a dictionary of keys (a dotted lookup path to the desired attribute/key on the object) and values(a formatter object).
 
@@ -203,6 +203,9 @@ class OptionResource(DjangoResource):
 
     def data_itsystem(self):
         return ["{} {}".format(*s) for s in ITSystem.objects.all().values_list("system_id", "name")]
+
+    def data_location(self):
+        return [l.name for l in Location.objects.all()]
 
 
 class whoamiResource(DjangoResource):
