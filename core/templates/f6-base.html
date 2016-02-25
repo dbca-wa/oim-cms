@@ -56,7 +56,7 @@
                             </ul>
                             <div class="columns large-3">
                                 <ul class="breadcrumbs float-right">
-                                    <li>{{ request.user.email }}</li>
+                                    <li><a href="/profile/">{{ request.user.email }}</a></li>
                                     <li><a title="Logout" href="{% url 'logout' %}"><i class="fi-power"></i></a></li>
                                 </ul>
                             </div>
