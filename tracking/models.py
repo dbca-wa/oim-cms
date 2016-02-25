@@ -105,10 +105,10 @@ class DepartmentUser(MPTTModel):
             self.org_data["cost_centre"] = {
                 "name": self.org_unit.name,
                 "code": self.cost_centre.code,
-                "manager" : str(self.cost_centre.manager),
-                "business_manager" : str(self.cost_centre.business_manager),
-                "admin" : str(self.cost_centre.admin),
-                "tech_contact" : str(self.cost_centre.tech_contact),
+                "manager": str(self.cost_centre.manager),
+                "business_manager": str(self.cost_centre.business_manager),
+                "admin": str(self.cost_centre.admin),
+                "tech_contact": str(self.cost_centre.tech_contact),
             }
 
         self.update_photo_ad()
@@ -162,7 +162,6 @@ class DepartmentUser(MPTTModel):
 
         temp_buffer.seek(0)
         self.photo_ad.save(os.path.basename(self.photo.name), ContentFile(temp_buffer.read()), save=False)
-    
 
     def org_data_pretty(self):
         if not self.org_data:
@@ -246,12 +245,16 @@ class Mobile(CommonFields):
     def __unicode__(self):
         return unicode(self.identity)
 
+
 class EC2Instance(CommonFields):
     name = models.CharField("Instance Name", max_length=200)
     ec2id = models.CharField("EC2 Instance ID", max_length=200, unique=True)
     launch_time = models.DateTimeField(editable=False, null=True, blank=True)
     next_state = models.BooleanField(default=True, help_text="Checked is on, unchecked is off")
     running = models.BooleanField(default=True)
-    
+
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name = 'EC2 instance'
