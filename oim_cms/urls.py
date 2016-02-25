@@ -23,6 +23,7 @@ api_patterns = [
     url(r'^locations.csv', api.LocationResource.as_csv),
     url(r'^devices', include(api.HardwareResource.urls())),
     url(r'^users', include(api.UserResource.urls())),
+    url(r'^profile', api.profile),
     url(r'^options', include(api.OptionResource.urls())),
     url(r'^whoami', api.whoamiResource.as_detail(), name="api_whoami"),
 ]
