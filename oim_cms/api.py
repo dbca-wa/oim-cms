@@ -7,11 +7,12 @@ from django.utils.timezone import make_aware
 from django.conf import settings
 
 import json
+from restless.utils import MoreTypesJSONEncoder
 import requests
 from restless.dj import DjangoResource
 from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Count, F
 
@@ -188,6 +189,8 @@ def freshdesk(request):
                       data=json.dumps(ticket))
     ticket_id = json.loads(r.content)["helpdesk_ticket"]["display_id"]
     return HttpResponseRedirect(settings.FRESHDESK_ENDPOINT + "/support/tickets/{}".format(ticket_id))
+
+
 
 
 class OptionResource(DjangoResource):
@@ -488,3 +491,31 @@ class UserResource(DjangoResource):
             data = self.data
             data["Error"] = repr(e)
         return self.formatters.format(self.request,data)
+
+
+@csrf_exempt
+def profile(request):
+    if not request.user.is_authenticated():
+        return HttpResponseForbidden()
+
+    self = UserResource()
+    if request.method == "GET":
+        data = DepartmentUser.objects.filter(email__iexact=request.user.email).order_by("name").values(*self.VALUES_ARGS)[0]
+    elif request.method == "POST":
+        user = DepartmentUser.objects.get(email__iexact=request.user.email)
+      
+        if 'photo' in request.POST and request.POST['photo'] == 'delete':
+            user.photo.delete()
+        elif 'photo' in request.FILES:
+            user.photo.save(request.FILES['photo'].name, request.FILES['photo'], save=False)
+        if 'telephone' in request.POST:
+            user.telephone = request.POST['telephone']
+        if 'mobile_phone' in request.POST:
+            user.mobile_phone = request.POST['mobile_phone']
+        if 'other_phone' in request.POST:
+            user.other_phone = request.POST['other_phone']
+        user.save()
+        data = DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS)[0]
+    return HttpResponse(json.dumps({'objects': [self.formatters.format(request, data)]}, cls=MoreTypesJSONEncoder))
+
+
