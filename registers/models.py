@@ -10,6 +10,7 @@ from datetime import timedelta
 
 from tracking import models as tracking
 
+
 class Function(models.Model):
     SERVICE_CHOICES = (
         (1, "Service 1"),
@@ -31,6 +32,7 @@ class Function(models.Model):
     def __str__(self):
         return self.name
 
+
 class Process(models.Model):
     name = models.CharField(max_length=256, unique=True)
     function = models.ForeignKey(Function, on_delete=models.PROTECT, null=True, blank=True)
@@ -40,9 +42,12 @@ class Process(models.Model):
     users = models.PositiveSmallIntegerField(default=1)
     #TODO: Add validation for durationfields
 
+    class Meta:
+        verbose_name_plural = 'processes'
 
     def __str__(self):
         return self.name
+
 
 class Location(models.Model):
     name = models.CharField(max_length=256, unique=True)
@@ -201,6 +206,7 @@ class Hardware(tracking.CommonFields):
     class Meta:
         unique_together = ('computer', 'mobile')
         ordering = ('name', '-device_type')
+        verbose_name_plural = 'hardware'
 
 
 class Device(tracking.CommonFields):
