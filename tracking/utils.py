@@ -1,8 +1,6 @@
 import csv
 import os
 from django.conf import settings
-from tablib import Dataset
-from harvest import utils_ldap
 import logging
 import subprocess
 
@@ -99,55 +97,3 @@ def csv_sync_prop_register_data(src='it_assets.csv'):
     print('Done')
 
 
-def csv_output_computers():
-    """Utility function to generate a CSV output of computers information from
-    Incredibus data, for audit/cleansing purposes.
-    """
-    computers = Computer.objects.all()
-    d = Dataset()
-    d.headers = [
-        'ID',
-        'HOSTNAME',
-        'CHASSIS',
-        'PROBABLE OWNER EMAIL',
-        'PROBABLE OWNER CC',
-        'MANAGED BY EMAIL',
-        'ASSET NO.',
-        'SERIAL NO.'
-    ]
-
-    for i in computers:
-        row = [i.pk, i.sam_account_name[:-1], i.chassis]
-        if i.probable_owner:
-            row += [i.probable_owner.email.lower(), i.probable_owner.cost_centre]
-        else:
-            row += ['', '']
-        if i.managed_by:
-            row += [i.managed_by.email.lower()]
-        else:
-            row += ['']
-        row += ['', i.serial_number]
-        d.append(row)
-
-    f = open('/tmp/computers.csv', 'w')
-    f.write(d.csv)
-    f.close()
-
-
-def ad_users_csv():
-    print('Downloading user data from AD')
-    ad_users = utils_ldap.ldap_search(settings.AD_FILTER_USERS)
-    f = open('/tmp/ad_users.csv', 'w')
-    c = csv.writer(f)
-    c.writerow(('AD DN', 'Username', 'User?', 'Admin?', 'Vendor?', 'Disabled?', 'Cost Centre', 'Description'))
-    print('Outputting user data to /tmp/ad_users.csv')
-    for dn, record in ad_users:
-        username = record.get('sAMAccountName', ('',))[0].lower()
-        is_user = 'OU=Users' in dn
-        is_admin = username.endswith('-admin')
-        is_vendor = 'OU=Vendor' in dn
-        is_disabled = 'OU=Disabled Accounts' in dn
-        cc = record.get('company', ('',))[0]
-        desc = record.get('description', ('',))[0].strip()
-        c.writerow((dn, username, is_user, is_admin, is_vendor, is_disabled, cc, desc))
-    f.close()
