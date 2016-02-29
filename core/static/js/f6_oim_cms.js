@@ -76,25 +76,22 @@ $(document).ready(function () {
     $(document).ready(upgradeForms);
 
     window._renderHandlebars = function(tmpl, data, callback) {
-        tmpl.after(Handlebars.compile(tmpl.html())(data));
+        tmpl.after(data);
         window[callback]();
-        $(".main-content").removeClass("loading");
     }
 
     window.renderHandlebars = function() {
         $("script[data-url]").each(function() {
             var tmpl = $(this);
-            $(".main-content").addClass("loading");
             var url = tmpl.attr("data-url");
             var callback = tmpl.attr("data-onload");
             localforage.getItem(url).then(function(data) {
                 if (data) { _renderHandlebars(tmpl, data, callback) }
-            });
-            $.get(url, function(data) {
-                localforage.setItem(url, data);
-                if ($(".main-content").hasClass("loading")) {
-                    _renderHandlebars(tmpl, data, callback);
-                }
+                $.get(url, function(rawdata) {
+                    var data = Handlebars.compile(tmpl.html())(rawdata);
+                    localforage.setItem(url, data);
+                    if (!data) { _renderHandlebars(tmpl, data, callback) }
+                });
             });
         });
     }
