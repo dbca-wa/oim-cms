@@ -29,13 +29,7 @@ $(document).ready(function () {
           var inview = images.filter(function() {
             var $e = $(this);
             if ($e.is(":hidden")) return;
-
-            var wt = $w.scrollTop(),
-                wb = wt + $w.height(),
-                et = $e.offset().top,
-                eb = et + $e.height();
-
-            return eb >= wt - th && et <= wb + th;
+            return true;
           });
 
           loaded = inview.trigger("unveil");
@@ -103,7 +97,7 @@ $(document).ready(function () {
     window.upgradeForms = function() {
         $("input[type=date]").fdatepicker({format: "dd/mm/yyyy"}).attr({placeholder: "dd/mm/yyyy"});
         // Find all inputs on the DOM which are bound to a datalist via their list attribute.
-        $('input[list]').on("change", function() {
+        $('input[list]').on("input", function() {
             // use the setCustomValidity function of the Validation API
             // to provide an user feedback if the value does not exist in the datalist
             var value = this.value;
