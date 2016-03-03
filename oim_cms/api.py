@@ -209,7 +209,7 @@ class OptionResource(DjangoResource):
         return getattr(self, "data_" + self.request.GET["list"])()
 
     def data_cost_centre(self):
-        return ["{} {}".format(
+        return ["CC{} / {}".format(
             *c) for c in CostCentre.objects.all().values_list("code", "org_position__name")]
 
     def data_dept_user(self):
@@ -225,6 +225,21 @@ class OptionResource(DjangoResource):
 
     def data_division(self):
         return [i.name for i in OrgUnit.objects.filter(unit_type=1)]
+
+    def data_department(self):
+        return [i.name for i in OrgUnit.objects.filter(unit_type=0)]
+
+    def data_branch(self):
+        return [i.name for i in OrgUnit.objects.filter(unit_type=2)]
+
+    def data_section(self):
+        return [i.name for i in OrgUnit.objects.filter(unit_type=7)]
+
+    def data_regiondistrict(self):
+        return [i.name for i in OrgUnit.objects.filter(unit_type__in=[3,6])]
+
+    def data_office(self):
+        return [i.name for i in OrgUnit.objects.filter(unit_type=5)]
 
 
 class whoamiResource(DjangoResource):
