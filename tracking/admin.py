@@ -14,6 +14,8 @@ class DepartmentUserAdmin(admin.ModelAdmin):
         ('telephone', 'mobile_phone'), ('vip', 'executive', 'contractor'),
         ('title', 'parent'),
         ('other_phone', 'extra_data'),
+        ('notes'),
+        ('working_hours'),
         ('photo'),
         ('org_data_pretty', 'ad_data_pretty'),
         ('active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date'),

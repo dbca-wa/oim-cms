@@ -83,6 +83,8 @@ class DepartmentUser(MPTTModel):
     photo = models.ImageField(blank=True, upload_to=get_photo_path)
     photo_ad = models.ImageField(blank=True, editable=False, upload_to=get_photo_ad_path)
     sso_roles = models.TextField(null=True, editable=False, help_text="Groups/roles separated by semicolon")
+    notes = models.TextField(null=True, blank=True, help_text="Officer secondary roles, etc.")
+    working_hours = models.TextField(default="9:00-17:00, Mon-Fri", null=True, blank=True, help_text="Officer normal work/contact hours")
 
     def save(self, *args, **kwargs):
         if self.employee_id == "n/a":
