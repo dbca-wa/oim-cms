@@ -8,7 +8,16 @@
   .inner-wrap {
     display: inherit; }
 
-  .header_row, .main_menu, .breadcrumbs_row {
+  .main_menu, .breadcrumbs_row {
+    display: none; }
+
+  a[href]:after {
+    content: none !important; }
+
+  abbr:after {
+    content: none !important; }
+
+  .wagtail-userbar {
     display: none; } }
 abbr {
   color: inherit;

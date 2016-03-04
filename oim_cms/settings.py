@@ -51,7 +51,8 @@ INSTALLED_APPS = (
     'tracking',
     'registers',
     'core',
-    'mudmap'
+    'mudmap',
+    'postgrest'
 )
 
 AUTHENTICATION_BACKENDS = (
@@ -214,6 +215,8 @@ PEEPERS_URL = env('PEEPERS_URL', None)
 INTERNAL_USER = env('INTERNAL_USER', None)
 FRESHDESK_ENDPOINT = env('FRESHDESK_ENDPOINT', None)
 FRESHDESK_AUTH = (env('FRESHDESK_KEY'), 'X')
+POSTGREST_ROLE = env('POSTGREST_ROLE', 'postgrest')
+POSTGREST_PORTFILE = os.path.join(BASE_DIR, ".env-postgrest-port")
 
 # Email settings
 EMAIL_HOST = env('EMAIL_HOST', None)
