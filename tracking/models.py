@@ -49,7 +49,7 @@ class DepartmentUser(MPTTModel):
     Represents a Department user.
     This model maps to an object managed by Active Directory.
     """
-    ACTIVE_FILTER = {"active": True, "email__isnull": False, "cost_centre__isnull": False}
+    ACTIVE_FILTER = {"active": True, "email__isnull": False, "cost_centre__isnull": False, "contractor": False}
     # These fields are populated from Active Directory.
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
@@ -87,7 +87,7 @@ class DepartmentUser(MPTTModel):
     working_hours = models.TextField(default="9:00-17:00, Mon-Fri", null=True, blank=True, help_text="Officer normal work/contact hours")
 
     def save(self, *args, **kwargs):
-        if self.employee_id == "n/a":
+        if self.employee_id and self.employee_id.lower() == "n/a":
             self.employee_id = None
         if self.employee_id:
             self.employee_id = "{0:06d}".format(int(self.employee_id))

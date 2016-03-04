@@ -220,26 +220,32 @@ class OptionResource(DjangoResource):
         return ["{} {}".format(
             *s) for s in ITSystem.objects.all().values_list("system_id", "name")]
 
+    def data_statuslogin(self):
+        return [l[1] for l in list(ITSystem.STATUS_CHOICES) + list(ITSystem.ACCESS_CHOICES) + list(ITSystem.AUTHENTICATION_CHOICES)]
+
     def data_location(self):
-        return [l.name for l in Location.objects.all()]
+        return [l.name for l in Location.objects.all().order_by('name')]
 
     def data_division(self):
-        return [i.name for i in OrgUnit.objects.filter(unit_type=1)]
+        return [i.name for i in OrgUnit.objects.filter(unit_type=1).order_by('name')]
+
+    def data_dept(self):
+        return [i.acronym for i in OrgUnit.objects.filter(unit_type=0, acronym__gt="").order_by('name')]
 
     def data_department(self):
-        return [i.name for i in OrgUnit.objects.filter(unit_type=0)]
+        return [i.name for i in OrgUnit.objects.filter(unit_type=0).order_by('name')]
 
     def data_branch(self):
-        return [i.name for i in OrgUnit.objects.filter(unit_type=2)]
+        return [i.name for i in OrgUnit.objects.filter(unit_type=2).order_by('name')]
 
     def data_section(self):
-        return [i.name for i in OrgUnit.objects.filter(unit_type=7)]
+        return [i.name for i in OrgUnit.objects.filter(unit_type=7).order_by('name')]
 
     def data_regiondistrict(self):
-        return [i.name for i in OrgUnit.objects.filter(unit_type__in=[3,6])]
+        return [i.name for i in OrgUnit.objects.filter(unit_type__in=[3,6]).order_by('name')]
 
     def data_office(self):
-        return [i.name for i in OrgUnit.objects.filter(unit_type=5)]
+        return [i.name for i in OrgUnit.objects.filter(unit_type=5).order_by('name')]
 
 
 class whoamiResource(DjangoResource):

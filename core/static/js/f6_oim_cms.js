@@ -126,9 +126,9 @@ $(document).ready(function () {
             localforage.getItem(url).then(function(data) {
                 if (data) { _renderHandlebars(tmpl, data, callback) }
                 $.get(url, function(rawdata) {
-                    var data = Handlebars.compile(tmpl.html())(rawdata);
-                    localforage.setItem(url, data);
-                    if (!data) { _renderHandlebars(tmpl, data, callback) }
+                    var comp_data = Handlebars.compile(tmpl.html())(rawdata);
+                    localforage.setItem(url, comp_data);
+                    if (!data) { _renderHandlebars(tmpl, comp_data, callback) }
                 });
             });
         });

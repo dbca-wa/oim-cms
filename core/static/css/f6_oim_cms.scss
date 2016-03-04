@@ -20,11 +20,25 @@
         display: inherit;
     };
 
-    .header_row, .main_menu, .breadcrumbs_row {
+    // hide the header, menu and breadcrumb bar
+    .main_menu, .breadcrumbs_row {
         display: none;
     };
 
-   
+    // remove printed hyperlinks
+    a[href]:after {
+        content: none !important;
+    };
+
+    // remove expanded abbreviations
+    abbr:after {
+        content: none !important;
+    };
+
+    // hide the wagtail icon
+    .wagtail-userbar {
+        display: none;
+    };
 };
 
 
