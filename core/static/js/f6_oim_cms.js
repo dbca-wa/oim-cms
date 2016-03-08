@@ -78,7 +78,7 @@ $(document).ready(function () {
         $("#wagtail-userbar").removeAttr("style").length && clearInterval(fixwtub);
     }, 100);
 
-    window.loadDatalist = function(listid) {
+    window.loadDatalist = function(listid, source) {
         if ($("#"+listid).length == 1) { return; }
         if (localStorage.getItem("list_"+listid)) {
             var datalist = $("<datalist/>", {id: listid});
@@ -86,11 +86,18 @@ $(document).ready(function () {
                 $("<option/>").text(value).appendTo(datalist);
             });
             $("body").append(datalist);
-        } 
-        $.get("/api/options?list=" + listid, function(data) {
-            localStorage.setItem("list_"+listid, JSON.stringify(data.objects));
-            loadDatalist(listid);
-        });
+        }
+        if (source) {
+            $.get(source, function(data) {
+                localStorage.setItem("list_"+listid, JSON.stringify($.map(data, function(i) { return i[Object.keys(i)] })));
+                loadDatalist(listid);
+            });
+        } else {
+            $.get("/api/options?list=" + listid, function(data) {
+                localStorage.setItem("list_"+listid, JSON.stringify(data.objects));
+                loadDatalist(listid);
+            });
+        }
     }
 
     // form upgrades
@@ -107,7 +114,7 @@ $(document).ready(function () {
               this.setCustomValidity('Please select a valid value.');
             }
         }).each(function() { 
-            if (this.list == null) { loadDatalist($(this).attr("list")); }
+            if (this.list == null) { loadDatalist($(this).attr("list"), $(this).attr("data-src")); }
         });
     }
 

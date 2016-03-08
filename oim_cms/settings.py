@@ -216,7 +216,7 @@ INTERNAL_USER = env('INTERNAL_USER', None)
 FRESHDESK_ENDPOINT = env('FRESHDESK_ENDPOINT', None)
 FRESHDESK_AUTH = (env('FRESHDESK_KEY'), 'X')
 POSTGREST_ROLE = env('POSTGREST_ROLE', 'postgrest')
-POSTGREST_PORTFILE = os.path.join(BASE_DIR, ".env-postgrest-port")
+POSTGREST_BINARY = env('POSTGREST_BINARY', '/usr/local/bin/postgrest')
 
 # Email settings
 EMAIL_HOST = env('EMAIL_HOST', None)
