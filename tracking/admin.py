@@ -11,10 +11,15 @@ class DepartmentUserAdmin(admin.ModelAdmin):
     readonly_fields = ['username', 'email', 'org_data_pretty', 'ad_data_pretty',
                        'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date']
     fields = (
-        ('email', 'username'), ('given_name', 'surname'),
-        ('employee_id', 'cost_centre'), ('name', 'org_unit'),
-        ('telephone', 'mobile_phone'), ('vip', 'executive', 'contractor'),
+        ('email', 'username'),
+        ('given_name', 'surname'),
+        ('employee_id', 'cost_centre'),
+        ('name', 'org_unit'),
+        ('cost_centres_secondary', 'org_units_secondary'),
+        ('telephone', 'mobile_phone'),
+        ('populate_primary_group', 'vip', 'executive', 'contractor'),
         ('title', 'parent'),
+        ('secondary_locations'),
         ('other_phone', 'extra_data'),
         ('notes'),
         ('working_hours'),

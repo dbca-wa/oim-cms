@@ -60,11 +60,12 @@ class DepartmentUser(MPTTModel):
     cost_centre = models.ForeignKey(
         "registers.CostCentre", on_delete=models.PROTECT, null=True)
     cost_centres_secondary = models.ManyToManyField(
-        "registers.CostCentre", related_name="cost_centres_secondary")
+        "registers.CostCentre", related_name="cost_centres_secondary",
+        blank=True)
     org_unit = models.ForeignKey(
         "registers.OrgUnit", on_delete=models.PROTECT, null=True, blank=True)
     org_units_secondary = models.ManyToManyField(
-        "registers.OrgUnit", related_name="org_units_secondary")
+        "registers.OrgUnit", related_name="org_units_secondary", blank=True)
     extra_data = JSONField(null=True, blank=True)
     ad_guid = models.CharField(max_length=48, unique=True, editable=False)
     ad_dn = models.CharField(max_length=512, unique=True, editable=False)
@@ -105,7 +106,7 @@ class DepartmentUser(MPTTModel):
                              help_text="Officer secondary roles, etc.")
     working_hours = models.TextField(
         default="9:00-17:00, Mon-Fri", null=True, blank=True, help_text="Officer normal work/contact hours")
-    secondary_locations = models.ManyToManyField("registers.Location")
+    secondary_locations = models.ManyToManyField("registers.Location", blank=True)
     populate_primary_group = models.BooleanField(
         default=True, help_text="If unchecked, user will not be added to primary group email")
 
