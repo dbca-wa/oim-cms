@@ -13,8 +13,10 @@ class CommonFields(models.Model):
     """
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
-    org_unit = models.ForeignKey("registers.OrgUnit", on_delete=models.PROTECT, null=True, blank=True)
-    cost_centre = models.ForeignKey("registers.CostCentre", on_delete=models.PROTECT, null=True)
+    org_unit = models.ForeignKey(
+        "registers.OrgUnit", on_delete=models.PROTECT, null=True, blank=True)
+    cost_centre = models.ForeignKey(
+        "registers.CostCentre", on_delete=models.PROTECT, null=True)
     extra_data = JSONField(null=True, blank=True)
 
     def extra_data_pretty(self):
@@ -40,6 +42,7 @@ class CommonFields(models.Model):
 def get_photo_path(instance, filename='photo.jpg'):
     return os.path.join("user_photo", '{0}.{1}'.format(instance.id, os.path.splitext(filename)))
 
+
 def get_photo_ad_path(instance, filename='photo.jpg'):
     return os.path.join("user_photo_ad", '{0}.{1}'.format(instance.id, os.path.splitext(filename)))
 
@@ -49,25 +52,35 @@ class DepartmentUser(MPTTModel):
     Represents a Department user.
     This model maps to an object managed by Active Directory.
     """
-    ACTIVE_FILTER = {"active": True, "email__isnull": False, "cost_centre__isnull": False, "contractor": False}
+    ACTIVE_FILTER = {"active": True, "email__isnull": False,
+                     "cost_centre__isnull": False, "contractor": False}
     # These fields are populated from Active Directory.
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
-    cost_centre = models.ForeignKey("registers.CostCentre", on_delete=models.PROTECT, null=True)
-    org_unit = models.ForeignKey("registers.OrgUnit", on_delete=models.PROTECT, null=True, blank=True)
+    cost_centre = models.ForeignKey(
+        "registers.CostCentre", on_delete=models.PROTECT, null=True)
+    cost_centres_secondary = models.ManyToManyField(
+        "registers.CostCentre", related_name="cost_centres_secondary")
+    org_unit = models.ForeignKey(
+        "registers.OrgUnit", on_delete=models.PROTECT, null=True, blank=True)
+    org_units_secondary = models.ManyToManyField(
+        "registers.OrgUnit", related_name="org_units_secondary")
     extra_data = JSONField(null=True, blank=True)
     ad_guid = models.CharField(max_length=48, unique=True, editable=False)
     ad_dn = models.CharField(max_length=512, unique=True, editable=False)
     ad_data = JSONField(null=True, editable=False)
     org_data = JSONField(null=True, editable=False)
-    employee_id = models.CharField(max_length=128, null=True, unique=True, blank=True, help_text="HR Employee ID, use 'n/a' if a contractor")
+    employee_id = models.CharField(max_length=128, null=True, unique=True,
+                                   blank=True, help_text="HR Employee ID, use 'n/a' if a contractor")
     name = models.CharField(max_length=128)
     username = models.CharField(max_length=128, editable=False, unique=True)
     given_name = models.CharField(max_length=128, null=True)
     surname = models.CharField(max_length=128, null=True)
-    title = models.CharField(max_length=128, null=True, help_text='Staff position')
+    title = models.CharField(max_length=128, null=True,
+                             help_text='Staff position')
     email = models.EmailField(unique=True, editable=False)
-    parent = TreeForeignKey('self', on_delete=models.PROTECT, null=True, related_name='children', editable=True, blank=True)
+    parent = TreeForeignKey('self', on_delete=models.PROTECT,
+                            null=True, related_name='children', editable=True, blank=True)
     expiry_date = models.DateTimeField(null=True, editable=False)
     date_ad_updated = models.DateTimeField(null=True, editable=False)
     telephone = models.CharField(max_length=128, null=True, blank=True)
@@ -77,14 +90,24 @@ class DepartmentUser(MPTTModel):
     active = models.BooleanField(default=True, editable=False)
     ad_deleted = models.BooleanField(default=False, editable=False)
     in_sync = models.BooleanField(default=False, editable=False)
-    vip = models.BooleanField(default=False, help_text="An individual who carries out a critical role for the department")
-    executive = models.BooleanField(default=False, help_text="An individual who is an executive")
-    contractor = models.BooleanField(default=False, help_text="An individual who is an external contractor")
+    vip = models.BooleanField(
+        default=False, help_text="An individual who carries out a critical role for the department")
+    executive = models.BooleanField(
+        default=False, help_text="An individual who is an executive")
+    contractor = models.BooleanField(
+        default=False, help_text="An individual who is an external contractor (does not include agency contract staff)")
     photo = models.ImageField(blank=True, upload_to=get_photo_path)
-    photo_ad = models.ImageField(blank=True, editable=False, upload_to=get_photo_ad_path)
-    sso_roles = models.TextField(null=True, editable=False, help_text="Groups/roles separated by semicolon")
-    notes = models.TextField(null=True, blank=True, help_text="Officer secondary roles, etc.")
-    working_hours = models.TextField(default="9:00-17:00, Mon-Fri", null=True, blank=True, help_text="Officer normal work/contact hours")
+    photo_ad = models.ImageField(
+        blank=True, editable=False, upload_to=get_photo_ad_path)
+    sso_roles = models.TextField(
+        null=True, editable=False, help_text="Groups/roles separated by semicolon")
+    notes = models.TextField(null=True, blank=True,
+                             help_text="Officer secondary roles, etc.")
+    working_hours = models.TextField(
+        default="9:00-17:00, Mon-Fri", null=True, blank=True, help_text="Officer normal work/contact hours")
+    secondary_locations = models.ManyToManyField("registers.Location")
+    populate_primary_group = models.BooleanField(
+        default=True, help_text="If unchecked, user will not be added to primary group email")
 
     def save(self, *args, **kwargs):
         if self.employee_id and self.employee_id.lower() == "n/a":
@@ -96,14 +119,17 @@ class DepartmentUser(MPTTModel):
             self.org_unit = self.cost_centre.org_position
         if self.cost_centre:
             self.org_data = self.org_data or {}
-            self.org_data["units"] = list(self.org_unit.get_ancestors(include_self=True).values("name", "acronym", "unit_type", "costcentre__code", "costcentre__name", "location__name"))
+            self.org_data["units"] = list(self.org_unit.get_ancestors(include_self=True).values(
+                "name", "acronym", "unit_type", "costcentre__code", "costcentre__name", "location__name"))
             self.org_data["unit"] = self.org_data["units"][-1]
             if self.org_unit.location:
                 self.org_data["location"] = self.org_unit.location.as_dict()
             if self.org_unit.secondary_location:
-                self.org_data["secondary_location"] = self.org_unit.secondary_location.as_dict()
+                self.org_data[
+                    "secondary_location"] = self.org_unit.secondary_location.as_dict()
             for unit in self.org_data["units"]:
-                unit["unit_type"] = self.org_unit.TYPE_CHOICES_DICT[unit["unit_type"]]
+                unit["unit_type"] = self.org_unit.TYPE_CHOICES_DICT[
+                    unit["unit_type"]]
             self.org_data["cost_centre"] = {
                 "name": self.org_unit.name,
                 "code": self.cost_centre.code,
@@ -120,7 +146,8 @@ class DepartmentUser(MPTTModel):
         return self.email
 
     def update_photo_ad(self):
-        # update self.photo_ad to contain a thumbnail less than 240x240 and 10kb
+        # update self.photo_ad to contain a thumbnail less than 240x240 and
+        # 10kb
         if not self.photo:
             if self.photo_ad:
                 self.photo_ad.delete()
@@ -153,7 +180,8 @@ class DepartmentUser(MPTTModel):
         # in case we miss 10kb, drop the quality and recompress
         for i in range(12):
             temp_buffer = StringIO()
-            image.save(temp_buffer, PIL_TYPE, quality=PIL_QUALITY, optimize=True)
+            image.save(temp_buffer, PIL_TYPE,
+                       quality=PIL_QUALITY, optimize=True)
             length = temp_buffer.tell()
             if length <= PHOTO_AD_FILESIZE:
                 break
@@ -163,7 +191,8 @@ class DepartmentUser(MPTTModel):
                 PIL_QUALITY -= 5
 
         temp_buffer.seek(0)
-        self.photo_ad.save(os.path.basename(self.photo.name), ContentFile(temp_buffer.read()), save=False)
+        self.photo_ad.save(os.path.basename(self.photo.name),
+                           ContentFile(temp_buffer.read()), save=False)
 
     def org_data_pretty(self):
         if not self.org_data:
@@ -193,8 +222,10 @@ class Computer(CommonFields):
     ad_guid = models.CharField(max_length=48, null=True, unique=True)
     ad_dn = models.CharField(max_length=512, null=True, unique=True)
     pdq_id = models.IntegerField(null=True, blank=True, unique=True)
-    sophos_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
-    asset_id = models.CharField(max_length=64, null=True, blank=True, help_text='OIM Asset ID')
+    sophos_id = models.CharField(
+        max_length=64, unique=True, null=True, blank=True)
+    asset_id = models.CharField(
+        max_length=64, null=True, blank=True, help_text='OIM Asset ID')
     finance_asset_id = models.CharField(
         max_length=64, null=True, blank=True, help_text='Finance asset ID')
     manufacturer = models.CharField(max_length=128)
@@ -232,8 +263,10 @@ class Mobile(CommonFields):
     """
     ad_guid = models.CharField(max_length=48, null=True, unique=True)
     ad_dn = models.CharField(max_length=512, null=True, unique=True)
-    registered_to = models.ForeignKey(DepartmentUser, on_delete=models.PROTECT, blank=True, null=True)
-    asset_id = models.CharField(max_length=64, null=True, help_text='OIM Asset ID')
+    registered_to = models.ForeignKey(
+        DepartmentUser, on_delete=models.PROTECT, blank=True, null=True)
+    asset_id = models.CharField(
+        max_length=64, null=True, help_text='OIM Asset ID')
     finance_asset_id = models.CharField(
         max_length=64, null=True, help_text='Finance asset ID')
     model = models.CharField(max_length=128, null=True)
@@ -252,7 +285,8 @@ class EC2Instance(CommonFields):
     name = models.CharField("Instance Name", max_length=200)
     ec2id = models.CharField("EC2 Instance ID", max_length=200, unique=True)
     launch_time = models.DateTimeField(editable=False, null=True, blank=True)
-    next_state = models.BooleanField(default=True, help_text="Checked is on, unchecked is off")
+    next_state = models.BooleanField(
+        default=True, help_text="Checked is on, unchecked is off")
     running = models.BooleanField(default=True)
 
     def __str__(self):

@@ -13,7 +13,7 @@ django-model-utils>=2.4
 restless>=2.0.1
 django-auth-ldap>=1.2.7
 django-ipware>=1.1.2
-python-social-auth>=0.2.13
+python-social-auth>=0.2.14
 graphviz>=0.4.8
 json2html>=1.0.1
 python-ldap
