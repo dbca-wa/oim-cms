@@ -3,7 +3,7 @@
 {% if error %}<div data-alert class="alert-box alert">{{ error }}</div>{% endif %}
 {% for block in self.body %}
     {% if block.block_type == 'heading' %}
-            <h1>{{ block.value }}</h1>
+        <h1>{{ block.value }}</h1>
     {% elif block.block_type == 'rich_text' %}
         {{ block.value|richtext }}
     {% elif block.block_type == 'include_content' %}
