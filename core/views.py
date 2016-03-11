@@ -18,28 +18,6 @@ from ipware.ip import get_ip
 from django.views.decorators.csrf import csrf_exempt
 
 
-def rolecheck(request):
-    ip, role = request.GET.get("ip"), request.GET.get("role")
-    if not ip or not role:
-        return HttpResponseBadRequest()
-    
-    cachekey = "rolecheck_cache_{}_{}".format(ip, role)
-    test = cache.get(cachekey)
-    if test is None:
-        test = False
-        targets = UserSession.objects.filter(ip=ip).distinct('department_user')
-        for session in targets:
-            du = session.department_user
-            if not du:
-                continue 
-            if role in du.sso_roles.split(','):
-                test = True
-                break
-
-        cache.set(cachekey, test, 3600)
-    return HttpResponse() if test else HttpResponseForbidden()
-
-
 @csrf_exempt
 def auth_ip(request):
     # get the IP of the current user, try and match it up to a session
@@ -68,16 +46,22 @@ def auth_ip(request):
     # we can assume that the Session and UserSession tables only contain current sessions
     qs = UserSession.objects.filter(session__isnull=False, ip=current_ip).order_by("-session__expire_date")
 
+    headers = {'client_logon_ip': current_ip}
+
     if qs.exists():
         user = qs[0].user
-        response = HttpResponse(json.dumps({'email': user.email, 'client_logon_ip': current_ip}))
-        response["X-email"] = user.email
-        response["X-client-logon-ip"] = current_ip
-        return response
+        headers["email"] = user.email
+        try:
+            headers["kmi_roles"] = DepartmentUser.objects.get(email__iexact=user.email).extra_data.get("KMIRoles", '')
+        except Exception as e:
+            headers["kmi_roles"] = ''
 
-    
-    response = HttpResponse(json.dumps({'client_logon_ip': current_ip}))
-    response["X-client-logon-ip"] = current_ip
+
+    response = HttpResponse(json.dumps(headers))
+    for key, val in headers.iteritems():
+        key = "X-" + key.replace("_", "-")
+        response[key] = val
+
     return response  
 
 
@@ -123,6 +107,10 @@ def auth(request):
     headers, cache_headers = json.loads(response.content), dict()
     headers["full_name"] = "{}, {}".format(headers.get("last_name", ""), headers.get("first_name", ""))
     headers["logout_url"] = "https://oim.dpaw.wa.gov.au/logout" # TODO: use url reverse on logout alias
+    try:
+        headers["kmi_roles"] = DepartmentUser.objects.get(email__iexact=headers["email"]).extra_data.get("KMIRoles", '')
+    except Exception as e:
+        headers["kmi_roles"] = ''
     for key, val in headers.iteritems():
         key = "X-" + key.replace("_", "-")
         cache_headers[key], response[key] = val, val
