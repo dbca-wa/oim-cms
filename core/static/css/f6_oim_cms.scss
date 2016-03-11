@@ -39,6 +39,11 @@
     .wagtail-userbar {
         display: none;
     };
+    // hide elements on printing
+    .hide-for-print, .hide-for-print *
+    {
+        display: none !important;
+    }
 };
 
 
@@ -98,7 +103,7 @@ $medium-blue: #004d88;
 $light-blue: #0083e7;
 $pale-blue: #b3ddef;
 $white-smoke: #f5f5f5;
-$jet: #222222; 
+$jet: #222222;
 $white: #ffffff;
 
 
@@ -109,14 +114,14 @@ body, h1, h2, h3, h4, h5, h6 {
 
 
 // add some padding to the header row
-.header_row { 
-    padding: 1rem 0; 
+.header_row {
+    padding: 1rem 0;
 }
 
 
 // set button colours
-.button { 
-    background-color: $dark-blue; 
+.button {
+    background-color: $dark-blue;
 }
 
 .button-group .button:not(:last-child) {
@@ -124,15 +129,15 @@ body, h1, h2, h3, h4, h5, h6 {
 }
 
 
-// set outer menu bar/footer page colour 
-.main_menu, .footer { 
-    background-color: $medium-blue; 
+// set outer menu bar/footer page colour
+.main_menu, .footer {
+    background-color: $medium-blue;
 }
 
 
 // set menu style
-.main_menu .top-bar, .main_menu .top-bar ul, .main_menu .top-bar a, .footer .row { 
-    color: $white; 
+.main_menu .top-bar, .main_menu .top-bar ul, .main_menu .top-bar a, .footer .row {
+    color: $white;
     background-color: $dark-blue;
 }
 
@@ -140,9 +145,9 @@ body, h1, h2, h3, h4, h5, h6 {
     padding: 0;
 }
 
-.main_menu .top-bar a:hover { 
+.main_menu .top-bar a:hover {
     color: $white;
-    background-color: $medium-blue; 
+    background-color: $medium-blue;
 }
 
 [type="search"], textarea {
@@ -152,25 +157,25 @@ body, h1, h2, h3, h4, h5, h6 {
 
 
 // set submenu colour
-.main_menu .dropdown.menu .submenu { 
-    background-color: $dark-blue; 
+.main_menu .dropdown.menu .submenu {
+    background-color: $dark-blue;
     border: none;
 }
 
 
 // set footer style
-.footer .inner { 
-    padding-top: 0.5rem; 
+.footer .inner {
+    padding-top: 0.5rem;
     margin-bottom: -1rem;
 }
 
-.footer .row a { 
-    color: $pale-blue; 
+.footer .row a {
+    color: $pale-blue;
 }
 
-.footer .row a:hover { 
+.footer .row a:hover {
     color: $white;
-    background-color: $medium-blue; 
+    background-color: $medium-blue;
 }
 
 
@@ -181,8 +186,8 @@ body, h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0.5625rem;
 }
 
-.breadcrumbs_row .breadcrumbs { 
-    margin: 0; 
+.breadcrumbs_row .breadcrumbs {
+    margin: 0;
 }
 
 #logout-breadcrumb::before {
@@ -194,8 +199,8 @@ body, h1, h2, h3, h4, h5, h6 {
     color: unset;
 }
 
-a, .breadcrumbs a { 
-    color: $medium-blue; 
+a, .breadcrumbs a {
+    color: $medium-blue;
 }
 
 
@@ -262,12 +267,12 @@ a, .breadcrumbs a {
 .two-columns {
    -webkit-column-count: 2;
       -moz-column-count: 2;
-           column-count: 2;    
+           column-count: 2;
 }
 /*
 
-.dropdown.menu .is-dropdown-submenu-parent.is-down-arrow > a::after { 
-    border-color: $medium-blue transparent transparent; 
+.dropdown.menu .is-dropdown-submenu-parent.is-down-arrow > a::after {
+    border-color: $medium-blue transparent transparent;
 }
 
 
