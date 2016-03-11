@@ -9,6 +9,8 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('tracking', '0013_auto_20160310_1053'),
+        ('registers', '0013_auto_20160303_1444')
     ]
 
     operations = [
