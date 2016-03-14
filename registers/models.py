@@ -11,6 +11,13 @@ from datetime import timedelta
 from tracking import models as tracking
 
 
+CRITICALITY_CHOICES = (
+    (1, 'High'),
+    (2, 'Medium'),
+    (3, 'Low'),
+)
+
+
 class Function(models.Model):
     SERVICE_CHOICES = (
         (1, "Service 1"),
@@ -186,6 +193,21 @@ class CostCentre(models.Model):
         ordering = ('code',)
 
 
+class Software(models.Model):
+    """A model to represent a discrete unit of software (OS, runtime, etc.)
+    """
+    name = models.CharField(max_length=2048, unique=True)
+    url = models.CharField(max_length=2000, null=True, blank=True)
+    license = models.ForeignKey('registers.SoftwareLicense', on_delete=models.PROTECT, null=True)
+    os = models.BooleanField(default=False, verbose_name='OS', help_text='Software is an operating system?')
+
+    class Meta:
+        verbose_name_plural = 'software'
+
+    def __str__(self):
+        return self.name
+
+
 class Hardware(tracking.CommonFields):
     device_type = models.PositiveSmallIntegerField(choices=(
         (1, 'Network'), (2, 'Mobile'), (3, 'Domain PC'), (4, 'Hostname')), editable=False)
@@ -199,9 +221,10 @@ class Hardware(tracking.CommonFields):
     serials = models.TextField(null=True, editable=False)
     local_info = models.TextField(null=True, editable=False)
     local_current = models.BooleanField(default=True, help_text='Does local state match central state?')
+    os = models.ForeignKey(Software, on_delete=models.PROTECT, null=True, limit_choices_to={'os': True})
 
     def __str__(self):
-        return u'{}:{} ({})'.format(self.get_device_type_display(), self.name, self.cost_centre)
+        return '{}:{} ({})'.format(self.get_device_type_display(), self.name, self.cost_centre)
 
     class Meta:
         unique_together = ('computer', 'mobile')
@@ -224,6 +247,38 @@ class Device(tracking.CommonFields):
         return self.name
 
 
+class UserGroup(models.Model):
+    """A model to represent an arbitrary group of users for an IT System.
+    E.g. 'All department staff', 'External govt agency staff', etc.
+    """
+    name = models.CharField(max_length=2048, unique=True)
+    user_count = models.PositiveIntegerField(blank=True, null=True)
+
+    def __str__(self):
+        return '{} ({})'.format(self.name, self.user_count)
+
+
+class ITSystemHardware(models.Model):
+    """A model to represent the relationship between an IT System and a
+    Hardware entity.
+    """
+    ROLE_CHOICES = (
+        (1, 'Application server'),
+        (2, 'Database server'),
+        (3, 'Network file storage'),
+        (4, 'Reverse proxy'),
+    )
+    host = models.ForeignKey(Hardware, on_delete=models.PROTECT)
+    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
+
+    class Meta:
+        verbose_name_plural = 'IT system hardware'
+        unique_together = ('host', 'role')
+
+    def __str__(self):
+        return '{} ({})'.format(self.host.name, self.role)
+
+
 class ITSystem(tracking.CommonFields):
     STATUS_CHOICES = (
         (0, "Production"),
@@ -243,6 +298,10 @@ class ITSystem(tracking.CommonFields):
         (1, 'Domain Credentials'),
         (2, 'Single Sign On'),
         (3, 'Externally Managed')
+    )
+    AVAILABILITY_CHOICES = (
+        (1, '24 hours a day, 7 days a week, 365 days a year'),
+        (2, 'Department core business hours'),
     )
     name = models.CharField(max_length=128, unique=True)
     system_id = models.CharField(max_length=16, unique=True)
@@ -265,6 +324,13 @@ class ITSystem(tracking.CommonFields):
     request_access = models.TextField(blank=True)
     process = models.ForeignKey(Process, on_delete=models.PROTECT, null=True, blank=True)
     function = models.ForeignKey(Function, on_delete=models.PROTECT, null=True, blank=True)
+    criticality = models.PositiveIntegerField(choices=CRITICALITY_CHOICES, null=True, blank=True)
+    availability = models.PositiveIntegerField(choices=AVAILABILITY_CHOICES, null=True, blank=True, help_text='Expected availability for this IT System')
+    schema_url = models.URLField(max_length=2000, null=True, blank=True)
+    user_groups = models.ManyToManyField(UserGroup, blank=True, help_text='User group(s) that use this IT System')
+    softwares = models.ManyToManyField(Software, blank=True, help_text='Software that is used to provide this IT System')
+    hardwares = models.ManyToManyField(ITSystemHardware, blank=True, help_text='Hardware that is used to provide this IT System')
+    itsystems = models.ManyToManyField('self', blank=True, help_text='Other IT Systems that help provide this IT System')
 
     def description_html(self):
         return mark_safe(self.description)
@@ -356,17 +422,24 @@ class Backup(tracking.CommonFields):
 class Vendor(models.Model):
     name = models.CharField(max_length=256, unique=True)
     details = models.TextField(blank=True)
-    extra_data = JSONField(null=True)
+    extra_data = JSONField(default=dict(), null=True, blank=True)
+
+    def __str__(self):
+        return self.name
 
 
 class SoftwareLicense(tracking.CommonFields):
     """
-    Represents a licensing arrangement.
+    Represents a software licensing arrangement.
     """
     name = models.CharField(max_length=256, unique=True)
+    url = models.URLField(max_length=2000, null=True, blank=True)
+    support = models.TextField(blank=True, help_text='Support timeframe or scope')
+    support_url = models.URLField(max_length=2000, null=True, blank=True)
+    oss = models.NullBooleanField(default=None, help_text='Open-source/free software license?')
     primary_user = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, null=True, blank=True)
     devices = models.ManyToManyField(Device, blank=True)
-    vendor = models.ForeignKey(Vendor, on_delete=models.PROTECT, null=True)
+    vendor = models.ForeignKey(Vendor, on_delete=models.PROTECT, null=True, blank=True)
     used_licenses = models.PositiveSmallIntegerField(default=0, editable=False)
     available_licenses = models.PositiveSmallIntegerField(default=0)
     license_details = models.TextField(blank=True, help_text="Direct license keys or details")
