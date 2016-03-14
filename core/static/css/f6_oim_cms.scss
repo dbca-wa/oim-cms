@@ -6,46 +6,6 @@
 // Display hacks //
 ///////////////////
 
-// fixes to make printing look nice
-@media print {
-    html, body {
-        height: inherit;
-    };
-
-    .content {
-        flex: inherit;
-    };
-
-    .inner-wrap {
-        display: inherit;
-    };
-
-    // hide the header, menu and breadcrumb bar
-    .main_menu, .breadcrumbs_row {
-        display: none;
-    };
-
-    // remove printed hyperlinks
-    a[href]:after {
-        content: none !important;
-    };
-
-    // remove expanded abbreviations
-    abbr:after {
-        content: none !important;
-    };
-
-    // hide the wagtail icon
-    .wagtail-userbar {
-        display: none;
-    };
-    // hide elements on printing
-    .hide-for-print, .hide-for-print *
-    {
-        display: none !important;
-    }
-};
-
 
 // fix abbreviate style
 abbr {
@@ -91,6 +51,51 @@ html, body {
     flex: none;
 };
 
+// fixes to make printing look nice
+@media print {
+    // remove global height, add enforced page margins
+    html {
+        height: inherit;
+    };
+
+    body {
+        height: inherit;
+        margin-top: 5mm;
+    };
+
+    // remove flexboxing
+    .inner-wrap {
+        display: inherit;
+    };
+
+    .row {
+        display: inherit;
+    };
+
+    // hide the header, menu and breadcrumb bar
+    .main_menu, .breadcrumbs_row {
+        display: none;
+    };
+
+    // remove printed hyperlinks
+    a[href]:after {
+        content: none !important;
+    };
+
+    // remove expanded abbreviations
+    abbr:after {
+        content: none !important;
+    };
+
+    // hide the wagtail icon
+    .wagtail-userbar {
+        display: none;
+    };
+    // hide elements on printing
+    .hide-for-print, .hide-for-print *, .hide-on-print {
+        display: none !important;
+    }
+};
 
 
 ///////////////////////////////
