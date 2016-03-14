@@ -8,13 +8,33 @@ from reversion.admin import VersionAdmin
 from mptt.admin import MPTTModelAdmin
 from leaflet.admin import LeafletGeoAdmin
 
-from .models import Hardware, Device, SoftwareLicense, CostCentre, Backup, ITSystem, OrgUnit, Location, SecondaryLocation, Process, Function
+from .models import (
+    UserGroup, Software, Hardware, Device, SoftwareLicense, CostCentre,
+    Backup, ITSystem, OrgUnit, Location, SecondaryLocation, Process,
+    Function, Vendor, ITSystemHardware)
+
+
+class UserGroupAdmin(VersionAdmin):
+    list_display = ('name', 'user_count')
+    search_fields = ('name',)
+
+
+class SoftwareAdmin(VersionAdmin):
+    list_display = ('name', 'url', 'license', 'os')
+    list_filter = ('license', 'os')
+    search_fields = ('name', 'url', 'license__name', 'license__url', 'license__support', 'license__vendor__name')
 
 
 class HardwareAdmin(VersionAdmin):
     list_display = ('device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4', 'ports', 'serials')
     list_filter = ('device_type', 'ports', 'cost_centre',)
     search_fields = ('name', 'username', 'email', 'ipv4', 'serials', 'ports')
+
+
+class SoftwareLicenseAdmin(VersionAdmin):
+    list_display = ('name', 'vendor', 'oss')
+    list_filter = ('oss', 'vendor')
+    search_fields = ('name', 'url', 'support', 'support_url', 'vendor')
 
 
 class ITSystemAdmin(VersionAdmin):
@@ -28,7 +48,12 @@ class ITSystemAdmin(VersionAdmin):
         ("cost_centre", "owner"), ("custodian", "data_custodian"),
         ("preferred_contact", "link"), ("documentation", "status_html"),
         ("authentication", "access"), ("description_html", "extra_data_pretty"),
-        ("description", "extra_data")
+        ("description", "extra_data"),
+        ("criticality", "availability"),
+        ("schema_url"),
+        ("softwares", "hardwares"),
+        ("itsystems", "user_groups")
+
     )
 
 
@@ -80,7 +105,7 @@ class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
         return format_html(
             '<a href="{}?org_unit__in={}">{}</a>',
             reverse("admin:tracking_departmentuser_changelist"),
-            ",".join([str(o.pk) for o in obj.get_descendants(include_self=True)]), 
+            ",".join([str(o.pk) for o in obj.get_descendants(include_self=True)]),
             obj.members().count())
 
     def it_systems(self, obj):
@@ -111,6 +136,14 @@ class LocationAdmin(LeafletGeoAdmin, VersionAdmin):
     }
 
 
+class ITSystemHardwareAdmin(VersionAdmin):
+    list_display = ('host', 'role')
+    list_filter = ('role',)
+    raw_id_fields = ('host',)
+
+
+admin.site.register(UserGroup, UserGroupAdmin)
+admin.site.register(Software, SoftwareAdmin)
 admin.site.register(Hardware, HardwareAdmin)
 admin.site.register(Device, DeviceAdmin)
 admin.site.register(Backup, BackupAdmin)
@@ -118,7 +151,9 @@ admin.site.register(CostCentre, CostCentreAdmin)
 admin.site.register(OrgUnit, OrgUnitAdmin)
 admin.site.register(Location, LocationAdmin)
 admin.site.register(SecondaryLocation, VersionAdmin)
-admin.site.register(SoftwareLicense, VersionAdmin)
+admin.site.register(Vendor, VersionAdmin)
+admin.site.register(SoftwareLicense, SoftwareLicenseAdmin)
 admin.site.register(Process, VersionAdmin)
 admin.site.register(Function, VersionAdmin)
+admin.site.register(ITSystemHardware, ITSystemHardwareAdmin)
 admin.site.register(ITSystem, ITSystemAdmin)
