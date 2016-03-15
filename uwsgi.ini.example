@@ -24,3 +24,5 @@ touch-reload    = uwsgi.ini
 socket          = :@(%d.env.port)
 die-on-term     = true
 
+# postgrest api server
+attach-daemon2 = cmd=venv/bin/python manage.py postgrest
