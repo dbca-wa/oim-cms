@@ -18,3 +18,6 @@ graphviz>=0.4.8
 json2html>=1.0.1
 python-ldap
 djangorestframework
+pycsw>=1.10.3
+SQLAlchemy>=1.0.12
+
