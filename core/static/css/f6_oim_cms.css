@@ -26,6 +26,9 @@ html, body {
 .footer {
   flex: none; }
 
+@media all {
+  .page-break {
+    display: none; } }
 @media print {
   html {
     height: inherit; }
@@ -53,7 +56,11 @@ html, body {
     display: none; }
 
   .hide-for-print, .hide-for-print *, .hide-on-print {
-    display: none !important; } }
+    display: none !important; }
+
+  .page-break {
+    display: block;
+    page-break-before: always; } }
 body, h1, h2, h3, h4, h5, h6 {
   font-family: "LatoWeb", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif; }
 

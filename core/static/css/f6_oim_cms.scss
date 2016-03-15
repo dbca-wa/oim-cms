@@ -51,6 +51,10 @@ html, body {
     flex: none;
 };
 
+@media all {
+    .page-break {display: none;}
+}
+
 // fixes to make printing look nice
 @media print {
     // remove global height, add enforced page margins
@@ -94,7 +98,11 @@ html, body {
     // hide elements on printing
     .hide-for-print, .hide-for-print *, .hide-on-print {
         display: none !important;
-    }
+    };
+    // Page breaks
+    .page-break {
+        display: block; page-break-before: always;
+    };
 };
 
 
