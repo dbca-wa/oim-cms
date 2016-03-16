@@ -30,7 +30,7 @@ http://localhost:8000/csw/server/?
 from django.db import models
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save
-
+from django.conf import settings
 
 class PycswConfig(models.Model):
     language = models.CharField(max_length=10, default="en-US")
@@ -167,7 +167,7 @@ class Style(models.Model):
     name = models.CharField(max_length=255)
     format = models.CharField(max_length=3, choices=FORMAT_CHOICES)
     default = models.BooleanField(default=False)
-    
+    content = models.FileField(upload_to='{0}/catalogue/styles'.format(settings.MEDIA_ROOT),blank=True, default='')
     def clean(self):
         from django.core.exceptions import ValidationError
         try:
