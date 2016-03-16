@@ -12,8 +12,8 @@ from tracking import models as tracking
 
 
 CRITICALITY_CHOICES = (
-    (1, 'High'),
-    (2, 'Medium'),
+    (1, 'Critical'),
+    (2, 'Moderate'),
     (3, 'Low'),
 )
 
@@ -446,3 +446,54 @@ class SoftwareLicense(tracking.CommonFields):
 
     def __str__(self):
         return self.name
+
+
+class BusinessService(models.Model):
+    """Represents the Department's core business services.
+    """
+    number = models.PositiveIntegerField(unique=True, help_text='Service number')
+    name = models.CharField(max_length=256, unique=True)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return '{} {}'.format(self.number, self.name)
+
+
+class BusinessFunction(models.Model):
+    """Represents a function of the Department, undertaken to meet the
+    Department's core services. Each function must be linked to 1+
+    BusinessService object.
+    """
+    name = models.CharField(max_length=256, unique=True)
+    description = models.TextField(null=True, blank=True)
+    services = models.ManyToManyField(BusinessService)
+
+    def __str__(self):
+        return self.name
+
+
+class BusinessProcess(models.Model):
+    """Represents a business process that the Department undertakes in order
+    to fulfil one of the Department's functions.
+    """
+    name = models.CharField(max_length=256, unique=True)
+    description = models.TextField(null=True, blank=True)
+    functions = models.ManyToManyField(BusinessFunction)
+
+    class Meta:
+        verbose_name_plural = 'business processes'
+
+    def __str__(self):
+        return self.name
+
+
+class ProcessITSystemRelationship(models.Model):
+    """A model to represent the relationship between a BusinessProcess and an
+    ITSystem object.
+    """
+    process = models.ForeignKey(BusinessProcess, on_delete=models.PROTECT)
+    itsystem = models.ForeignKey(ITSystem, on_delete=models.PROTECT)
+    criticality = models.PositiveIntegerField(choices=CRITICALITY_CHOICES)
+
+    class Meta:
+        unique_together = ('process', 'itsystem')

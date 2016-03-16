@@ -11,7 +11,8 @@ from leaflet.admin import LeafletGeoAdmin
 from .models import (
     UserGroup, Software, Hardware, Device, SoftwareLicense, CostCentre,
     Backup, ITSystem, OrgUnit, Location, SecondaryLocation, Process,
-    Function, Vendor, ITSystemHardware)
+    Function, Vendor, ITSystemHardware, BusinessService, BusinessFunction,
+    BusinessProcess, ProcessITSystemRelationship)
 
 
 class UserGroupAdmin(VersionAdmin):
@@ -52,8 +53,7 @@ class ITSystemAdmin(VersionAdmin):
         ("criticality", "availability"),
         ("schema_url"),
         ("softwares", "hardwares"),
-        ("itsystems", "user_groups")
-
+        ("itsystems", "user_groups"),
     )
 
 
@@ -142,6 +142,25 @@ class ITSystemHardwareAdmin(VersionAdmin):
     raw_id_fields = ('host',)
 
 
+class BusinessServiceAdmin(VersionAdmin):
+    list_display = ('number', 'name')
+    search_fields = ('name', 'description')
+
+
+class BusinessFunctionAdmin(VersionAdmin):
+    search_fields = ('name', 'description')
+
+
+class BusinessProcessAdmin(VersionAdmin):
+    search_fields = ('name', 'description')
+
+
+class ProcessITSystemRelationshipAdmin(VersionAdmin):
+    list_display = ('process', 'itsystem', 'criticality')
+    list_filter = ('criticality',)
+    search_fields = ('process__name', 'itsystem__name')
+
+
 admin.site.register(UserGroup, UserGroupAdmin)
 admin.site.register(Software, SoftwareAdmin)
 admin.site.register(Hardware, HardwareAdmin)
@@ -157,3 +176,7 @@ admin.site.register(Process, VersionAdmin)
 admin.site.register(Function, VersionAdmin)
 admin.site.register(ITSystemHardware, ITSystemHardwareAdmin)
 admin.site.register(ITSystem, ITSystemAdmin)
+admin.site.register(BusinessService, BusinessServiceAdmin)
+admin.site.register(BusinessFunction, BusinessFunctionAdmin)
+admin.site.register(BusinessProcess, BusinessProcessAdmin)
+admin.site.register(ProcessITSystemRelationship, ProcessITSystemRelationshipAdmin)
