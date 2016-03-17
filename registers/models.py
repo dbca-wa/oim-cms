@@ -456,7 +456,7 @@ class BusinessService(models.Model):
     description = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return '{} {}'.format(self.number, self.name)
+        return 'Service {}: {}'.format(self.number, self.name)
 
 
 class BusinessFunction(models.Model):

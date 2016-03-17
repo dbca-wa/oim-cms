@@ -10,22 +10,36 @@ class DepartmentUserAdmin(admin.ModelAdmin):
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
     readonly_fields = ['username', 'email', 'org_data_pretty', 'ad_data_pretty',
                        'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date']
-    fields = (
-        ('email', 'username'),
-        ('given_name', 'surname'),
-        ('employee_id', 'cost_centre'),
-        ('name', 'org_unit'),
-        ('cost_centres_secondary', 'org_units_secondary'),
-        ('telephone', 'mobile_phone'),
-        ('populate_primary_group', 'vip', 'executive', 'contractor'),
-        ('title', 'parent'),
-        ('secondary_locations'),
-        ('other_phone', 'extra_data'),
-        ('notes'),
-        ('working_hours'),
-        ('photo'),
-        ('org_data_pretty', 'ad_data_pretty'),
-        ('active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date'),
+    fieldsets = (
+        ('Email/username', {
+            'fields': ('email', 'username'),
+        }),
+        ('Name fields', {
+            'description': '''<p class="errornote">Do not edit information in this section
+            without written permission from People Services or the cost centre manager
+            (forms are required).</p>''',
+            'fields': (('given_name', 'surname'), ('employee_id', 'cost_centre'), ('name', 'org_unit')),
+        }),
+        ('Other details', {
+            'fields': (
+                'photo',
+                ('cost_centres_secondary', 'org_units_secondary'),
+                ('telephone', 'mobile_phone', 'other_phone'),
+                ('populate_primary_group', 'vip', 'executive', 'contractor'),
+                ('title', 'parent'),
+                'secondary_locations',
+                'notes',
+                'working_hours',
+                'extra_data',
+            )
+        }),
+        ('Organisation data (read-only)', {
+            'fields': (
+                ('active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date'),
+                'org_data_pretty',
+                'ad_data_pretty',
+            )
+        })
     )
 
 
