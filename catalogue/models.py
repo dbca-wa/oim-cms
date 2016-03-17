@@ -128,18 +128,27 @@ class Record(models.Model):
         help_text='Maps to pycsw:Modified'
     )
     bounding_box = models.TextField(null=True, blank=True,
-                                    help_text='Maps to pycsw:BoundingBox')
+                                    help_text='Maps to pycsw:BoundingBox.It\'s a WKT geometry')
     abstract = models.TextField(blank=True, null=True,
                                 help_text='Maps to pycsw:Abstract')
     keywords = models.CharField(max_length=255, blank=True, null=True,
                                 help_text='Maps to pycsw:Keywords')
-    # Custom metadata
-    kmi_slug = models.CharField(max_length=255,blank=True, null=True,)
-    lineage = models.TextField(blank=True, null=True,)
-    positional_acc = models.TextField(blank=True, null=True,)
-    attribute_acc = models.TextField(blank=True, null=True,)
-    completeness = models.TextField(blank=True, null=True,)
-    manual_override = models.BooleanField(default=False)
+    publication_date = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Maps to pycsw:PublicationDate'
+    )
+    service_type = models.CharField(max_length=30, null=True, blank=True,
+                                    help_text='Maps to pycsw:ServiceType')
+    service_type_version = models.CharField(
+        max_length=30, null=True, blank=True,
+        help_text='Maps to pycsw:ServiceTypeVersion'
+    )
+    links = models.TextField(null=True, blank=True,
+                             help_text='Maps to pycsw:Links')
+    crs = models.CharField(max_length=255, null=True, blank=True,help_text='Maps to pycsw:CRS')
+    # Custom fields
+    auto_update = models.BooleanField(default=True)
+    active = models.BooleanField(default=True)
     # Styles
     sld = models.CharField(max_length=255,blank=True, null=True,)
     qml = models.CharField(max_length=255,blank=True, null=True,)
