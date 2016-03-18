@@ -30,7 +30,9 @@ http://localhost:8000/csw/server/?
 from django.db import models
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save
-
+from django.conf import settings
+import md5
+import base64
 
 class PycswConfig(models.Model):
     language = models.CharField(max_length=10, default="en-US")
@@ -167,7 +169,8 @@ class Style(models.Model):
     name = models.CharField(max_length=255)
     format = models.CharField(max_length=3, choices=FORMAT_CHOICES)
     default = models.BooleanField(default=False)
-    
+    content = models.FileField(upload_to='{0}/catalogue/styles'.format(settings.MEDIA_ROOT),blank=True, default='')
+    checksum = models.CharField(blank=True,max_length=255, editable=False)
     def clean(self):
         from django.core.exceptions import ValidationError
         try:
@@ -190,5 +193,11 @@ def setup_default_styles(sender, instance, **kwargs):
         elif instance.format == 'LYR':
             record.lyr = instance.name
     record.save()
+
+@receiver(pre_save, sender=Style)
+def set_checksum(sender, instance, **kwargs):
+    checksum = md5.new()
+    checksum.update(instance.content.read())
+    instance.checksum = base64.b64encode(checksum.digest())
     
     
