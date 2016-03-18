@@ -10,9 +10,9 @@ from leaflet.admin import LeafletGeoAdmin
 
 from .models import (
     UserGroup, Software, Hardware, Device, SoftwareLicense, CostCentre,
-    Backup, ITSystem, OrgUnit, Location, SecondaryLocation, Process,
-    Function, Vendor, ITSystemHardware, BusinessService, BusinessFunction,
-    BusinessProcess, ProcessITSystemRelationship)
+    Backup, ITSystem, OrgUnit, Location, SecondaryLocation,
+    Vendor, ITSystemHardware, BusinessService, BusinessFunction,
+    BusinessProcess, ProcessITSystemRelationship, ITSystemDependency)
 
 
 class UserGroupAdmin(VersionAdmin):
@@ -39,21 +39,27 @@ class SoftwareLicenseAdmin(VersionAdmin):
 
 
 class ITSystemAdmin(VersionAdmin):
-    list_display = ('system_id', 'name', 'acronym', 'status', 'function', 'process', 'cost_centre', 'owner', 'custodian', 'preferred_contact', 'access', 'authentication')
+    list_display = ('system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian', 'preferred_contact', 'access', 'authentication')
     list_filter = ('access', 'authentication', 'status')
-    search_fields = ('system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description', 'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
-    raw_id_fields = ("devices", "owner", "custodian", "data_custodian", "preferred_contact", "cost_centre")
+    search_fields = (
+        'system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description',
+        'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
+    raw_id_fields = (
+        "devices", "owner", "custodian", "data_custodian", "preferred_contact", "cost_centre",
+        'bh_support', 'ah_support')
     readonly_fields = ("extra_data_pretty", "description_html")
     fields = (
-        ("system_id", "acronym"), ("name", "status"), ("process", "function"),
+        ("system_id", "acronym"), ("name", "status"), ('link',),
         ("cost_centre", "owner"), ("custodian", "data_custodian"),
-        ("preferred_contact", "link"), ("documentation", "status_html"),
+        ("preferred_contact",),
+        ('bh_support', 'ah_support'),
+        ("documentation", "status_html"),
         ("authentication", "access"), ("description_html", "extra_data_pretty"),
         ("description", "extra_data"),
         ("criticality", "availability"),
         ("schema_url"),
         ("softwares", "hardwares"),
-        ("itsystems", "user_groups"),
+        ("user_groups"),
     )
 
 
@@ -156,9 +162,15 @@ class BusinessProcessAdmin(VersionAdmin):
 
 
 class ProcessITSystemRelationshipAdmin(VersionAdmin):
-    list_display = ('process', 'itsystem', 'criticality')
-    list_filter = ('criticality',)
+    list_display = ('process', 'itsystem', 'importance')
+    list_filter = ('importance',)
     search_fields = ('process__name', 'itsystem__name')
+
+
+class ITSystemDependencyAdmin(VersionAdmin):
+    list_display = ('itsystem', 'dependency', 'criticality')
+    list_filter = ('criticality',)
+    search_fields = ('itsystem__name', 'dependency__name')
 
 
 admin.site.register(UserGroup, UserGroupAdmin)
@@ -172,11 +184,10 @@ admin.site.register(Location, LocationAdmin)
 admin.site.register(SecondaryLocation, VersionAdmin)
 admin.site.register(Vendor, VersionAdmin)
 admin.site.register(SoftwareLicense, SoftwareLicenseAdmin)
-admin.site.register(Process, VersionAdmin)
-admin.site.register(Function, VersionAdmin)
 admin.site.register(ITSystemHardware, ITSystemHardwareAdmin)
 admin.site.register(ITSystem, ITSystemAdmin)
 admin.site.register(BusinessService, BusinessServiceAdmin)
 admin.site.register(BusinessFunction, BusinessFunctionAdmin)
 admin.site.register(BusinessProcess, BusinessProcessAdmin)
 admin.site.register(ProcessITSystemRelationship, ProcessITSystemRelationshipAdmin)
+admin.site.register(ITSystemDependency, ITSystemDependencyAdmin)

@@ -16,44 +16,11 @@ CRITICALITY_CHOICES = (
     (2, 'Moderate'),
     (3, 'Low'),
 )
-
-
-class Function(models.Model):
-    SERVICE_CHOICES = (
-        (1, "Service 1"),
-        (2, "Service 2"),
-        (3, "Service 3"),
-        (4, "Service 4"),
-        (5, "Service 5"),
-        (6, "Service 6"),
-        (7, "Service 7"),
-        (8, "Service 8"),
-        (9, "Common Service 9 - OIM"),
-        (10, "Common Service 10 - ODG"),
-        (11, "Common Service 11 - ???"),
-    )
-    SERVICE_CHOICES_DICT = dict(SERVICE_CHOICES)
-    service = models.PositiveSmallIntegerField(choices=SERVICE_CHOICES, default=4)
-    name = models.CharField(max_length=256, unique=True)
-
-    def __str__(self):
-        return self.name
-
-
-class Process(models.Model):
-    name = models.CharField(max_length=256, unique=True)
-    function = models.ForeignKey(Function, on_delete=models.PROTECT, null=True, blank=True)
-    mtd = models.DurationField(help_text="Maximum Tolerable Downtime (days hh:mm:ss)", default=timedelta(days=14))
-    rto = models.DurationField(help_text="Recovery Time Objective (days hh:mm:ss)", default=timedelta(days=7))
-    rpo = models.DurationField(help_text="Recovery Point Objective/Data Loss Interval (days hh:mm:ss)", default=timedelta(hours=24))
-    users = models.PositiveSmallIntegerField(default=1)
-    #TODO: Add validation for durationfields
-
-    class Meta:
-        verbose_name_plural = 'processes'
-
-    def __str__(self):
-        return self.name
+IMPORTANCE_CHOICES = (
+    (1, 'High'),
+    (2, 'Medium'),
+    (3, 'Low'),
+)
 
 
 class Location(models.Model):
@@ -221,7 +188,8 @@ class Hardware(tracking.CommonFields):
     serials = models.TextField(null=True, editable=False)
     local_info = models.TextField(null=True, editable=False)
     local_current = models.BooleanField(default=True, help_text='Does local state match central state?')
-    os = models.ForeignKey(Software, on_delete=models.PROTECT, null=True, limit_choices_to={'os': True})
+    os = models.ForeignKey(Software, on_delete=models.PROTECT, null=True, blank=True, limit_choices_to={'os': True})
+    location = models.ForeignKey(Location, on_delete=models.PROTECT, null=True, blank=True, help_text='Physical location')
 
     def __str__(self):
         return '{}:{} ({})'.format(self.get_device_type_display(), self.name, self.cost_centre)
@@ -316,21 +284,21 @@ class ITSystem(tracking.CommonFields):
     preferred_contact = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, related_name="systems_preferred_contact", null=True, blank=True)
     link = models.CharField(max_length=2048, null=True, blank=True, help_text="URL to Application itself")
     documentation = models.CharField(max_length=2048, null=True, blank=True, help_text="URL to Documentation")
+    # technical_documentation
     status_html = models.CharField(max_length=2048, null=True, blank=True, help_text="URL to status/uptime info")
     authentication = models.PositiveSmallIntegerField(choices=AUTHENTICATION_CHOICES, default=1)
     authentication_display = models.CharField(max_length=128, null=True, editable=False)
     access = models.PositiveSmallIntegerField(choices=ACCESS_CHOICES, default=3)
     access_display = models.CharField(max_length=128, null=True, editable=False)
     request_access = models.TextField(blank=True)
-    process = models.ForeignKey(Process, on_delete=models.PROTECT, null=True, blank=True)
-    function = models.ForeignKey(Function, on_delete=models.PROTECT, null=True, blank=True)
     criticality = models.PositiveIntegerField(choices=CRITICALITY_CHOICES, null=True, blank=True)
     availability = models.PositiveIntegerField(choices=AVAILABILITY_CHOICES, null=True, blank=True, help_text='Expected availability for this IT System')
-    schema_url = models.URLField(max_length=2000, null=True, blank=True)
+    schema_url = models.URLField(max_length=2000, null=True, blank=True, help_text='URL to schema diagram')
     user_groups = models.ManyToManyField(UserGroup, blank=True, help_text='User group(s) that use this IT System')
     softwares = models.ManyToManyField(Software, blank=True, help_text='Software that is used to provide this IT System')
     hardwares = models.ManyToManyField(ITSystemHardware, blank=True, help_text='Hardware that is used to provide this IT System')
-    itsystems = models.ManyToManyField('self', blank=True, help_text='Other IT Systems that help provide this IT System')
+    bh_support = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name="bh_support", help_text="Business hours support contact")
+    ah_support = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name="ah_support", help_text="After-hours support contact")
 
     def description_html(self):
         return mark_safe(self.description)
@@ -479,6 +447,9 @@ class BusinessProcess(models.Model):
     name = models.CharField(max_length=256, unique=True)
     description = models.TextField(null=True, blank=True)
     functions = models.ManyToManyField(BusinessFunction)
+    mtd = models.DurationField(help_text="Maximum Tolerable Downtime (days hh:mm:ss)", default=timedelta(days=14))
+    rto = models.DurationField(help_text="Recovery Time Objective (days hh:mm:ss)", default=timedelta(days=7))
+    rpo = models.DurationField(help_text="Recovery Point Objective/Data Loss Interval (days hh:mm:ss)", default=timedelta(hours=24))
 
     class Meta:
         verbose_name_plural = 'business processes'
@@ -493,7 +464,23 @@ class ProcessITSystemRelationship(models.Model):
     """
     process = models.ForeignKey(BusinessProcess, on_delete=models.PROTECT)
     itsystem = models.ForeignKey(ITSystem, on_delete=models.PROTECT)
-    criticality = models.PositiveIntegerField(choices=CRITICALITY_CHOICES)
+    importance = models.PositiveIntegerField(choices=IMPORTANCE_CHOICES)
 
     class Meta:
         unique_together = ('process', 'itsystem')
+
+
+class ITSystemDependency(models.Model):
+    """A model to represent a dependency that an ITSystem has on another, plus
+    the criticality of that dependency.
+    """
+    itsystem = models.ForeignKey(ITSystem, on_delete=models.PROTECT, help_text='The IT System')
+    dependency = models.ForeignKey(
+        ITSystem, on_delete=models.PROTECT, related_name='dependency',
+        help_text='The system which is depended upon by')
+    criticality = models.PositiveIntegerField(
+        choices=CRITICALITY_CHOICES, help_text='How critical is the dependency')
+
+    class Meta:
+        verbose_name_plural = 'IT System dependencies'
+        unique_together = ('itsystem', 'dependency')
