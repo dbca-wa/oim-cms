@@ -29,10 +29,11 @@ http://localhost:8000/csw/server/?
 
 from django.db import models
 from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save, pre_save, post_delete
 from django.conf import settings
 import md5
 import base64
+import os
 
 class PycswConfig(models.Model):
     language = models.CharField(max_length=10, default="en-US")
@@ -110,18 +111,17 @@ class Record(models.Model):
     title = models.CharField(max_length=255, null=True,
                              help_text='Maps to pycsw:Title')
     typename = models.CharField(
-        max_length=100, default="gmd:MD_Metadata", db_index=True,
+        max_length=100, default="", db_index=True,
         help_text="Maps to pycsw:Typename"
     )
     schema = models.CharField(
-        max_length=100, default="http://www.isotc211.org/2005/gmd",
+        max_length=100, default="",
         help_text="Maps to pycsw:Schema", db_index=True,
     )
     insert_date = models.DateTimeField(
         auto_now_add=True, help_text='Maps to pycsw:InsertDate')
     xml = models.TextField(
-        default='<gmd:MD_Metadata '
-                'xmlns:gmd="http://www.isotc211.org/2005/gmd"/>',
+        default='',
         help_text=' Maps to pycsw:XML'
     )
     any_text = models.TextField(help_text='Maps to pycsw:AnyText')
@@ -179,8 +179,28 @@ class Style(models.Model):
                 raise ValidationError('There can only be one default format style for each record')
         except Style.DoesNotExist:
             pass
+        
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            orig = Style.objects.get(pk=self.pk)
+            if orig.content:
+                if orig.checksum != self._calculate_checksum(self.content):
+                    os.remove(orig.content.path)
+            elif self.content:
+                clean_name = self.name.split('.')
+                self.content.name = '{0}.{1}'.format(clean_name[0],self.format.lower())
+        else:
+            clean_name = self.name.split('.')
+            self.content.name = '{0}.{1}'.format(clean_name[0],self.format.lower())
+        super(Style, self).save(*args, **kwargs)
+        
     def __unicode__(self):
         return self.name
+    
+    def _calculate_checksum(self, content):
+        checksum = md5.new()
+        checksum.update(content.read())
+        return base64.b64encode(checksum.digest())
     
 @receiver(post_save, sender=Style)    
 def setup_default_styles(sender, instance, **kwargs):
@@ -194,10 +214,18 @@ def setup_default_styles(sender, instance, **kwargs):
             record.lyr = instance.name
     record.save()
 
-@receiver(pre_save, sender=Style)
+@receiver(post_save, sender=Style)
 def set_checksum(sender, instance, **kwargs):
     checksum = md5.new()
     checksum.update(instance.content.read())
     instance.checksum = base64.b64encode(checksum.digest())
-    
+
+@receiver(post_delete, sender=Style)
+def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):
+    """ Deletes the style file from disk when the
+        object is deleted
+    """
+    if instance.content:
+        if os.path.isfile(instance.content.path):
+            os.remove(instance.content.path)
     
