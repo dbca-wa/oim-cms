@@ -179,14 +179,21 @@ class Style(models.Model):
                 raise ValidationError('There can only be one default format style for each record')
         except Style.DoesNotExist:
             pass
-        
-    def save(self, *args, **kwargs):
+    
+    def save(self, update_style_file=False, *args, **kwargs):
         if self.pk is not None:
             orig = Style.objects.get(pk=self.pk)
-            if orig.content:
-                if orig.checksum != self._calculate_checksum(self.content):
+            if not update_style_file:
+                if orig.content:
+                    if orig.checksum != self._calculate_checksum(self.content):
+                        if os.path.isfile(orig.content.path):
+                            os.remove(orig.content.path)
+                elif self.content:
+                    clean_name = self.name.split('.')
+                    self.content.name = '{0}.{1}'.format(clean_name[0],self.format.lower())
+            else:
+                if os.path.isfile(orig.content.path):
                     os.remove(orig.content.path)
-            elif self.content:
                 clean_name = self.name.split('.')
                 self.content.name = '{0}.{1}'.format(clean_name[0],self.format.lower())
         else:
@@ -202,6 +209,7 @@ class Style(models.Model):
         checksum.update(content.read())
         return base64.b64encode(checksum.digest())
     
+    
 @receiver(post_save, sender=Style)    
 def setup_default_styles(sender, instance, **kwargs):
     record = Record.objects.get(id=instance.record_id)
@@ -214,8 +222,8 @@ def setup_default_styles(sender, instance, **kwargs):
             record.lyr = instance.name
     record.save()
 
-@receiver(post_save, sender=Style)
-def set_checksum(sender, instance, **kwargs):
+@receiver(pre_save, sender=Style)
+def set_checksum (sender, instance, **kwargs):
     checksum = md5.new()
     checksum.update(instance.content.read())
     instance.checksum = base64.b64encode(checksum.digest())
@@ -228,4 +236,3 @@ def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):
     if instance.content:
         if os.path.isfile(instance.content.path):
             os.remove(instance.content.path)
-    
