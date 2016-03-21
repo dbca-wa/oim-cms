@@ -23,13 +23,15 @@ class UserGroupAdmin(VersionAdmin):
 class SoftwareAdmin(VersionAdmin):
     list_display = ('name', 'url', 'license', 'os')
     list_filter = ('license', 'os')
-    search_fields = ('name', 'url', 'license__name', 'license__url', 'license__support', 'license__vendor__name')
+    search_fields = (
+        'name', 'url', 'license__name', 'license__url', 'license__support', 'license__vendor__name')
 
 
 class HardwareAdmin(VersionAdmin):
-    list_display = ('device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4', 'ports', 'serials')
-    list_filter = ('device_type', 'ports', 'cost_centre',)
-    search_fields = ('name', 'username', 'email', 'ipv4', 'serials', 'ports')
+    list_display = (
+        'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4', 'ports', 'serials', 'os')
+    list_filter = ('device_type', 'os', 'ports', 'cost_centre')
+    search_fields = ('name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')
 
 
 class SoftwareLicenseAdmin(VersionAdmin):
@@ -39,7 +41,9 @@ class SoftwareLicenseAdmin(VersionAdmin):
 
 
 class ITSystemAdmin(VersionAdmin):
-    list_display = ('system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian', 'preferred_contact', 'access', 'authentication')
+    list_display = (
+        'system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian',
+        'preferred_contact', 'access', 'authentication')
     list_filter = ('access', 'authentication', 'status')
     search_fields = (
         'system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description',
@@ -53,19 +57,24 @@ class ITSystemAdmin(VersionAdmin):
         ("cost_centre", "owner"), ("custodian", "data_custodian"),
         ("preferred_contact",),
         ('bh_support', 'ah_support'),
-        ("documentation", "status_html"),
-        ("authentication", "access"), ("description_html", "extra_data_pretty"),
+        ('documentation', 'technical_documentation'),
+        ("status_html"),
+        ("authentication", "access"),
         ("description", "extra_data"),
         ("criticality", "availability"),
         ("schema_url"),
         ("softwares", "hardwares"),
         ("user_groups"),
+        ('system_reqs', 'system_type'),
+        ('vulnerability_docs', 'recovery_docs'),
+        ('workaround'),
     )
 
 
 class BackupAdmin(VersionAdmin):
     raw_id_fields = ("system", "parent_host")
-    list_display = ("name", "host", "operating_system", "role", "status", "last_tested", "backup_documentation")
+    list_display = (
+        "name", "host", "operating_system", "role", "status", "last_tested", "backup_documentation")
     list_editable = ("operating_system", "role", "status", "last_tested")
     search_fields = ("system__name", "parent_host__name")
     list_filter = ("role", "status", "operating_system")
@@ -112,7 +121,8 @@ class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
             '<a href="{}?org_unit__in={}">{}</a>',
             reverse("admin:tracking_departmentuser_changelist"),
             ",".join([str(o.pk) for o in obj.get_descendants(include_self=True)]),
-            obj.members().count())
+            obj.members().count()
+        )
 
     def it_systems(self, obj):
         return format_html(
@@ -122,8 +132,12 @@ class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
 
 
 class CostCentreAdmin(VersionAdmin):
-    list_display = ('code', 'name', 'org_position', 'division', 'users', 'manager', 'business_manager', 'admin', 'tech_contact')
-    search_fields = ('code', 'name', 'org_position__name', 'division__name', 'org_position__acronym', 'division__acronym')
+    list_display = (
+        'code', 'name', 'org_position', 'division', 'users', 'manager', 'business_manager',
+        'admin', 'tech_contact')
+    search_fields = (
+        'code', 'name', 'org_position__name', 'division__name', 'org_position__acronym',
+        'division__acronym')
     raw_id_fields = ('org_position', 'manager', 'business_manager', 'admin', 'tech_contact')
 
     def users(self, obj):

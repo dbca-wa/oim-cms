@@ -188,7 +188,9 @@ class Hardware(tracking.CommonFields):
     serials = models.TextField(null=True, editable=False)
     local_info = models.TextField(null=True, editable=False)
     local_current = models.BooleanField(default=True, help_text='Does local state match central state?')
-    os = models.ForeignKey(Software, on_delete=models.PROTECT, null=True, blank=True, limit_choices_to={'os': True})
+    os = models.ForeignKey(
+        Software, on_delete=models.PROTECT, null=True, blank=True, limit_choices_to={'os': True},
+        verbose_name='operating system')
     location = models.ForeignKey(Location, on_delete=models.PROTECT, null=True, blank=True, help_text='Physical location')
 
     def __str__(self):
@@ -271,6 +273,12 @@ class ITSystem(tracking.CommonFields):
         (1, '24 hours a day, 7 days a week, 365 days a year'),
         (2, 'Department core business hours'),
     )
+    SYSTEM_TYPE_CHOICES = (
+        (1, 'Web application'),
+        (2, 'Client application'),
+        (3, 'Mobile application'),
+        (4, 'Service'),
+    )
     name = models.CharField(max_length=128, unique=True)
     system_id = models.CharField(max_length=16, unique=True)
     acronym = models.CharField(max_length=16, null=True, blank=True)
@@ -282,10 +290,10 @@ class ITSystem(tracking.CommonFields):
     custodian = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, null=True, related_name="systems_custodianed", help_text="Appication custodian")
     data_custodian = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, related_name="systems_data_custodianed", null=True, blank=True)
     preferred_contact = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, related_name="systems_preferred_contact", null=True, blank=True)
-    link = models.CharField(max_length=2048, null=True, blank=True, help_text="URL to Application itself")
-    documentation = models.CharField(max_length=2048, null=True, blank=True, help_text="URL to Documentation")
-    # technical_documentation
-    status_html = models.CharField(max_length=2048, null=True, blank=True, help_text="URL to status/uptime info")
+    link = models.CharField(max_length=2048, null=True, blank=True, help_text="URL to web application")
+    documentation = models.URLField(max_length=2048, null=True, blank=True, help_text="URL to end-user documentation")
+    technical_documentation = models.URLField(max_length=2048, null=True, blank=True, help_text="URL to technical documentation")
+    status_html = models.URLField(max_length=2048, null=True, blank=True, help_text="URL to status/uptime info")
     authentication = models.PositiveSmallIntegerField(choices=AUTHENTICATION_CHOICES, default=1)
     authentication_display = models.CharField(max_length=128, null=True, editable=False)
     access = models.PositiveSmallIntegerField(choices=ACCESS_CHOICES, default=3)
@@ -293,12 +301,21 @@ class ITSystem(tracking.CommonFields):
     request_access = models.TextField(blank=True)
     criticality = models.PositiveIntegerField(choices=CRITICALITY_CHOICES, null=True, blank=True)
     availability = models.PositiveIntegerField(choices=AVAILABILITY_CHOICES, null=True, blank=True, help_text='Expected availability for this IT System')
-    schema_url = models.URLField(max_length=2000, null=True, blank=True, help_text='URL to schema diagram')
+    schema_url = models.URLField(max_length=2048, null=True, blank=True, help_text='URL to schema diagram')
     user_groups = models.ManyToManyField(UserGroup, blank=True, help_text='User group(s) that use this IT System')
     softwares = models.ManyToManyField(Software, blank=True, help_text='Software that is used to provide this IT System')
     hardwares = models.ManyToManyField(ITSystemHardware, blank=True, help_text='Hardware that is used to provide this IT System')
-    bh_support = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name="bh_support", help_text="Business hours support contact")
-    ah_support = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name="ah_support", help_text="After-hours support contact")
+    bh_support = models.ForeignKey(
+        tracking.DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name="bh_support",
+        verbose_name='business hours support', help_text='Business hours support contact')
+    ah_support = models.ForeignKey(
+        tracking.DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name="ah_support",
+        verbose_name='after hours support', help_text='After-hours support contact')
+    system_reqs = models.TextField(blank=True, help_text='A written description of the requirements to use the system (e.g. web browser version)')
+    system_type = models.PositiveSmallIntegerField(choices=SYSTEM_TYPE_CHOICES, null=True, blank=True)
+    vulnerability_docs = models.URLField(max_length=2048, null=True, blank=True, help_text='URL to documentation related to known vulnerability reports')
+    workaround = models.TextField(blank=True, help_text='Written procedure for users to work around an outage of this system')
+    recovery_docs = models.URLField(max_length=2048, null=True, blank=True, help_text='URL to recovery procedure(s) in the event of system failure')
 
     def description_html(self):
         return mark_safe(self.description)
@@ -409,7 +426,7 @@ class SoftwareLicense(tracking.CommonFields):
     devices = models.ManyToManyField(Device, blank=True)
     vendor = models.ForeignKey(Vendor, on_delete=models.PROTECT, null=True, blank=True)
     used_licenses = models.PositiveSmallIntegerField(default=0, editable=False)
-    available_licenses = models.PositiveSmallIntegerField(default=0)
+    available_licenses = models.PositiveSmallIntegerField(default=0, null=True, blank=True)
     license_details = models.TextField(blank=True, help_text="Direct license keys or details")
 
     def __str__(self):
@@ -464,7 +481,8 @@ class ProcessITSystemRelationship(models.Model):
     """
     process = models.ForeignKey(BusinessProcess, on_delete=models.PROTECT)
     itsystem = models.ForeignKey(ITSystem, on_delete=models.PROTECT)
-    importance = models.PositiveIntegerField(choices=IMPORTANCE_CHOICES)
+    importance = models.PositiveIntegerField(
+        choices=IMPORTANCE_CHOICES, help_text='How important is the IT System to undertaking this process?')
 
     class Meta:
         unique_together = ('process', 'itsystem')
@@ -479,7 +497,7 @@ class ITSystemDependency(models.Model):
         ITSystem, on_delete=models.PROTECT, related_name='dependency',
         help_text='The system which is depended upon by')
     criticality = models.PositiveIntegerField(
-        choices=CRITICALITY_CHOICES, help_text='How critical is the dependency')
+        choices=CRITICALITY_CHOICES, help_text='How critical is the dependency?')
 
     class Meta:
         verbose_name_plural = 'IT System dependencies'
