@@ -10,9 +10,9 @@ from leaflet.admin import LeafletGeoAdmin
 
 from .models import (
     UserGroup, Software, Hardware, Device, SoftwareLicense, CostCentre,
-    Backup, ITSystem, OrgUnit, Location, SecondaryLocation, Process,
-    Function, Vendor, ITSystemHardware, BusinessService, BusinessFunction,
-    BusinessProcess, ProcessITSystemRelationship)
+    Backup, ITSystem, OrgUnit, Location, SecondaryLocation,
+    Vendor, ITSystemHardware, BusinessService, BusinessFunction,
+    BusinessProcess, ProcessITSystemRelationship, ITSystemDependency)
 
 
 class UserGroupAdmin(VersionAdmin):
@@ -23,13 +23,15 @@ class UserGroupAdmin(VersionAdmin):
 class SoftwareAdmin(VersionAdmin):
     list_display = ('name', 'url', 'license', 'os')
     list_filter = ('license', 'os')
-    search_fields = ('name', 'url', 'license__name', 'license__url', 'license__support', 'license__vendor__name')
+    search_fields = (
+        'name', 'url', 'license__name', 'license__url', 'license__support', 'license__vendor__name')
 
 
 class HardwareAdmin(VersionAdmin):
-    list_display = ('device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4', 'ports', 'serials')
-    list_filter = ('device_type', 'ports', 'cost_centre',)
-    search_fields = ('name', 'username', 'email', 'ipv4', 'serials', 'ports')
+    list_display = (
+        'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4', 'ports', 'serials', 'os')
+    list_filter = ('device_type', 'os', 'ports', 'cost_centre')
+    search_fields = ('name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')
 
 
 class SoftwareLicenseAdmin(VersionAdmin):
@@ -39,27 +41,40 @@ class SoftwareLicenseAdmin(VersionAdmin):
 
 
 class ITSystemAdmin(VersionAdmin):
-    list_display = ('system_id', 'name', 'acronym', 'status', 'function', 'process', 'cost_centre', 'owner', 'custodian', 'preferred_contact', 'access', 'authentication')
+    list_display = (
+        'system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian',
+        'preferred_contact', 'access', 'authentication')
     list_filter = ('access', 'authentication', 'status')
-    search_fields = ('system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description', 'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
-    raw_id_fields = ("devices", "owner", "custodian", "data_custodian", "preferred_contact", "cost_centre")
+    search_fields = (
+        'system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description',
+        'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
+    raw_id_fields = (
+        "devices", "owner", "custodian", "data_custodian", "preferred_contact", "cost_centre",
+        'bh_support', 'ah_support')
     readonly_fields = ("extra_data_pretty", "description_html")
     fields = (
-        ("system_id", "acronym"), ("name", "status"), ("process", "function"),
+        ("system_id", "acronym"), ("name", "status"), ('link',),
         ("cost_centre", "owner"), ("custodian", "data_custodian"),
-        ("preferred_contact", "link"), ("documentation", "status_html"),
-        ("authentication", "access"), ("description_html", "extra_data_pretty"),
+        ("preferred_contact",),
+        ('bh_support', 'ah_support'),
+        ('documentation', 'technical_documentation'),
+        ("status_html"),
+        ("authentication", "access"),
         ("description", "extra_data"),
         ("criticality", "availability"),
         ("schema_url"),
         ("softwares", "hardwares"),
-        ("itsystems", "user_groups"),
+        ("user_groups"),
+        ('system_reqs', 'system_type'),
+        ('vulnerability_docs', 'recovery_docs'),
+        ('workaround'),
     )
 
 
 class BackupAdmin(VersionAdmin):
     raw_id_fields = ("system", "parent_host")
-    list_display = ("name", "host", "operating_system", "role", "status", "last_tested", "backup_documentation")
+    list_display = (
+        "name", "host", "operating_system", "role", "status", "last_tested", "backup_documentation")
     list_editable = ("operating_system", "role", "status", "last_tested")
     search_fields = ("system__name", "parent_host__name")
     list_filter = ("role", "status", "operating_system")
@@ -106,7 +121,8 @@ class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
             '<a href="{}?org_unit__in={}">{}</a>',
             reverse("admin:tracking_departmentuser_changelist"),
             ",".join([str(o.pk) for o in obj.get_descendants(include_self=True)]),
-            obj.members().count())
+            obj.members().count()
+        )
 
     def it_systems(self, obj):
         return format_html(
@@ -116,8 +132,12 @@ class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
 
 
 class CostCentreAdmin(VersionAdmin):
-    list_display = ('code', 'name', 'org_position', 'division', 'users', 'manager', 'business_manager', 'admin', 'tech_contact')
-    search_fields = ('code', 'name', 'org_position__name', 'division__name', 'org_position__acronym', 'division__acronym')
+    list_display = (
+        'code', 'name', 'org_position', 'division', 'users', 'manager', 'business_manager',
+        'admin', 'tech_contact')
+    search_fields = (
+        'code', 'name', 'org_position__name', 'division__name', 'org_position__acronym',
+        'division__acronym')
     raw_id_fields = ('org_position', 'manager', 'business_manager', 'admin', 'tech_contact')
 
     def users(self, obj):
@@ -156,9 +176,15 @@ class BusinessProcessAdmin(VersionAdmin):
 
 
 class ProcessITSystemRelationshipAdmin(VersionAdmin):
-    list_display = ('process', 'itsystem', 'criticality')
-    list_filter = ('criticality',)
+    list_display = ('process', 'itsystem', 'importance')
+    list_filter = ('importance',)
     search_fields = ('process__name', 'itsystem__name')
+
+
+class ITSystemDependencyAdmin(VersionAdmin):
+    list_display = ('itsystem', 'dependency', 'criticality')
+    list_filter = ('criticality',)
+    search_fields = ('itsystem__name', 'dependency__name')
 
 
 admin.site.register(UserGroup, UserGroupAdmin)
@@ -172,11 +198,10 @@ admin.site.register(Location, LocationAdmin)
 admin.site.register(SecondaryLocation, VersionAdmin)
 admin.site.register(Vendor, VersionAdmin)
 admin.site.register(SoftwareLicense, SoftwareLicenseAdmin)
-admin.site.register(Process, VersionAdmin)
-admin.site.register(Function, VersionAdmin)
 admin.site.register(ITSystemHardware, ITSystemHardwareAdmin)
 admin.site.register(ITSystem, ITSystemAdmin)
 admin.site.register(BusinessService, BusinessServiceAdmin)
 admin.site.register(BusinessFunction, BusinessFunctionAdmin)
 admin.site.register(BusinessProcess, BusinessProcessAdmin)
 admin.site.register(ProcessITSystemRelationship, ProcessITSystemRelationshipAdmin)
+admin.site.register(ITSystemDependency, ITSystemDependencyAdmin)

@@ -18,3 +18,4 @@ graphviz>=0.4.8
 json2html>=1.0.1
 python-ldap
 djangorestframework
+babel==2.2.0

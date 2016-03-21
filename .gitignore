@@ -1,6 +1,7 @@
 .env*
 .hg*
 media/
+logs/
 static/
 venv/
 *.pyc

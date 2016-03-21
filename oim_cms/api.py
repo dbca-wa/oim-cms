@@ -1,3 +1,6 @@
+import itertools
+import json
+import requests
 from registers.models import CostCentre, ITSystem, Hardware, OrgUnit, Location, SecondaryLocation
 from core.models import UserSession
 from tracking.models import DepartmentUser, EC2Instance
@@ -6,9 +9,7 @@ from django.utils.text import slugify
 from django.utils.timezone import make_aware
 from django.conf import settings
 
-import json
 from restless.utils import MoreTypesJSONEncoder
-import requests
 from restless.dj import DjangoResource
 from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
@@ -336,10 +337,8 @@ class EC2InstanceResource(CSVDjangoResource):
             deleted = EC2Instance.objects.exclude(
                 ec2id__in=[i["InstanceId"] for i in self.data]).delete()
         for instc in self.data:
-            instance, created = EC2Instance.objects.get_or_create(ec2id=instc[
-                                                                  "InstanceId"])
-            instance.name = [x["Value"]
-                             for x in instc["Tags"] if x["Key"] == "Name"][0]
+            instance, created = EC2Instance.objects.get_or_create(ec2id=instc["InstanceId"])
+            instance.name = [x["Value"] for x in instc["Tags"] if x["Key"] == "Name"][0]
             instance.launch_time = instc["LaunchTime"]
             instance.running = instc["State"]["Name"] == "running"
             instance.extra_data = instc
@@ -405,19 +404,84 @@ class LocationResource(CSVDjangoResource):
 
 
 class ITSystemResource(CSVDjangoResource):
-    VALUES_ARGS = (
-        "pk", "name", "acronym", "system_id",
-        "link", "cost_centre__code",
-        "cost_centre__name",
-        "cost_centre__division__name",
-        "cost_centre__division__manager__name",
-        "owner__name", "owner__email",
-        "custodian__name", "custodian__email",
-        "data_custodian__name", "data_custodian__email",
-        "preferred_contact__name", "preferred_contact__email",
-        "documentation", "access_display",
-        "authentication_display", "status_html", "status_display",
-        "description")
+
+    def prepare(self, data):
+        """Prepare a custom API response for ITSystemResource objects.
+        """
+        # Owner > CC > Division > Manager
+        cost_centre__division__manager__name = ''
+        cost_centre__division__name = ''
+        cost_centre__name = ''
+        cost_centre__code = ''
+        # Every damn field is nullable!
+        if data.owner:
+            if data.owner.cost_centre:
+                cost_centre__name = data.owner.cost_centre.name
+                cost_centre__code = data.owner.cost_centre.code
+                if data.owner.cost_centre.division:
+                    cost_centre__division__name = data.owner.cost_centre.division.name
+                    if data.owner.cost_centre.division.manager:
+                        cost_centre__division__manager__name = data.owner.cost_centre.division.manager.name
+
+        prepped = {
+            'pk': data.pk,
+            'name': data.name,
+            'acronym': data.acronym,
+            'system_id': data.system_id,
+            'link': data.link,
+            'description': data.description,
+            'documentation': data.documentation,
+            'technical_documentation': data.technical_documentation,
+            'authentication_display': data.authentication_display or '',
+            'access_display': data.access_display or '',
+            'preferred_contact__name': data.preferred_contact.name if data.preferred_contact else '',
+            'preferred_contact__email': data.preferred_contact.email if data.preferred_contact else '',
+            'cost_centre__division__manager__name': cost_centre__division__manager__name,
+            'cost_centre__division__name': cost_centre__division__name,
+            'cost_centre__name': cost_centre__name,
+            'cost_centre__code': cost_centre__code,
+            'owner__name': data.owner.name if data.owner else '',
+            'owner__email': data.owner.email if data.owner else '',
+            'custodian__name': data.custodian.name if data.custodian else '',
+            'custodian__email': data.custodian.email if data.custodian else '',
+            'data_custodian__name': data.data_custodian.name if data.data_custodian else '',
+            'data_custodian__email': data.data_custodian.email if data.data_custodian else '',
+            'status_html': data.status_html or '',
+            'schema': data.schema_url or '',
+            'system_reqs': data.system_reqs,
+            'system_type': data.get_system_type_display() if data.system_type else '',
+            'vulnerability_docs': data.vulnerability_docs,
+            'workaround': data.workaround,
+            'recovery_docs': data.recovery_docs,
+            'bh_support': {'name': data.bh_support.name, 'email': data.bh_support.email, 'telephone': data.bh_support.telephone} if data.bh_support else {},
+            'ah_support': {'name': data.ah_support.name, 'email': data.ah_support.email, 'telephone': data.ah_support.telephone} if data.ah_support else {},
+            'availability': data.get_availability_display() if data.availability else '',
+            'status_display': data.status_display or '',
+            'criticality': data.get_criticality_display() if data.criticality else '',
+            'softwares': [],
+            'hardwares': [],
+            'processes': {'relationships': [{
+                'process__name': i.process.name,
+                'process__importance': i.get_importance_display(),
+                # Flatten the function(s) associated with the process.
+                'function__name': ', '.join(f.name for f in i.process.functions.all()),
+                # One nest listed comprehension to rule them all.
+                'function__service': ', '.join(sorted(set(
+                    [str(s.number) for s in list(
+                        itertools.chain.from_iterable(
+                            [f.services.all() for f in i.process.functions.all()]
+                        )
+                    )]
+                )))
+            } for i in data.processitsystemrelationship_set.all()]},
+            'itsystems': {'relationships': [{
+                'name': i.dependency.name,
+                'system_id': i.dependency.system_id,
+                'criticality': i.get_criticality_display()
+            } for i in data.itsystemdependency_set.all()]},
+            'usergroups': [{'pk': i.pk, 'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
+        }
+        return prepped
 
     def list_qs(self):
         # Only return production apps
@@ -431,9 +495,8 @@ class ITSystemResource(CSVDjangoResource):
             FILTERS["name"] = self.request.GET["name"]
         if "pk" in self.request.GET:
             FILTERS["pk"] = self.request.GET["pk"]
-        return ITSystem.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
+        return ITSystem.objects.filter(**FILTERS)
 
-    @skip_prepare
     def list(self):
         return list(self.list_qs())
 
