@@ -70,6 +70,7 @@ class PycswConfig(models.Model):
     conformity_service = models.CharField(max_length=255, blank=True)
     temporal_extent_start = models.DateTimeField(null=True, blank=True)
     temporal_extent_end = models.DateTimeField(null=True, blank=True)
+    service_type_version = models.TextField(max_length=10, blank=True)
 
     class Meta:
         verbose_name = "PyCSW Configuration"
