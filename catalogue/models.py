@@ -70,6 +70,7 @@ class PycswConfig(models.Model):
     conformity_service = models.CharField(max_length=255, blank=True)
     temporal_extent_start = models.DateTimeField(null=True, blank=True)
     temporal_extent_end = models.DateTimeField(null=True, blank=True)
+    service_type_version = models.CharField(max_length=10, blank=True)
 
     class Meta:
         verbose_name = "PyCSW Configuration"
@@ -111,12 +112,12 @@ class Record(models.Model):
     title = models.CharField(max_length=255, null=True,
                              help_text='Maps to pycsw:Title')
     typename = models.CharField(
-        max_length=100, default="", db_index=True,
-        help_text="Maps to pycsw:Typename"
+        max_length=100, default="", db_index=True, blank=True,
+        help_text="Maps to pycsw:Typename", editable=False
     )
     schema = models.CharField(
         max_length=100, default="",
-        help_text="Maps to pycsw:Schema", db_index=True,
+        help_text="Maps to pycsw:Schema", db_index=True, blank=True, editable=False
     )
     insert_date = models.DateTimeField(
         auto_now_add=True, help_text='Maps to pycsw:InsertDate')
@@ -124,7 +125,7 @@ class Record(models.Model):
         default='',
         help_text=' Maps to pycsw:XML'
     )
-    any_text = models.TextField(help_text='Maps to pycsw:AnyText',null=True)
+    any_text = models.TextField(help_text='Maps to pycsw:AnyText',null=True, blank=True,)
     modified = models.DateTimeField(
         null=True, blank=True,
         help_text='Maps to pycsw:Modified'
@@ -150,11 +151,7 @@ class Record(models.Model):
     crs = models.CharField(max_length=255, null=True, blank=True,help_text='Maps to pycsw:CRS')
     # Custom fields
     auto_update = models.BooleanField(default=True)
-    active = models.BooleanField(default=True)
-    # Styles
-    sld = models.CharField(max_length=255,blank=True, null=True,)
-    qml = models.CharField(max_length=255,blank=True, null=True,)
-    lyr = models.CharField(max_length=255,blank=True, null=True,)
+    active = models.BooleanField(default=True, editable=False)
     
     def __unicode__(self):
         return self.identifier
@@ -209,18 +206,6 @@ class Style(models.Model):
         checksum.update(content.read())
         return base64.b64encode(checksum.digest())
     
-    
-@receiver(post_save, sender=Style)    
-def setup_default_styles(sender, instance, **kwargs):
-    record = Record.objects.get(id=instance.record_id)
-    if instance.default:
-        if instance.format == 'SLD':
-            record.sld = instance.name
-        elif instance.format == 'QML':
-            record.qml = instance.name
-        elif instance.format == 'LYR':
-            record.lyr = instance.name
-    record.save()
 
 @receiver(pre_save, sender=Style)
 def set_checksum (sender, instance, **kwargs):

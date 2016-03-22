@@ -25,6 +25,7 @@ class StyleAdmin(admin.ModelAdmin):
 class RecordAdmin(admin.ModelAdmin):
     list_display = ("id", "identifier", "title",)
     inlines = [StyleInline,]
+    readonly_fields = ('publication_date','modified',)
     
     def get_readonly_fields(self, request, obj=None):
         if obj:

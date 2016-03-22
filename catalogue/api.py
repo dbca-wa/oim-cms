@@ -68,7 +68,6 @@ class RecordViewSet(viewsets.ModelViewSet):
         checksum.update(content)
         return base64.b64encode(checksum.digest())
         
-    
     def create(self,request):
         styles_data = None
         http_status = status.HTTP_200_OK
