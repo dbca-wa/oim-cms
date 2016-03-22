@@ -111,12 +111,12 @@ class Record(models.Model):
     title = models.CharField(max_length=255, null=True,
                              help_text='Maps to pycsw:Title')
     typename = models.CharField(
-        max_length=100, default="", db_index=True,
+        max_length=100, default="", db_index=True, blank=True,
         help_text="Maps to pycsw:Typename"
     )
     schema = models.CharField(
         max_length=100, default="",
-        help_text="Maps to pycsw:Schema", db_index=True,
+        help_text="Maps to pycsw:Schema", db_index=True, blank=True,
     )
     insert_date = models.DateTimeField(
         auto_now_add=True, help_text='Maps to pycsw:InsertDate')
@@ -124,7 +124,7 @@ class Record(models.Model):
         default='',
         help_text=' Maps to pycsw:XML'
     )
-    any_text = models.TextField(help_text='Maps to pycsw:AnyText',null=True)
+    any_text = models.TextField(help_text='Maps to pycsw:AnyText',null=True, blank=True,)
     modified = models.DateTimeField(
         null=True, blank=True,
         help_text='Maps to pycsw:Modified'
@@ -150,7 +150,7 @@ class Record(models.Model):
     crs = models.CharField(max_length=255, null=True, blank=True,help_text='Maps to pycsw:CRS')
     # Custom fields
     auto_update = models.BooleanField(default=True)
-    active = models.BooleanField(default=True)
+    active = models.BooleanField(default=True, editable=False)
     # Styles
     sld = models.CharField(max_length=255,blank=True, null=True,)
     qml = models.CharField(max_length=255,blank=True, null=True,)
