@@ -151,10 +151,6 @@ class Record(models.Model):
     # Custom fields
     auto_update = models.BooleanField(default=True)
     active = models.BooleanField(default=True, editable=False)
-    # Styles
-    sld = models.CharField(max_length=255,blank=True, null=True,)
-    qml = models.CharField(max_length=255,blank=True, null=True,)
-    lyr = models.CharField(max_length=255,blank=True, null=True,)
     
     def __unicode__(self):
         return self.identifier
@@ -209,18 +205,6 @@ class Style(models.Model):
         checksum.update(content.read())
         return base64.b64encode(checksum.digest())
     
-    
-@receiver(post_save, sender=Style)    
-def setup_default_styles(sender, instance, **kwargs):
-    record = Record.objects.get(id=instance.record_id)
-    if instance.default:
-        if instance.format == 'SLD':
-            record.sld = instance.name
-        elif instance.format == 'QML':
-            record.qml = instance.name
-        elif instance.format == 'LYR':
-            record.lyr = instance.name
-    record.save()
 
 @receiver(pre_save, sender=Style)
 def set_checksum (sender, instance, **kwargs):
