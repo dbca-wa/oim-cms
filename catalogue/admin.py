@@ -15,10 +15,21 @@ class StyleInline(admin.StackedInline):
 class StyleAdmin(admin.ModelAdmin):
     list_display = ('name','record','format',)
     
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return self.readonly_fields + ('name',)
+        return self.readonly_fields
+    
+    
 @admin.register(models.Record)
 class RecordAdmin(admin.ModelAdmin):
     list_display = ("id", "identifier", "title",)
     inlines = [StyleInline,]
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return self.readonly_fields + ('identifier',)
+        return self.readonly_fields
 
 
 @admin.register(models.Organization)
