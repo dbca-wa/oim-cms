@@ -34,9 +34,9 @@
                 {% if 'fullscreen' not in request.GET %}
                     {% block header %}
                     <div class="row header_row align-justify">
-                        <div class="columns show-for-large"><a target="_blank" href="http://www.dpaw.wa.gov.au"><img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife"></a></div>
+                        <div class="columns show-for-large hide-for-print"><a target="_blank" href="//www.dpaw.wa.gov.au"><img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife"></a></div>
                         <div class="columns"><a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a></div>
-                        <div class="columns show-for-large"><a class="float-right" href="/products/"><img src="//static.dpaw.wa.gov.au/images/oim_tree.svg"></a></div>
+                        <div class="columns show-for-large hide-for-print"><a class="float-right" href="/products/"><img src="//static.dpaw.wa.gov.au/images/oim_tree.svg"></a></div>
                     </div>
                     <div class="main_menu">
                         <div class="row">
@@ -45,21 +45,21 @@
                         </div>
                     </div>
                     <div class="row breadcrumbs_row align-middle">
-                            <ul class="breadcrumbs columns large-9">
-                            {% page_menuitems self as menuitems %}
-                            {% for menuitem in menuitems %}
-                                <li>{% if not forloop.last %}<a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>{% else %}{{ menuitem.title }}{% endif %}</li>
-                            {% endfor %}
-                                <li><a title="Open fullscreen in new tab" target="_blank" href="{{ request.get_full_path }}{% if '?' in request.get_full_path %}&amp;{% else %}?{% endif %}fullscreen">
-                                    <i class="fi-arrows-expand"></i></a>
-                                </li>
+                        <ul class="breadcrumbs columns large-9">
+                        {% page_menuitems self as menuitems %}
+                        {% for menuitem in menuitems %}
+                            <li>{% if not forloop.last %}<a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>{% else %}{{ menuitem.title }}{% endif %}</li>
+                        {% endfor %}
+                            <li><a title="Open fullscreen in new tab" target="_blank" href="{{ request.get_full_path }}{% if '?' in request.get_full_path %}&amp;{% else %}?{% endif %}fullscreen">
+                                <i class="fi-arrows-expand"></i></a>
+                            </li>
+                        </ul>
+                        <div class="columns large-3">
+                            <ul class="breadcrumbs float-right">
+                                <li><a href="/profile/">{{ request.user.email }}</a></li>
+                                <li><a title="Logout" href="{% url 'logout' %}"><i class="fi-power"></i></a></li>
                             </ul>
-                            <div class="columns large-3">
-                                <ul class="breadcrumbs float-right">
-                                    <li><a href="/profile/">{{ request.user.email }}</a></li>
-                                    <li><a title="Logout" href="{% url 'logout' %}"><i class="fi-power"></i></a></li>
-                                </ul>
-                            </div>
+                        </div>
                     </div>
                     {% endblock %}
                 {% endif %}

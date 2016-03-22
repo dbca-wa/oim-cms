@@ -12,6 +12,7 @@ import os
 class StyleSerializer(serializers.ModelSerializer):
     raw_content = serializers.SerializerMethodField(read_only=True)
     content = serializers.CharField(write_only=True,allow_null=True)
+    name = serializers.CharField(default='builtin')
     class Meta:
         model = Style
         fields = (
@@ -29,7 +30,7 @@ class StyleSerializer(serializers.ModelSerializer):
 
 # Record Serializer
 class RecordSerializer(serializers.ModelSerializer):
-    styles = StyleSerializer(many=True)
+    styles = StyleSerializer(many=True,required=False)
     workspace =  serializers.CharField(max_length=255, write_only=True)
     name = serializers.CharField(max_length=255, write_only=True)
     class Meta:
@@ -69,99 +70,77 @@ class RecordViewSet(viewsets.ModelViewSet):
         
     
     def create(self,request):
-        serializer = RecordSerializer(data=request.data, many=True)
-        if serializer.is_valid():
-            for uploaded_record in serializer.validated_data:
-                uploaded_record = dict(uploaded_record)
-                try:
-                    # # Check if workspace and name match identifier for a particular record
-                    record = Record.objects.get(identifier='{0}:{1}'.format(uploaded_record['workspace'],uploaded_record['name']))
-                    # Get all styles associated with the record
-                    record_styles = record.styles.all()
-                    # Check if the auto update flag is set to true so as to update the record
-                    if record.auto_update:
-                        # Update the record metadata
-                        record.title = uploaded_record['title'],
-                        record.any_text = uploaded_record['any_text'],
-                        record.abstract = uploaded_record['abstract'],
-                        record.keywords = uploaded_record['keywords'],
-                        record.bounding_box = uploaded_record['bounding_box'],
-                        record.crs = uploaded_record['crs'],
-                        if uploaded_record['publication_date']:
-                            record.publication_date = uploaded_record['publication_date'],
-                        record.service_type = uploaded_record['service_type'],
-                        record.links = uploaded_record['links']
-                        record.auto_update = uploaded_record['auto_update']
-                        record.save()
-                        # Update the styles if they need to be updated
-                        styles = []
-                        for style in uploaded_record['styles']:
-                            style = dict(style)
-                            try:
-                                content = style['content'].decode('base64')
-                                new_style = Style(
-                                                record = record,
-                                                name=style['name'],
-                                                format = style['format'],
-                                                default = style['default'],
-                                                content = self.createStyle(content),
-                                            )
-                                new_style.raw_data = content
-                                styles.append(new_style)
-                            except:
-                                pass
-                        for record_style in record_styles:
-                            for style in styles:
-                                # Check if a style with the same name exists for the record
-                                if record_style.name == style.name and record_style.format == style.format:
-                                    # Check the checksum of the two styles to see if they match
-                                    if record_style.checksum == self.calculate_checksum(style.raw_data):
-                                        pass
-                                    else:
-                                        # Change the content of the style file
-                                        record_style.content = style.content
-                                        record_style.save(update_style_file=True)
-                                    # Remove the style from the list in order to make the list smaller    
-                                    styles.remove(style)
-                        # Create all other styles that were not matched to the records styles
-                        for style in styles:
-                            style.save()
-                    else:
-                        pass
-                except Record.DoesNotExist:
-                    # If the record does not exist create a new record
-                    record = Record(
-                        identifier='{0}:{1}'.format(uploaded_record['workspace'],uploaded_record['name']),
-                        title = uploaded_record['title'],
-                        any_text = uploaded_record['any_text'],
-                        abstract = uploaded_record['abstract'],
-                        keywords = uploaded_record['keywords'],
-                        bounding_box = uploaded_record['bounding_box'],
-                        crs = uploaded_record['crs'],
-                        publication_date = uploaded_record['publication_date'],
-                        service_type = uploaded_record['service_type'],
-                        links = uploaded_record['links']
-                    )
-                    record.save()
-                    styles = uploaded_record['styles']
-                    for style in styles:
-                        style = dict(style)
-                        if style['content']:
-                            # Decode the content from base64
-                            content = style['content'].decode('base64')
-                            new_style = Style(
-                                    record = record,
-                                    name=style['name'],
-                                    format = style['format'],
-                                    default = style['default'],
-                                    content = self.createStyle(content)
-                                )
-                            new_style.save()
-                            
-            queryset = self.get_queryset()
-            serializer = RecordSerializer(queryset, many=True)
-            return Response(serializer.data,status=status.HTTP_200_OK)
-        else:
-            return Response({'unsuccessful'},status=status.HTTP_400_BAD_REQUEST)
+        styles_data = None
+        http_status = status.HTTP_200_OK
+        
+        if "styles" in request.data:
+            styles_data = request.data.pop("styles")
+        #parse and valid record data
+        serializer = RecordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        #parse and valid styles data
+        style_serializers = [StyleSerializer(data=style) for style in styles_data] if styles_data else None
+        if style_serializers:
+            for style_serializer in style_serializers:
+                style_serializer.is_valid(raise_exception=True)
+        
+        #save record data.
+        identifier = "{}:{}".format(serializer.validated_data['workspace'],serializer.validated_data['name'])
+        try:
+            serializer.instance = Record.objects.get(identifier=identifier)
+            if not serializer.instance.auto_update:
+                #auto update disabled
+                for key in ["title","abstract","auto_update","modified","insert_date"]:
+                    if key in serializer.validated_data: serializer.validated_data.pop(key)
 
-                    
+        except Record.DoesNotExist:
+            serializer.validated_data['identifier']=identifier
+            http_status = status.HTTP_201_CREATED
+
+        #remove fake fields
+        workspace = serializer.validated_data.pop("workspace")
+        name = serializer.validated_data.pop("name")
+
+        record = serializer.save()
+
+        #set the missing data and transform the content
+        for style_serializer in style_serializers:
+            uploaded_style = style_serializer.validated_data
+            uploaded_style["record"] = record
+            uploaded_style["content"] = self.createStyle(uploaded_style["content"].decode("base64"))
+
+        #set default style
+        origin_default_style = {"sld":record.sld,"qml":record.qml, "lyr":record.lyr }
+        default_style = { }
+        for style_serializer in style_serializers:
+            uploaded_style = style_serializer.validated_data
+            if uploaded_style.get("default",False):
+                #user set this style as default style, use the user's setting
+                default_style[uploaded_style["format"]] = uploaded_style
+            elif origin_default_style.get(uploaded_style["format"].lower(),None) == uploaded_style["name"]:
+                #the current style is configured default style.
+                default_style[uploaded_style["format"]] = uploaded_style
+            elif not origin_default_style.get(uploaded_style["format"].lower(),None) and  uploaded_style["format"] not in default_style:
+                #no default style has been set, set the current style as the default style
+                default_style[uploaded_style["format"]] = uploaded_style
+            #clear the default flag
+            uploaded_style["default"] = False
+
+        #set the default style
+        for uploaded_style in default_style.itervalues():
+            uploaded_style["default"] = True
+
+        #save  style
+        styles= []
+        for style_serializer in style_serializers:
+            if http_status != status.HTTP_201_CREATED:
+                #record is already exist,should check whether style exist or not.
+                try:
+                    style_serializer.instance = Style.objects.get(record=record,name=style_serializer.validated_data["name"],format=style_serializer.validated_data["format"])
+                except Style.DoesNotExist:
+                    pass
+            styles.append(style_serializer.save())
+
+        record.styles = styles
+        serializer = RecordSerializer(record)
+        return Response(serializer.data,status=http_status)

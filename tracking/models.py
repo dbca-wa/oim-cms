@@ -16,7 +16,7 @@ class CommonFields(models.Model):
     org_unit = models.ForeignKey(
         "registers.OrgUnit", on_delete=models.PROTECT, null=True, blank=True)
     cost_centre = models.ForeignKey(
-        "registers.CostCentre", on_delete=models.PROTECT, null=True)
+        "registers.CostCentre", on_delete=models.PROTECT, null=True, blank=True)
     extra_data = JSONField(null=True, blank=True)
 
     def extra_data_pretty(self):
