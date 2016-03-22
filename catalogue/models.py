@@ -124,7 +124,7 @@ class Record(models.Model):
         default='',
         help_text=' Maps to pycsw:XML'
     )
-    any_text = models.TextField(help_text='Maps to pycsw:AnyText')
+    any_text = models.TextField(help_text='Maps to pycsw:AnyText',null=True)
     modified = models.DateTimeField(
         null=True, blank=True,
         help_text='Maps to pycsw:Modified'
@@ -180,25 +180,25 @@ class Style(models.Model):
         except Style.DoesNotExist:
             pass
     
-    def save(self, update_style_file=False, *args, **kwargs):
+    def save(self, *args, **kwargs):
+        update_fields=None
+        clean_name = self.name.split('.')
+        self.content.name = '{}_{}.{}'.format(self.record.identifier.replace(':','_'),clean_name[0],self.format.lower())
         if self.pk is not None:
+            update_fields=["default","content","checksum"]
             orig = Style.objects.get(pk=self.pk)
-            if not update_style_file:
-                if orig.content:
-                    if orig.checksum != self._calculate_checksum(self.content):
-                        if os.path.isfile(orig.content.path):
-                            os.remove(orig.content.path)
-                elif self.content:
-                    clean_name = self.name.split('.')
-                    self.content.name = '{0}.{1}'.format(clean_name[0],self.format.lower())
+            if orig.content:
+                if orig.checksum != self._calculate_checksum(self.content):
+                    if os.path.isfile(orig.content.path):
+                        os.remove(orig.content.path)
+                else:
+                    update_fields = ["default"]
             else:
                 if os.path.isfile(orig.content.path):
                     os.remove(orig.content.path)
-                clean_name = self.name.split('.')
-                self.content.name = '{0}.{1}'.format(clean_name[0],self.format.lower())
-        else:
-            clean_name = self.name.split('.')
-            self.content.name = '{0}.{1}'.format(clean_name[0],self.format.lower())
+
+        if update_fields:
+            kwargs["update_fields"] = update_fields
         super(Style, self).save(*args, **kwargs)
         
     def __unicode__(self):
