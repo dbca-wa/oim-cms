@@ -112,11 +112,11 @@ class Record(models.Model):
                              help_text='Maps to pycsw:Title')
     typename = models.CharField(
         max_length=100, default="", db_index=True, blank=True,
-        help_text="Maps to pycsw:Typename"
+        help_text="Maps to pycsw:Typename", editable=False
     )
     schema = models.CharField(
         max_length=100, default="",
-        help_text="Maps to pycsw:Schema", db_index=True, blank=True,
+        help_text="Maps to pycsw:Schema", db_index=True, blank=True, editable=False
     )
     insert_date = models.DateTimeField(
         auto_now_add=True, help_text='Maps to pycsw:InsertDate')
