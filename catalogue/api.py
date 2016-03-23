@@ -78,7 +78,7 @@ class RecordViewSet(viewsets.ModelViewSet):
         serializer = RecordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         #parse and valid styles data
-        style_serializers = [StyleSerializer(data=style) for style in styles_data] if styles_data else None
+        style_serializers = [StyleSerializer(data=style) for style in styles_data] if styles_data else []
         if style_serializers:
             for style_serializer in style_serializers:
                 style_serializer.is_valid(raise_exception=True)
