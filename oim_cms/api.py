@@ -1,3 +1,4 @@
+from babel.dates import format_timedelta
 import itertools
 import json
 import requests
@@ -428,7 +429,6 @@ class ITSystemResource(CSVDjangoResource):
             'name': data.name,
             'acronym': data.acronym,
             'system_id': data.system_id,
-            'link': data.link,
             'description': data.description,
             'documentation': data.documentation,
             'technical_documentation': data.technical_documentation,
@@ -446,6 +446,7 @@ class ITSystemResource(CSVDjangoResource):
             'custodian__email': data.custodian.email if data.custodian else '',
             'data_custodian__name': data.data_custodian.name if data.data_custodian else '',
             'data_custodian__email': data.data_custodian.email if data.data_custodian else '',
+            'link': data.link,
             'status_html': data.status_html or '',
             'schema': data.schema_url or '',
             'system_reqs': data.system_reqs,
@@ -458,10 +459,33 @@ class ITSystemResource(CSVDjangoResource):
             'availability': data.get_availability_display() if data.availability else '',
             'status_display': data.status_display or '',
             'criticality': data.get_criticality_display() if data.criticality else '',
-            'softwares': [],
-            'hardwares': [],
+            "mtd": format_timedelta(data.mtd),
+            "rto": format_timedelta(data.rto),
+            "rpo": format_timedelta(data.rpo),
+            'softwares': [{
+                'name': i.name,
+                'url': i.url,
+                'license': i.license.name if i.license else '',
+                'license__url': i.license.url if i.license else '',
+                'support': i.license.support if i.license else '',
+                'support__url': i.license.support_url if i.license else '',
+            } for i in data.softwares.all()],
+            'hardwares': [{
+                'host': i.host.name,
+                'role': i.get_role_display(),
+                'host__location': i.host.location.name if i.host.location else '',
+                'operating_system': i.host.os.name if i.host.os else '',
+                'operating_system__url': i.host.os.url if i.host.os else '',
+                'operating_system__license': i.host.os.license.name if i.host.os.license else '',
+                'operating_system__license__url': i.host.os.license.url if i.host.os.license else '',
+                'operating_system__support': i.host.os.license.support if i.host.os.license else '',
+                'operating_system__support__url': i.host.os.license.support_url if i.host.os.license else '',
+                'backup': i.host.backup.get_os_schedule_display() if i.host.backup else '',
+                'backup_test_date': i.host.backup.last_tested.isoformat() if (i.host.backup and i.host.backup.last_tested) else '',
+            } for i in data.hardwares.all()],
             'processes': {'relationships': [{
                 'process__name': i.process.name,
+                'process__criticality': i.process.get_criticality_display() if i.process.criticality else '',
                 'process__importance': i.get_importance_display(),
                 # Flatten the function(s) associated with the process.
                 'function__name': ', '.join(f.name for f in i.process.functions.all()),
@@ -474,12 +498,12 @@ class ITSystemResource(CSVDjangoResource):
                     )]
                 )))
             } for i in data.processitsystemrelationship_set.all()]},
-            'itsystems': {'relationships': [{
-                'name': i.dependency.name,
-                'system_id': i.dependency.system_id,
+            'dependencies': {'relationships': [{
+                'dependency__system_id': i.dependency.system_id,
+                'dependency__name': i.dependency.name,
                 'criticality': i.get_criticality_display()
             } for i in data.itsystemdependency_set.all()]},
-            'usergroups': [{'pk': i.pk, 'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
+            'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
         }
         return prepped
 
