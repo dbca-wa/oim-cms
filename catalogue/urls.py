@@ -5,9 +5,13 @@ from api import RecordViewSet
 from . import views
 
 router = routers.DefaultRouter()
-router.register(r'api',RecordViewSet)
+router.register(r'^records',RecordViewSet)
+
+api_patterns = [
+    url(r'^', include(router.urls))
+]
 
 urlpatterns = [
     url(r'^$', views.CswEndpoint.as_view(), name="csw_endpoint"),
-    url(r'^', include(router.urls))
+    url(r'^api/', include(api_patterns))
 ]
