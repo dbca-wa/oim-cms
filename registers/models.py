@@ -26,8 +26,8 @@ IMPORTANCE_CHOICES = (
 class Location(models.Model):
     name = models.CharField(max_length=256, unique=True)
     manager = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, null=True, blank=True)
-    address = models.TextField(unique=True)
-    pobox = models.TextField(blank=True)
+    address = models.TextField(unique=True, blank=True)
+    pobox = models.TextField(blank=True, verbose_name='PO Box')
     phone = models.CharField(max_length=128, null=True, blank=True)
     fax = models.CharField(max_length=128, null=True, blank=True)
     email = models.CharField(max_length=128, null=True, blank=True)
@@ -316,6 +316,9 @@ class ITSystem(tracking.CommonFields):
     vulnerability_docs = models.URLField(max_length=2048, null=True, blank=True, help_text='URL to documentation related to known vulnerability reports')
     workaround = models.TextField(blank=True, help_text='Written procedure for users to work around an outage of this system')
     recovery_docs = models.URLField(max_length=2048, null=True, blank=True, help_text='URL to recovery procedure(s) in the event of system failure')
+    mtd = models.DurationField(help_text="Maximum Tolerable Downtime (days hh:mm:ss)", default=timedelta(days=14))
+    rto = models.DurationField(help_text="Recovery Time Objective (days hh:mm:ss)", default=timedelta(days=7))
+    rpo = models.DurationField(help_text="Recovery Point Objective/Data Loss Interval (days hh:mm:ss)", default=timedelta(hours=24))
 
     def description_html(self):
         return mark_safe(self.description)
@@ -464,9 +467,8 @@ class BusinessProcess(models.Model):
     name = models.CharField(max_length=256, unique=True)
     description = models.TextField(null=True, blank=True)
     functions = models.ManyToManyField(BusinessFunction)
-    mtd = models.DurationField(help_text="Maximum Tolerable Downtime (days hh:mm:ss)", default=timedelta(days=14))
-    rto = models.DurationField(help_text="Recovery Time Objective (days hh:mm:ss)", default=timedelta(days=7))
-    rpo = models.DurationField(help_text="Recovery Point Objective/Data Loss Interval (days hh:mm:ss)", default=timedelta(hours=24))
+    criticality = models.PositiveIntegerField(
+        choices=CRITICALITY_CHOICES, null=True, blank=True, help_text='How critical is the process?')
 
     class Meta:
         verbose_name_plural = 'business processes'
