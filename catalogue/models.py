@@ -109,7 +109,7 @@ class Collaborator(models.Model):
 class Record(models.Model):
     identifier = models.CharField(
         max_length=255, db_index=True, help_text="Maps to pycsw:Identifier")
-    title = models.CharField(max_length=255, null=True,
+    title = models.CharField(max_length=255, null=True,blank=True,
                              help_text='Maps to pycsw:Title')
     typename = models.CharField(
         max_length=100, default="", db_index=True, blank=True,
@@ -125,7 +125,7 @@ class Record(models.Model):
         default='',
         help_text=' Maps to pycsw:XML'
     )
-    any_text = models.TextField(help_text='Maps to pycsw:AnyText',null=True, blank=True,)
+    any_text = models.TextField(help_text='Maps to pycsw:AnyText',null=True, blank=True)
     modified = models.DateTimeField(
         null=True, blank=True,
         help_text='Maps to pycsw:Modified'
@@ -155,6 +155,36 @@ class Record(models.Model):
     
     def __unicode__(self):
         return self.identifier
+
+    def default_style(self,format):
+        try:
+            return self.styles.get(format=format,default=True)
+        except Style.DoesNotExist:
+            return None
+
+    @property
+    def sld(self):
+        """
+        The default sld style file
+        if not exist, return None
+        """
+        return self.default_style("SLD")
+    
+    @property
+    def lyr(self):
+        """
+        The default sld style file
+        if not exist, return None
+        """
+        return self.default_style("LYR")
+    
+    @property
+    def qml(self):
+        """
+        The default sld style file
+        if not exist, return None
+        """
+        return self.default_style("QML")
     
 class Style(models.Model):
     FORMAT_CHOICES = (
