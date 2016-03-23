@@ -161,7 +161,16 @@ class Record(models.Model):
             return self.styles.get(format=format,default=True)
         except Style.DoesNotExist:
             return None
-
+    
+    def _create_default_style(self,format):
+        try:
+            style = self.styles.get(format=format).first()
+            style.default = True
+            style.save()
+            return True
+        except Style.DoesNotExist:
+            return False
+                
     @property
     def sld(self):
         """
@@ -173,7 +182,7 @@ class Record(models.Model):
     @property
     def lyr(self):
         """
-        The default sld style file
+        The default lyr style file
         if not exist, return None
         """
         return self.default_style("LYR")
@@ -181,10 +190,26 @@ class Record(models.Model):
     @property
     def qml(self):
         """
-        The default sld style file
+        The default qml style file
         if not exist, return None
         """
         return self.default_style("QML")
+    
+    """
+    Used to check the default style
+    for a particular format. If it does
+    not exist it sets the first style as
+    the default
+    """
+    def setup_default_styles(self):
+        if not self.sld:
+            self._create_default_style("SLD")
+        
+        if not self.qml:
+            self._create_default_style("QML")
+            
+        if not self.lyr:
+            self._create_default_style("LYR")
     
 class Style(models.Model):
     FORMAT_CHOICES = (
@@ -251,3 +276,8 @@ def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):
     if instance.content:
         if os.path.isfile(instance.content.path):
             os.remove(instance.content.path)
+            
+@receiver(post_save, sender=Style)
+def check_default_styles(sender, instance, **kwargs):
+    record = instance.record
+    record.setup_default_styles()
