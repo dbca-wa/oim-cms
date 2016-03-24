@@ -160,22 +160,8 @@ class Record(models.Model):
         try:
             return self.styles.get(format=format,default=True)
         except Style.DoesNotExist:
-            try:
-                #no default style is configured, try to get the builtin one as the default style
-                return self.styles.get(format=format,name="builtin")
-            except:
-                #no builtin style  try to get the first added one as the default style
-                return self.styles.filter(format=format).order_by("id").first()
+            return None
     
-    def _create_default_style(self,format):
-        style = self.styles.filter(format=format).first()
-        if style:
-            style.default = True
-            style.save(update_fields=["default"])
-            return True
-        else:
-            return False
-                
     @property
     def sld(self):
         """
@@ -205,16 +191,26 @@ class Record(models.Model):
     for a particular format. If it does
     not exist it sets the first style as
     the default
+    Return True if configured a default style; otherwise return False
     """
-    def setup_default_styles(self):
-        if not self.sld:
-            self._create_default_style("SLD")
+    def setup_default_styles(self,format):
+        if self.default_style(format):
+            return True
+        else:
+            style = None
+            try:
+                #no default style is configured, try to get the builtin one as the default style
+                style = self.styles.get(format=format,name="builtin")
+            except:
+                #no builtin style  try to get the first added one as the default style
+                style = self.styles.filter(format=format).order_by("name").first()
+            if style:
+                style.default = True
+                style.save(update_fields=["default"])
+                return True
+            else:
+                return False
         
-        if not self.qml:
-            self._create_default_style("QML")
-            
-        if not self.lyr:
-            self._create_default_style("LYR")
  
 class Style(models.Model):
     FORMAT_CHOICES = (
@@ -274,9 +270,9 @@ class Style(models.Model):
     
 
 @receiver(pre_save, sender=Style)
-def clear_existing_default_style (sender, instance, **kwargs):
+def set_default_style (sender, instance, **kwargs):
     update_fields=kwargs.get("update_fields",None)
-    if not update_fields or "default" in update_fields:
+    if not instance.pk or not update_fields or "default" in update_fields:
         if instance.default:
             #The style will be set as the default style
             cur_default_style = instance.record.default_style(instance.format)
@@ -284,6 +280,11 @@ def clear_existing_default_style (sender, instance, **kwargs):
                 #The current default style is not the saving style, reset the current default style's default to false
                 cur_default_style.default=False
                 cur_default_style.save(update_fields=["default"])
+        else:
+            #The saving style is not the default style, try to set a default style if it does not exist
+            if not instance.record.setup_default_styles(instance.format):
+                #no default style is configured,set the current one as default style
+                instance.default = True
 
 @receiver(pre_save, sender=Style)
 def set_checksum (sender, instance, **kwargs):
@@ -301,10 +302,3 @@ def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):
     if instance.content:
         if os.path.isfile(instance.content.path):
             os.remove(instance.content.path)
-"""
-if not configure a default style manually, automatically choose one as the default style
-@receiver(post_save, sender=Style)
-def check_default_styles(sender, instance, **kwargs):
-    record = instance.record
-    record.setup_default_styles()
-"""
