@@ -109,7 +109,7 @@ class RecordViewSet(viewsets.ModelViewSet):
             uploaded_style["content"] = self.createStyle(uploaded_style["content"].decode("base64"))
 
         #set default style
-        origin_default_style = {"sld":record.sld,"qml":record.qml, "lyr":record.lyr }
+        origin_default_style = {"sld":record.sld.name if record.sld else None,"qml":record.qml.name if record.qml else None, "lyr":record.lyr.name if record.lyr else None }
         default_style = { }
         for style_serializer in style_serializers:
             uploaded_style = style_serializer.validated_data
