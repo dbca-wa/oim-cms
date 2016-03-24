@@ -251,6 +251,24 @@ class OptionResource(DjangoResource):
 
 
 class whoamiResource(DjangoResource):
+    """
+    whoami is read only resource without any parameters, and only used to return the authentication data for whoami request and auth request.
+    so only one method 'detail' is required no matter which http method is used.
+    """
+    http_methods = {
+        'list': {
+            'GET': 'detail',
+            'POST': 'detail',
+            'PUT': 'detail',
+            'DELETE': 'detail',
+        },
+        'detail': {
+            'GET': 'detail',
+            'POST': 'detail',
+            'PUT': 'detail',
+            'DELETE': 'detail',
+        }
+    }
     preparer = FieldsPreparer(fields={
         'email': 'user.email',
         'username': 'user.username',
@@ -260,6 +278,12 @@ class whoamiResource(DjangoResource):
         'session_key': 'session.session_key',
         'client_logon_ip': 'ip'
     })
+
+    def request_body(self):
+        return None
+
+    def is_authenticated(self):
+        return self.request.user.is_authenticated()
 
     def detail(self):
         return UserSession.objects.get(
