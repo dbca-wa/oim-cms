@@ -168,11 +168,19 @@ class BusinessServiceAdmin(VersionAdmin):
 
 
 class BusinessFunctionAdmin(VersionAdmin):
+    list_display = ('name', 'function_services')
+    list_filter = ('services',)
     search_fields = ('name', 'description')
+
+    def function_services(self, obj):
+        return ', '.join([str(i.number) for i in obj.services.all()])
+    function_services.short_description = 'services'
 
 
 class BusinessProcessAdmin(VersionAdmin):
-    search_fields = ('name', 'description')
+    list_display = ('name', 'criticality')
+    list_filter = ('criticality', 'functions')
+    search_fields = ('name', 'description', 'functions__name')
 
 
 class ProcessITSystemRelationshipAdmin(VersionAdmin):
