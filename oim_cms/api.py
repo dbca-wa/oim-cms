@@ -252,7 +252,8 @@ class OptionResource(DjangoResource):
 
 class whoamiResource(DjangoResource):
     """
-    whoami is read only resource without any parameters, and only used to return the authentication data for whoami request and auth request.
+    whoami is a read only resource and does not require any request parameters.
+    This resource can be used to return the authentication data by whoami request and auth request.
     so only one method 'detail' is required no matter which http method is used.
     """
     http_methods = {
