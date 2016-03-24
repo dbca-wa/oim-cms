@@ -160,15 +160,20 @@ class Record(models.Model):
         try:
             return self.styles.get(format=format,default=True)
         except Style.DoesNotExist:
-            return None
+            try:
+                #no default style is configured, try to get the builtin one as the default style
+                return self.styles.get(format=format,name="builtin")
+            except:
+                #no builtin style  try to get the first added one as the default style
+                return self.styles.filter(format=format).order_by("id").first()
     
     def _create_default_style(self,format):
-        try:
-            style = self.styles.get(format=format).first()
+        style = self.styles.filter(format=format).first()
+        if style:
             style.default = True
-            style.save()
+            style.save(update_fields=["default"])
             return True
-        except Style.DoesNotExist:
+        else:
             return False
                 
     @property
@@ -210,7 +215,7 @@ class Record(models.Model):
             
         if not self.lyr:
             self._create_default_style("LYR")
-    
+ 
 class Style(models.Model):
     FORMAT_CHOICES = (
         ('SLD','SLD'),
@@ -221,7 +226,7 @@ class Style(models.Model):
     name = models.CharField(max_length=255)
     format = models.CharField(max_length=3, choices=FORMAT_CHOICES)
     default = models.BooleanField(default=False)
-    content = models.FileField(upload_to='{0}/catalogue/styles'.format(settings.MEDIA_ROOT),blank=True, default='')
+    content = models.FileField(upload_to='catalogue/styles',blank=True, default='')
     checksum = models.CharField(blank=True,max_length=255, editable=False)
     def clean(self):
         from django.core.exceptions import ValidationError
@@ -235,19 +240,25 @@ class Style(models.Model):
     def save(self, *args, **kwargs):
         update_fields=None
         clean_name = self.name.split('.')
-        self.content.name = '{}_{}.{}'.format(self.record.identifier.replace(':','_'),clean_name[0],self.format.lower())
+        self.content.name = 'catalogue/styles/{}_{}.{}'.format(self.record.identifier.replace(':','_'),clean_name[0],self.format.lower())
         if self.pk is not None:
-            update_fields=["default","content","checksum"]
-            orig = Style.objects.get(pk=self.pk)
-            if orig.content:
-                if orig.checksum != self._calculate_checksum(self.content):
+            update_fields=kwargs.get("update_fields",["default","content","checksum"])
+            if "content" in update_fields:
+                if "checksum" not in update_fields: update_fields.append("checksum")
+                orig = Style.objects.get(pk=self.pk)
+                if orig.content:
+                    if orig.checksum != self._calculate_checksum(self.content):
+                        if os.path.isfile(orig.content.path):
+                            os.remove(orig.content.path)
+                    else:
+                        #content is not changed, no need to update content and checksum
+                        update_fields = [field for field in update_fields if field not in ["content","checksum"]]
+                        if not update_fields:
+                            #nothing is needed to update.
+                            return
+                else:
                     if os.path.isfile(orig.content.path):
                         os.remove(orig.content.path)
-                else:
-                    update_fields = ["default"]
-            else:
-                if os.path.isfile(orig.content.path):
-                    os.remove(orig.content.path)
 
         if update_fields:
             kwargs["update_fields"] = update_fields
@@ -263,10 +274,24 @@ class Style(models.Model):
     
 
 @receiver(pre_save, sender=Style)
+def clear_existing_default_style (sender, instance, **kwargs):
+    update_fields=kwargs.get("update_fields",None)
+    if not update_fields or "default" in update_fields:
+        if instance.default:
+            #The style will be set as the default style
+            cur_default_style = instance.record.default_style(instance.format)
+            if cur_default_style and cur_default_style.pk != instance.pk:
+                #The current default style is not the saving style, reset the current default style's default to false
+                cur_default_style.default=False
+                cur_default_style.save(update_fields=["default"])
+
+@receiver(pre_save, sender=Style)
 def set_checksum (sender, instance, **kwargs):
-    checksum = md5.new()
-    checksum.update(instance.content.read())
-    instance.checksum = base64.b64encode(checksum.digest())
+    update_fields=kwargs.get("update_fields",None)
+    if not update_fields or "checksum" in update_fields:
+        checksum = md5.new()
+        checksum.update(instance.content.read())
+        instance.checksum = base64.b64encode(checksum.digest())
 
 @receiver(post_delete, sender=Style)
 def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):
@@ -276,8 +301,10 @@ def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):
     if instance.content:
         if os.path.isfile(instance.content.path):
             os.remove(instance.content.path)
-            
+"""
+if not configure a default style manually, automatically choose one as the default style
 @receiver(post_save, sender=Style)
 def check_default_styles(sender, instance, **kwargs):
     record = instance.record
     record.setup_default_styles()
+"""
