@@ -19,3 +19,5 @@ json2html>=1.0.1
 python-ldap
 djangorestframework
 babel==2.2.0
+pycsw>=1.10.3
+SQLAlchemy>=1.0.12
