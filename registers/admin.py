@@ -68,6 +68,7 @@ class ITSystemAdmin(VersionAdmin):
         ('system_reqs', 'system_type'),
         ('vulnerability_docs', 'recovery_docs'),
         ('workaround'),
+        ('mtd', 'rto', 'rpo'),
     )
 
 
