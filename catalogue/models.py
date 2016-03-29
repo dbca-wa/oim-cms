@@ -120,35 +120,36 @@ class Record(models.Model):
         help_text="Maps to pycsw:Schema", db_index=True, blank=True, editable=False
     )
     insert_date = models.DateTimeField(
-        auto_now_add=True, help_text='Maps to pycsw:InsertDate')
+        auto_now_add=True, help_text='Maps to pycsw:InsertDate',editable=False)
     xml = models.TextField(
         default='',
+        editable=False,
         help_text=' Maps to pycsw:XML'
     )
     any_text = models.TextField(help_text='Maps to pycsw:AnyText',null=True, blank=True)
     modified = models.DateTimeField(
-        null=True, blank=True,
+        null=True, blank=True,editable=False,
         help_text='Maps to pycsw:Modified'
     )
-    bounding_box = models.TextField(null=True, blank=True,
+    bounding_box = models.TextField(null=True, blank=True,editable=False,
                                     help_text='Maps to pycsw:BoundingBox.It\'s a WKT geometry')
     abstract = models.TextField(blank=True, null=True,
                                 help_text='Maps to pycsw:Abstract')
     keywords = models.CharField(max_length=255, blank=True, null=True,
                                 help_text='Maps to pycsw:Keywords')
     publication_date = models.DateTimeField(
-        null=True, blank=True,
+        null=True, blank=True,editable=False,
         help_text='Maps to pycsw:PublicationDate'
     )
-    service_type = models.CharField(max_length=30, null=True, blank=True,
+    service_type = models.CharField(max_length=30, null=True, blank=True,editable=False,
                                     help_text='Maps to pycsw:ServiceType')
     service_type_version = models.CharField(
-        max_length=30, null=True, blank=True,
+        max_length=30, null=True, blank=True,editable=False,
         help_text='Maps to pycsw:ServiceTypeVersion'
     )
-    links = models.TextField(null=True, blank=True,
+    links = models.TextField(null=True, blank=True,editable=False,
                              help_text='Maps to pycsw:Links')
-    crs = models.CharField(max_length=255, null=True, blank=True,help_text='Maps to pycsw:CRS')
+    crs = models.CharField(max_length=255, null=True, blank=True,help_text='Maps to pycsw:CRS',editable=False)
     # Custom fields
     auto_update = models.BooleanField(default=True)
     active = models.BooleanField(default=True, editable=False)

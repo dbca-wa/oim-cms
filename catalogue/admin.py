@@ -1,6 +1,9 @@
+import json
+
 from django.contrib import admin
 
 from . import models
+from .forms import RecordForm
 
 
 class CollaboratorInline(admin.StackedInline):
@@ -23,15 +26,47 @@ class StyleAdmin(admin.ModelAdmin):
     
 @admin.register(models.Record)
 class RecordAdmin(admin.ModelAdmin):
-    list_display = ("id", "identifier", "title",)
+    list_display = ("identifier","service_type","crs","title", "auto_update","modified")
     inlines = [StyleInline,]
-    readonly_fields = ('publication_date','modified',)
-    
+    readonly_fields = ('service_type','service_type_version','crs','_bounding_box','publication_date','modified','insert_date')
+    form = RecordForm
+    """
     def get_readonly_fields(self, request, obj=None):
         if obj:
             return self.readonly_fields + ('identifier',)
         return self.readonly_fields
+    """
+    html = """<table>
+<tr>
+    <th style='width:100px;border-bottom:None'>Min X</th>
+    <th style='width:100px;border-bottom:None'>Min Y</th>
+    <th style='width:100px;border-bottom:None'>Max X</th>
+    <th style='width:100px;border-bottom:None'>Max Y</th>
+</tr>
+<tr>
+    <td style='border-bottom:None'>{}</td>
+    <td style='border-bottom:None'>{}</td>
+    <td style='border-bottom:None'>{}</td>
+    <td style='border-bottom:None'>{}</td>
+</tr>
+</table>
+"""
+    def _bounding_box(self,instance):
+        bounding_box = ["-","-","-","-"]
+        if instance.bounding_box:
+            try:
+                bounding_box = json.loads(instance.bounding_box)
+                if not bounding_box or not isinstance(bounding_box,list) or len(bounding_box) != 4:
+                    bounding_box = ["-","-","-","-"]
+            except:
+                bounding_box = ["-","-","-","-"]
 
+        return self.html.format(*bounding_box)
+
+    _bounding_box.allow_tags = True
+    _bounding_box.short_description = "bounding_box"
+
+            
 
 @admin.register(models.Organization)
 class OrganizationAdmin(admin.ModelAdmin):
