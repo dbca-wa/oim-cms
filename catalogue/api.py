@@ -59,6 +59,7 @@ class RecordViewSet(viewsets.ModelViewSet):
     queryset = Record.objects.all()
     serializer_class = RecordSerializer
     authentication_classes =[]
+    lookup_field = "identifier"
     
     def createStyle(self,content):
         uploaded_style = ContentFile(content)
@@ -69,6 +70,10 @@ class RecordViewSet(viewsets.ModelViewSet):
         checksum.update(content)
         return base64.b64encode(checksum.digest())
         
+    def perform_destroy(self, instance):
+        instance.active = False
+        instance.save()
+
     def create(self,request):
         styles_data = None
         http_status = status.HTTP_200_OK
@@ -88,6 +93,7 @@ class RecordViewSet(viewsets.ModelViewSet):
         identifier = "{}:{}".format(serializer.validated_data['workspace'],serializer.validated_data['name'])
         try:
             serializer.instance = Record.objects.get(identifier=identifier)
+            serializer.instance.active = True
             if not serializer.instance.auto_update:
                 #auto update disabled
                 for key in ["title","abstract","auto_update","modified","insert_date"]:
@@ -100,7 +106,6 @@ class RecordViewSet(viewsets.ModelViewSet):
         #remove fake fields
         workspace = serializer.validated_data.pop("workspace")
         name = serializer.validated_data.pop("name")
-
         record = serializer.save()
 
         #set the missing data and transform the content

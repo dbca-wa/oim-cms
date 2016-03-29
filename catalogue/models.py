@@ -31,6 +31,7 @@ from django.db import models
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save, post_delete
 from django.conf import settings
+from django.core.exceptions import ValidationError
 import md5
 import base64
 import os
@@ -120,7 +121,7 @@ class Record(models.Model):
         help_text="Maps to pycsw:Schema", db_index=True, blank=True, editable=False
     )
     insert_date = models.DateTimeField(
-        auto_now_add=True, help_text='Maps to pycsw:InsertDate',editable=False)
+        auto_now_add=True, help_text='Maps to pycsw:InsertDate')
     xml = models.TextField(
         default='',
         editable=False,
@@ -128,20 +129,20 @@ class Record(models.Model):
     )
     any_text = models.TextField(help_text='Maps to pycsw:AnyText',null=True, blank=True)
     modified = models.DateTimeField(
-        null=True, blank=True,editable=False,
+        null=True, blank=True,
         help_text='Maps to pycsw:Modified'
     )
-    bounding_box = models.TextField(null=True, blank=True,editable=False,
+    bounding_box = models.TextField(null=True, blank=True,
                                     help_text='Maps to pycsw:BoundingBox.It\'s a WKT geometry')
     abstract = models.TextField(blank=True, null=True,
                                 help_text='Maps to pycsw:Abstract')
     keywords = models.CharField(max_length=255, blank=True, null=True,
                                 help_text='Maps to pycsw:Keywords')
     publication_date = models.DateTimeField(
-        null=True, blank=True,editable=False,
+        null=True, blank=True,
         help_text='Maps to pycsw:PublicationDate'
     )
-    service_type = models.CharField(max_length=30, null=True, blank=True,editable=False,
+    service_type = models.CharField(max_length=30, null=True, blank=True,
                                     help_text='Maps to pycsw:ServiceType')
     service_type_version = models.CharField(
         max_length=30, null=True, blank=True,editable=False,
@@ -149,7 +150,7 @@ class Record(models.Model):
     )
     links = models.TextField(null=True, blank=True,editable=False,
                              help_text='Maps to pycsw:Links')
-    crs = models.CharField(max_length=255, null=True, blank=True,help_text='Maps to pycsw:CRS',editable=False)
+    crs = models.CharField(max_length=255, null=True, blank=True,help_text='Maps to pycsw:CRS')
     # Custom fields
     auto_update = models.BooleanField(default=True)
     active = models.BooleanField(default=True, editable=False)
@@ -192,11 +193,12 @@ class Record(models.Model):
     for a particular format. If it does
     not exist it sets the first style as
     the default
-    Return True if configured a default style; otherwise return False
+    Return the configured default style; otherwise return None
     """
     def setup_default_styles(self,format):
-        if self.default_style(format):
-            return True
+        default_style = self.default_style(format)
+        if default_style:
+            return default_style
         else:
             style = None
             try:
@@ -208,9 +210,17 @@ class Record(models.Model):
             if style:
                 style.default = True
                 style.save(update_fields=["default"])
-                return True
+                return style
             else:
-                return False
+                return None
+
+    
+    def delete(self,using=None):
+        if self.active:
+            raise ValidationError("Can not delete the active record ({}).".format(self.identifier))
+        else:
+            super(Record,self).delete(using)
+
         
  
 class Style(models.Model):
@@ -219,21 +229,43 @@ class Style(models.Model):
         ('QML','QML'),
         ('LYR','LAYER')
     )
-    record = models.ForeignKey(Record, related_name='styles',null=True)
+    record = models.ForeignKey(Record, related_name='styles')
     name = models.CharField(max_length=255)
     format = models.CharField(max_length=3, choices=FORMAT_CHOICES)
     default = models.BooleanField(default=False)
-    content = models.FileField(upload_to='catalogue/styles',blank=True, default='')
+    content = models.FileField(upload_to='catalogue/styles')
     checksum = models.CharField(blank=True,max_length=255, editable=False)
+
+    @property
+    def identifier(self):
+        return "{}:{}".format(self.record.identifier,self.name)
     def clean(self):
         from django.core.exceptions import ValidationError
-        try:
-            duplicate = Style.objects.exclude(pk=self.pk).get(record=self.record,format=self.format,default=True)
-            if duplicate and self.default:
-                raise ValidationError('There can only be one default format style for each record')
-        except Style.DoesNotExist:
-            pass
-    
+        if not self.pk and self.name == "builtin":
+            raise ValidationError("Can't add a builtin style.")
+
+        """
+        simply reset the default style to the current style if the current style is configured as default style
+        if getattr(self,"record",None) and self.default:
+            try:
+                duplicate = Style.objects.exclude(pk=self.pk).get(record=self.record,format=self.format,default=True)
+                if duplicate and self.default:
+                    raise ValidationError('There can only be one default format style for each record')
+            except Style.DoesNotExist:
+                pass
+        """
+    @property
+    def can_delete(self):
+        if not self.pk or self.name == "builtin":
+            return False
+        return True
+            
+    def delete(self,using=None):
+        if self.name == "builtin":
+            raise ValidationError("Can not delete builtin style.")
+        else:
+            super(Style,self).delete(using)
+
     def save(self, *args, **kwargs):
         update_fields=None
         clean_name = self.name.split('.')
@@ -283,7 +315,8 @@ def set_default_style (sender, instance, **kwargs):
                 cur_default_style.save(update_fields=["default"])
         else:
             #The saving style is not the default style, try to set a default style if it does not exist
-            if not instance.record.setup_default_styles(instance.format):
+            default_style = instance.record.setup_default_styles(instance.format)
+            if not default_style or default_style.pk == instance.pk:
                 #no default style is configured,set the current one as default style
                 instance.default = True
 
@@ -300,6 +333,10 @@ def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):
     """ Deletes the style file from disk when the
         object is deleted
     """
+    if instance.default:
+        #deleted style is the default style, reset the default style
+            instance.record.setup_default_styles(instance.format)
+
     if instance.content:
         if os.path.isfile(instance.content.path):
             os.remove(instance.content.path)
