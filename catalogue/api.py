@@ -36,6 +36,7 @@ class RecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = Record
         fields = (
+            'identifier',
             'title',
             'insert_date',
             'any_text',
