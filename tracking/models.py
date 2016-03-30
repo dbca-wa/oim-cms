@@ -110,6 +110,16 @@ class DepartmentUser(MPTTModel):
     populate_primary_group = models.BooleanField(
         default=True, help_text="If unchecked, user will not be added to primary group email")
 
+    def __init__(self, *args, **kwargs):
+        super(DepartmentUser, self).__init__(*args, **kwargs)
+        # Store the pre-save values of some fields on object init.
+        self.__original_given_name = self.given_name
+        self.__original_surname = self.surname
+        self.__original_employee_id = self.employee_id
+        self.__original_cost_centre = self.cost_centre
+        self.__original_name = self.name
+        self.__original_org_unit = self.org_unit
+
     def save(self, *args, **kwargs):
         if self.employee_id and self.employee_id.lower() == "n/a":
             self.employee_id = None
@@ -139,7 +149,6 @@ class DepartmentUser(MPTTModel):
                 "admin": str(self.cost_centre.admin),
                 "tech_contact": str(self.cost_centre.tech_contact),
             }
-
         self.update_photo_ad()
         super(DepartmentUser, self).save(*args, **kwargs)
 

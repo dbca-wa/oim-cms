@@ -1,10 +1,8 @@
 import csv
-import os
 from django.conf import settings
 import logging
+import os
 import subprocess
-
-from .models import Computer
 
 
 def logger_setup(name):
@@ -65,6 +63,7 @@ def csv_sync_prop_register_data(src='it_assets.csv'):
 
     Matches on serial number, should be non-destructive of existing data.
     """
+    from .models import Computer
     data, count = sourcefile_setup(src)
 
     for i in data:
