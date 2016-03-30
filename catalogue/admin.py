@@ -111,25 +111,10 @@ class RecordAdmin(admin.ModelAdmin):
     _bounding_box.allow_tags = True
     _bounding_box.short_description = "bounding_box"
     def get_inline_instances(self, request, obj=None):
-        inline_instances = []
-        for inline_class in self.inlines:
-            inline = inline_class(self.model, self.admin_site)
-            if request:
-                if not (inline.has_add_permission(request) or
-                        inline.has_change_permission(request, obj) or
-                        inline.has_delete_permission(request, obj)):
-                    continue
-                if not inline.has_add_permission(request):
-                    inline.max_num = 0
-            inline_instances.append(inline)
-
-        return inline_instances
-    def get_formsets_with_inlines(self, request, obj=None):
-        """
-        Yields formsets and the corresponding inlines.
-        """
-        for inline in self.get_inline_instances(request, obj):
-            yield inline.get_formset(request, obj), inline           
+        if obj and obj.service_type == "WMS":
+            return []
+        else:
+            return super(RecordAdmin,self).get_inline_instances(request,obj)
 
     def has_add_permission(self,request):
         return False
