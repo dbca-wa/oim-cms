@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.utils.safestring import mark_safe
 
 from . import models
-from .forms import RecordForm,StyleForm
+from .forms import RecordForm,StyleForm,ApplicationForm
 
 
 class CollaboratorInline(admin.StackedInline):
@@ -20,7 +20,7 @@ class StyleInline(admin.StackedInline):
     form = StyleForm
     template = "catalogue/style/edit_inline/stacked.html"
     
-@admin.register(models.Style)
+#@admin.register(models.Style)
 class StyleAdmin(admin.ModelAdmin):
     list_display = ('name','record','format','default')
     form = StyleForm
@@ -196,3 +196,14 @@ class PycswConfigAdmin(admin.ModelAdmin):
     def has_add_permission(self,request):
         return False
 
+
+class ApplicationLayerInline(admin.TabularInline):
+    model = models.ApplicationLayer
+    extra = 3
+    
+@admin.register(models.Application)
+class ApplicationAdmin(admin.ModelAdmin):
+    list_display = ("name","description","last_modify_time","create_time")
+    inlines = [ApplicationLayerInline,]
+    readonly_fields = ('last_modify_time','create_time')
+    form = ApplicationForm

@@ -10,7 +10,8 @@ from django.apps import apps
 from .models import PycswConfig
 
 
-def build_pycsw_settings():
+def build_pycsw_settings(app=None):
+    record_table = "catalogue_{}".format(app) if app else "catalogue_record"
     config = PycswConfig.objects.first()
     url = "{}{}".format(settings.BASE_URL,
                                reverse("csw_endpoint"))
@@ -84,7 +85,7 @@ def build_pycsw_settings():
             # mysql
             #"database": "mysql://username:password@localhost/pycsw?charset=utf8",
             "mappings": mappings_path,
-            "table": "catalogue_record",
+            "table": record_table,
         },
         "metadata:inspire": {
             "enabled": "true" if config.inspire_enabled else "false",

@@ -27,14 +27,19 @@ http://localhost:8000/csw/server/?
 
 """
 
-from django.db import models
+from django.db import models,connection
 from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_save, post_delete
+from django.db.models.signals import post_save, pre_save, post_delete,pre_delete
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 import md5
 import base64
 import os
+import re
+
+slug_re = re.compile(r'^[a-z0-9_]+$')
+validate_slug = RegexValidator(slug_re, "Slug can only contain lowercase letters, numbers and underscores", "invalid")
 
 class PycswConfig(models.Model):
     language = models.CharField(max_length=10, default="en-US")
@@ -340,3 +345,61 @@ def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):
     if instance.content:
         if os.path.isfile(instance.content.path):
             os.remove(instance.content.path)
+
+
+class Application(models.Model):
+    """
+    Represent a application which can access wms,wfs,wcs service from geoserver
+    """
+    name = models.CharField(max_length=255, validators=[validate_slug],db_index=True,blank=False)
+    description = models.TextField(blank=True)
+    last_modify_time = models.DateTimeField(auto_now=True,null=False)
+    create_time = models.DateTimeField(auto_now_add=True,null=False)
+
+    @property
+    def records_view(self):
+        return "catalogue_{}".format(self.name)
+
+    def __str__(self):
+        return self.name
+
+class ApplicationEventListener(object):
+    @staticmethod
+    @receiver(pre_delete, sender=Application)
+    def _pre_delete(sender, instance, **args):
+        #remove the view for this application
+        try:
+            cursor = connection.cursor()
+            cursor.execute("DROP VIEW {} CASCADE".format(instance.records_view))
+        except:
+            #drop failed, maybe the view does not exist, ignore the exception
+            connection._rollback()
+
+
+    @staticmethod
+    @receiver(pre_save, sender=Application)
+    def _pre_save(sender, instance, **args):
+        if not instance.pk:
+            #New application, create a view for this application
+            try:
+                cursor = connection.cursor()
+                cursor.execute("CREATE OR REPLACE VIEW {} AS SELECT r.* FROM catalogue_application a join catalogue_applicationlayer l on a.id = l.application_id join catalogue_record r on l.layer_id = r.id WHERE a.name = '{}' order by l.order,r.identifier".format(instance.records_view,instance.name))
+            except Exception as e:
+                #create view failed
+                connection._rollback()
+                raise ValidationError(e)
+class ApplicationLayer(models.Model):
+    """
+    The relationship between application and layer
+    """
+    application = models.ForeignKey(Application,blank=False,null=False)
+    layer = models.ForeignKey(Record,null=False,blank=False,limit_choices_to={"active":True})
+    order = models.PositiveIntegerField(blank=False,null=False)
+
+    def __str__(self):
+        return "{}:{}".format(self.application.name,self.layer.identifier)
+
+    class Meta:
+        unique_together = (('application','layer'))
+
+
