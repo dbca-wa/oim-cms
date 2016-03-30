@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.safestring import mark_safe
 
-from catalogue.models import Record,Style
+from catalogue.models import Record,Style,Application
 
 class Select(forms.Select):
     def __init__(self, attrs=None, choices=()):
@@ -55,3 +55,16 @@ class StyleForm(forms.ModelForm):
                 'format': Select(),
         }
 
+class ApplicationForm(forms.ModelForm):
+    """
+    A form for Application Model
+    """
+    def __init__(self, *args, **kwargs):
+        super(ApplicationForm, self).__init__(*args, **kwargs)
+        if 'instance' in kwargs and  kwargs['instance'] and kwargs['instance'].pk:
+           self.fields['name'].widget.attrs['readonly'] = True
+
+
+    class Meta:
+        model = Application
+        fields = "__all__"

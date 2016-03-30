@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class CswEndpoint(View):
 
     def get(self, request):
-        pycsw_settings = build_pycsw_settings()
+        pycsw_settings = build_pycsw_settings(request.get('app',None))
         server = Csw(rtconfig=pycsw_settings, env=request.META.copy())
         server.request = "http://{}{}".format(get_current_site(request),
                                               reverse("csw_endpoint"))
