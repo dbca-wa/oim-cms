@@ -74,6 +74,7 @@ class RecordAdmin(admin.ModelAdmin):
     list_display = ("identifier","service_type","crs","title", "auto_update","active","modified")
     inlines = [StyleInline,]
     readonly_fields = ('service_type','service_type_version','crs','_bounding_box','publication_date','modified','insert_date')
+    search_fields = ["identifier",'service_type']
     form = RecordForm
     """
     def get_readonly_fields(self, request, obj=None):
@@ -207,3 +208,4 @@ class ApplicationAdmin(admin.ModelAdmin):
     inlines = [ApplicationLayerInline,]
     readonly_fields = ('last_modify_time','create_time')
     form = ApplicationForm
+    search_fields = ["name"]

@@ -226,8 +226,9 @@ class Record(models.Model):
         else:
             super(Record,self).delete(using)
 
-        
- 
+    class Meta:
+        ordering = ['identifier']
+
 class Style(models.Model):
     FORMAT_CHOICES = (
         ('SLD','SLD'),
@@ -306,7 +307,6 @@ class Style(models.Model):
         checksum.update(content.read())
         return base64.b64encode(checksum.digest())
     
-
 @receiver(pre_save, sender=Style)
 def set_default_style (sender, instance, **kwargs):
     update_fields=kwargs.get("update_fields",None)
@@ -351,7 +351,7 @@ class Application(models.Model):
     """
     Represent a application which can access wms,wfs,wcs service from geoserver
     """
-    name = models.CharField(max_length=255, validators=[validate_slug],db_index=True,blank=False)
+    name = models.CharField(max_length=255, validators=[validate_slug],unique=True,blank=False)
     description = models.TextField(blank=True)
     last_modify_time = models.DateTimeField(auto_now=True,null=False)
     create_time = models.DateTimeField(auto_now_add=True,null=False)
@@ -359,6 +359,9 @@ class Application(models.Model):
     @property
     def records_view(self):
         return "catalogue_{}".format(self.name)
+
+    class Meta:
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -388,6 +391,7 @@ class ApplicationEventListener(object):
                 #create view failed
                 connection._rollback()
                 raise ValidationError(e)
+
 class ApplicationLayer(models.Model):
     """
     The relationship between application and layer
@@ -401,5 +405,6 @@ class ApplicationLayer(models.Model):
 
     class Meta:
         unique_together = (('application','layer'))
+        ordering = ['application','order','layer']
 
 
