@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import DepartmentUser, Computer, Mobile, EC2Instance
+from .utils import logger_setup
 
 
 class DepartmentUserAdmin(admin.ModelAdmin):
@@ -41,6 +42,37 @@ class DepartmentUserAdmin(admin.ModelAdmin):
             )
         })
     )
+
+    def save_model(self, request, obj, form, change):
+        """Override save_model in order to log any changes to some fields:
+        'given_name', 'surname', 'employee_id', 'cost_centre', 'name', 'org_unit'
+        """
+        logger = logger_setup('departmentuser_updates')
+        if obj._DepartmentUser__original_given_name != obj.given_name:
+            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
+                obj.email, 'given_name', obj._DepartmentUser__original_given_name, obj.given_name, request.user.username
+            ))
+        if obj._DepartmentUser__original_surname != obj.surname:
+            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
+                obj.email, 'surname', obj._DepartmentUser__original_surname, obj.surname, request.user.username
+            ))
+        if obj._DepartmentUser__original_employee_id != obj.employee_id:
+            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
+                obj.email, 'employee_id', obj._DepartmentUser__original_employee_id, obj.employee_id, request.user.username
+            ))
+        if obj._DepartmentUser__original_cost_centre != obj.cost_centre:
+            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
+                obj.email, 'cost_centre', obj._DepartmentUser__original_cost_centre, obj.cost_centre, request.user.username
+            ))
+        if obj._DepartmentUser__original_name != obj.name:
+            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
+                obj.email, 'name', obj._DepartmentUser__original_name, obj.name, request.user.username
+            ))
+        if obj._DepartmentUser__original_org_unit != obj.org_unit:
+            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
+                obj.email, 'org_unit', obj._DepartmentUser__original_org_unit, obj.org_unit, request.user.username
+            ))
+        obj.save()
 
 
 class ComputerAdmin(admin.ModelAdmin):
