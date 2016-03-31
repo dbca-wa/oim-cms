@@ -12,6 +12,7 @@ api_patterns = [
 ]
 
 urlpatterns = [
+    url(r'^api/', include(api_patterns)),
     url(r'^$', views.CswEndpoint.as_view(), name="csw_endpoint"),
-    url(r'^api/', include(api_patterns))
+    url(r'^(?P<app>[a-z0-9_]*)/$', views.CswEndpoint.as_view(), name="csw_app_endpoint"),
 ]
