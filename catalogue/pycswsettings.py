@@ -25,7 +25,7 @@ def build_pycsw_settings(app=None):
     db_connection = {
         "django.db.backends.sqlite3": "sqlite:///{}".format(django_db["NAME"]),
         "django.contrib.gis.db.backends.postgis":
-        "postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{NAME}".format(**django_db)
+        "postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{NAME}".format(USER=django_db.get("USER") or "anonymous",PASSWORD=django_db.get("PASSWORD") or "",HOST=django_db.get("HOST") or "127.0.0.1",PORT=django_db.get("PORT") or "5432" ,NAME=django_db["NAME"])
     }.get(django_db["ENGINE"])
     mappings_path = os.path.join(apps.get_app_config("catalogue").path,
                                  "mappings.py")
