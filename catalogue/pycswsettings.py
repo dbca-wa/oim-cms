@@ -7,11 +7,11 @@ from django.core.urlresolvers import reverse
 from django.conf import settings
 from django.apps import apps
 
-from .models import PycswConfig
+from .models import PycswConfig,Application
 
 
 def build_pycsw_settings(app=None):
-    record_table = "catalogue_{}".format(app) if app else "catalogue_record"
+    record_table = Application.get_view_name(app) if app else "catalogue_record"
     config = PycswConfig.objects.first()
     url = "{}{}".format(settings.BASE_URL,
                                reverse("csw_endpoint"))

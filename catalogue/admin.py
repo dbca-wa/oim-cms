@@ -32,7 +32,7 @@ class StyleAdmin(admin.ModelAdmin):
         if request.path == "/django-admin/catalogue/style/":
             #request the list page
             return super(StyleAdmin,self).has_delete_permission(request,obj)
-        elif obj and obj.name == "builtin":
+        elif obj and obj.name == models.Style.BUILTIN:
             # request the edit page and the style is a builtin style
             return False
         else:
