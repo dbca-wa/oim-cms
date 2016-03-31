@@ -12,7 +12,7 @@ import os
 class StyleSerializer(serializers.ModelSerializer):
     raw_content = serializers.SerializerMethodField(read_only=True)
     content = serializers.CharField(write_only=True,allow_null=True)
-    name = serializers.CharField(default='builtin')
+    name = serializers.CharField(default=Style.BUILTIN)
     class Meta:
         model = Style
         fields = (

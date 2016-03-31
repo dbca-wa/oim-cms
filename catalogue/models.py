@@ -208,7 +208,7 @@ class Record(models.Model):
             style = None
             try:
                 #no default style is configured, try to get the builtin one as the default style
-                style = self.styles.get(format=format,name="builtin")
+                style = self.styles.get(format=format,name=Style.BUILTIN)
             except:
                 #no builtin style  try to get the first added one as the default style
                 style = self.styles.filter(format=format).order_by("name").first()
@@ -230,6 +230,7 @@ class Record(models.Model):
         ordering = ['identifier']
 
 class Style(models.Model):
+    BUILTIN = "builtin"
     FORMAT_CHOICES = (
         ('SLD','SLD'),
         ('QML','QML'),
@@ -247,7 +248,7 @@ class Style(models.Model):
         return "{}:{}".format(self.record.identifier,self.name)
     def clean(self):
         from django.core.exceptions import ValidationError
-        if not self.pk and self.name == "builtin":
+        if not self.pk and self.name == Style.BUILTIN:
             raise ValidationError("Can't add a builtin style.")
 
         """
@@ -262,12 +263,12 @@ class Style(models.Model):
         """
     @property
     def can_delete(self):
-        if not self.pk or self.name == "builtin":
+        if not self.pk or self.name == Style.BUILTIN:
             return False
         return True
             
     def delete(self,using=None):
-        if self.name == "builtin":
+        if self.name == Style.BUILTIN:
             raise ValidationError("Can not delete builtin style.")
         else:
             super(Style,self).delete(using)
@@ -356,9 +357,14 @@ class Application(models.Model):
     last_modify_time = models.DateTimeField(auto_now=True,null=False)
     create_time = models.DateTimeField(auto_now_add=True,null=False)
 
+    @staticmethod
+    def get_view_name(app):
+        return "catalogue_record_{}".format(app)
+
+
     @property
     def records_view(self):
-        return "catalogue_{}".format(self.name)
+        return Application.get_view_name(self.name)
 
     class Meta:
         ordering = ['name']
