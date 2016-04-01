@@ -59,19 +59,20 @@ class Mapper(BaseMapper):
 class CswEndpoint(View):
     application_records = {}
     def get(self, request,app=None):
-        record_table = Application.get_view_name(app) if app else "catalogue_record"
         pycsw_settings = build_pycsw_settings()
         server = Csw(rtconfig=pycsw_settings, env=request.META.copy())
-        if app:
-            #request by named app, use app related view
-            try:
-                if not self.application_records.get(app,None):
-                    base = declarative_base(bind=server.repository.engine,mapper=Mapper)
-                    self.application_records[app] = type('dataset', (base,),
-                            dict(__tablename__=record_table,__table_args__={'autoload': True,'schema': None},__mapper_args__={"primary_key":["id"]}))
-                server.repository.dataset = self.application_records[app]
-            except:
-                pass
+        if not app:
+            app = "all"
+        #request by named app, use app related view
+        record_table = Application.get_view_name(app) 
+        try:
+            if not self.application_records.get(app,None):
+                base = declarative_base(bind=server.repository.engine,mapper=Mapper)
+                self.application_records[app] = type('dataset', (base,),
+                        dict(__tablename__=record_table,__table_args__={'autoload': True,'schema': None},__mapper_args__={"primary_key":["id"]}))
+            server.repository.dataset = self.application_records[app]
+        except:
+            pass
 
         server.request = "http://{}{}".format(get_current_site(request),
                                               reverse("csw_endpoint"))
