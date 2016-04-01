@@ -193,6 +193,13 @@ class Record(models.Model):
         """
         return self.default_style("QML")
     
+    def clean(self):
+        #set auto update to false if some columns are changed
+        if self.pk and self.auto_update:
+            origin = Record.objects.get(pk = self.pk)
+            if any([(getattr(origin,k) or "") != (getattr(self,k) or "") for k in ["title","abstract"]]):
+                self.auto_update = False
+                    
     """
     Used to check the default style
     for a particular format. If it does
@@ -246,6 +253,7 @@ class Style(models.Model):
     @property
     def identifier(self):
         return "{}:{}".format(self.record.identifier,self.name)
+
     def clean(self):
         from django.core.exceptions import ValidationError
         if not self.pk and self.name == Style.BUILTIN:
@@ -261,6 +269,7 @@ class Style(models.Model):
             except Style.DoesNotExist:
                 pass
         """
+
     @property
     def can_delete(self):
         if not self.pk or self.name == Style.BUILTIN:
@@ -286,6 +295,17 @@ class Style(models.Model):
                     if orig.checksum != self._calculate_checksum(self.content):
                         if os.path.isfile(orig.content.path):
                             os.remove(orig.content.path)
+
+                        if os.path.isfile(self.content.path):
+                            #the style file exists in the file system, remove it
+                            os.remove(self.content.path)
+
+                        if self.record.auto_update:
+                            #auto update is enabled
+                            if getattr(self,"access_channel","django-admin") == "django-admin":
+                                #changed from django admin portal, disable auto_update
+                                self.record.auto_update = False
+                                self.record.save(update_fields=["auto_update"])
                     else:
                         #content is not changed, no need to update content and checksum
                         update_fields = [field for field in update_fields if field not in ["content","checksum"]]
@@ -295,6 +315,9 @@ class Style(models.Model):
                 else:
                     if os.path.isfile(orig.content.path):
                         os.remove(orig.content.path)
+                    if os.path.isfile(self.content.path):
+                        #the style file exists in the file system, remove it
+                        os.remove(self.content.path)
 
         if update_fields:
             kwargs["update_fields"] = update_fields
@@ -388,15 +411,14 @@ class ApplicationEventListener(object):
     @staticmethod
     @receiver(pre_save, sender=Application)
     def _pre_save(sender, instance, **args):
-        if not instance.pk:
-            #New application, create a view for this application
-            try:
-                cursor = connection.cursor()
-                cursor.execute("CREATE OR REPLACE VIEW {} AS SELECT r.* FROM catalogue_application a join catalogue_applicationlayer l on a.id = l.application_id join catalogue_record r on l.layer_id = r.id WHERE a.name = '{}' order by l.order,r.identifier".format(instance.records_view,instance.name))
-            except Exception as e:
-                #create view failed
-                connection._rollback()
-                raise ValidationError(e)
+        #create a view for this application
+        try:
+            cursor = connection.cursor()
+            cursor.execute("CREATE OR REPLACE VIEW {} AS SELECT r.* FROM catalogue_application a join catalogue_applicationlayer l on a.id = l.application_id join catalogue_record r on l.layer_id = r.id WHERE a.name = '{}' and r.active order by l.order,r.identifier".format(instance.records_view,instance.name))
+        except Exception as e:
+            #create view failed
+            connection._rollback()
+            raise ValidationError(e)
 
 class ApplicationLayer(models.Model):
     """

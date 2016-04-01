@@ -33,6 +33,7 @@ class RecordSerializer(serializers.ModelSerializer):
     styles = StyleSerializer(many=True,required=False)
     workspace =  serializers.CharField(max_length=255, write_only=True)
     name = serializers.CharField(max_length=255, write_only=True)
+    identifier = serializers.CharField(max_length=255, read_only=True)
     class Meta:
         model = Record
         fields = (
@@ -76,8 +77,8 @@ class RecordViewSet(viewsets.ModelViewSet):
 
     def create(self,request):
         styles_data = None
+        auto_update = True
         http_status = status.HTTP_200_OK
-        
         if "styles" in request.data:
             styles_data = request.data.pop("styles")
         #parse and valid record data
@@ -94,6 +95,7 @@ class RecordViewSet(viewsets.ModelViewSet):
         try:
             serializer.instance = Record.objects.get(identifier=identifier)
             serializer.instance.active = True
+            auto_update = serializer.instance.auto_update
             if not serializer.instance.auto_update:
                 #auto update disabled
                 for key in ["title","abstract","auto_update","modified","insert_date"]:
@@ -108,44 +110,46 @@ class RecordViewSet(viewsets.ModelViewSet):
         name = serializer.validated_data.pop("name")
         record = serializer.save()
 
-        #set the missing data and transform the content
-        for style_serializer in style_serializers:
-            uploaded_style = style_serializer.validated_data
-            uploaded_style["record"] = record
-            uploaded_style["content"] = self.createStyle(uploaded_style["content"].decode("base64"))
+        if auto_update:
+            #auto update is enabled update styles
+            #set the missing data and transform the content
+            for style_serializer in style_serializers:
+                uploaded_style = style_serializer.validated_data
+                uploaded_style["record"] = record
+                uploaded_style["content"] = self.createStyle(uploaded_style["content"].decode("base64"))
 
-        #set default style
-        origin_default_style = {"sld":record.sld.name if record.sld else None,"qml":record.qml.name if record.qml else None, "lyr":record.lyr.name if record.lyr else None }
-        default_style = { }
-        for style_serializer in style_serializers:
-            uploaded_style = style_serializer.validated_data
-            if uploaded_style.get("default",False):
-                #user set this style as default style, use the user's setting
-                default_style[uploaded_style["format"]] = uploaded_style
-            elif origin_default_style.get(uploaded_style["format"].lower(),None) == uploaded_style["name"]:
-                #the current style is configured default style.
-                default_style[uploaded_style["format"]] = uploaded_style
-            elif not origin_default_style.get(uploaded_style["format"].lower(),None) and  uploaded_style["format"] not in default_style:
-                #no default style has been set, set the current style as the default style
-                default_style[uploaded_style["format"]] = uploaded_style
-            #clear the default flag
-            uploaded_style["default"] = False
+            #set default style
+            origin_default_style = {"sld":record.sld.name if record.sld else None,"qml":record.qml.name if record.qml else None, "lyr":record.lyr.name if record.lyr else None }
+            default_style = { }
+            for style_serializer in style_serializers:
+                uploaded_style = style_serializer.validated_data
+                if uploaded_style.get("default",False):
+                    #user set this style as default style, use the user's setting
+                    default_style[uploaded_style["format"]] = uploaded_style
+                elif origin_default_style.get(uploaded_style["format"].lower(),None) == uploaded_style["name"]:
+                    #the current style is configured default style.
+                    default_style[uploaded_style["format"]] = uploaded_style
+                elif not origin_default_style.get(uploaded_style["format"].lower(),None) and  uploaded_style["format"] not in default_style:
+                    #no default style has been set, set the current style as the default style
+                    default_style[uploaded_style["format"]] = uploaded_style
+                #clear the default flag
+                uploaded_style["default"] = False
 
-        #set the default style
-        for uploaded_style in default_style.itervalues():
-            uploaded_style["default"] = True
+            #set the default style
+            for uploaded_style in default_style.itervalues():
+                uploaded_style["default"] = True
 
-        #save  style
-        styles= []
-        for style_serializer in style_serializers:
-            if http_status != status.HTTP_201_CREATED:
-                #record is already exist,should check whether style exist or not.
-                try:
-                    style_serializer.instance = Style.objects.get(record=record,name=style_serializer.validated_data["name"],format=style_serializer.validated_data["format"])
-                except Style.DoesNotExist:
-                    pass
-            styles.append(style_serializer.save())
+            #save  style
+            for style_serializer in style_serializers:
+                if http_status != status.HTTP_201_CREATED:
+                    #record is already exist,should check whether style exist or not.
+                    try:
+                        style_serializer.instance = Style.objects.get(record=record,name=style_serializer.validated_data["name"],format=style_serializer.validated_data["format"])
+                        setattr(style_serializer.instance,"access_channel","restapi")
+                    except Style.DoesNotExist:
+                        pass
+                style_serializer.save()
 
-        record.styles = styles
+        record.styles = list(Style.objects.filter(record=record))
         serializer = RecordSerializer(record)
         return Response(serializer.data,status=http_status)
