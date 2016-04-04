@@ -37,7 +37,6 @@ class StyleSerializer(serializers.ModelSerializer):
         super(StyleSerializer, self).__init__(*args, **kwargs)
         request = kwargs['context']['request']
         borg = request.GET.get('borg',False)
-        print dir(self)
         if borg:
             self.fields['raw_content'] = serializers.SerializerMethodField(read_only=True)
 
@@ -63,8 +62,9 @@ class RecordSerializer(serializers.ModelSerializer):
         format_date = request.GET.get('format_date',False)
         self.fields['styles'] = StyleSerializer(many=True,required=False, context={'request':request})
         if format_date:
-            self.fields['publication_date'] = serializers.DateTimeField(format='%a, %d %B %Y')
-    
+            self.fields['publication_date'] = serializers.DateTimeField(format='%A, %d %B %Y %H:%M %p')
+            self.fields['modified'] = serializers.DateTimeField(format='%A, %d %B %Y %H:%M %p')
+
     def get_url(self,obj):
         return '/catalogue/api/records/{0}.json'.format(obj.identifier)
 
