@@ -24,9 +24,23 @@ class OwsResourceSerializer(serializers.Serializer):
 
 # Style Serializer
 class StyleSerializer(serializers.ModelSerializer):
-    raw_content = serializers.SerializerMethodField(read_only=True)
     content = serializers.CharField(write_only=True,allow_null=True)
     name = serializers.CharField(default=Style.BUILTIN)
+    
+    def get_raw_content(self, obj):
+        if obj.content:
+            return obj.content.read().encode('base64')
+        else:
+            return None
+    
+    def __init__(self, *args, **kwargs):
+        super(StyleSerializer, self).__init__(*args, **kwargs)
+        request = kwargs['context']['request']
+        borg = request.GET.get('borg',False)
+        print dir(self)
+        if borg:
+            self.fields['raw_content'] = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Style
         fields = (
@@ -34,17 +48,10 @@ class StyleSerializer(serializers.ModelSerializer):
             'format',
             'default',
             'content',
-            'raw_content'
         )
-    def get_raw_content(self, obj):
-        if obj.content:
-            return obj.content.read().encode('base64')
-        else:
-            return None
 
 # Record Serializer
 class RecordSerializer(serializers.ModelSerializer):
-    styles = StyleSerializer(many=True,required=False)
     workspace =  serializers.CharField(max_length=255, write_only=True)
     name = serializers.CharField(max_length=255, write_only=True)
     identifier = serializers.CharField(max_length=255, read_only=True)
@@ -54,6 +61,7 @@ class RecordSerializer(serializers.ModelSerializer):
         super(RecordSerializer, self).__init__(*args, **kwargs)
         request = kwargs['context']['request']
         format_date = request.GET.get('format_date',False)
+        self.fields['styles'] = StyleSerializer(many=True,required=False, context={'request':request})
         if format_date:
             self.fields['publication_date'] = serializers.DateTimeField(format='%a, %d %B %Y')
     
