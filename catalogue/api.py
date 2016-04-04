@@ -48,6 +48,14 @@ class RecordSerializer(serializers.ModelSerializer):
     workspace =  serializers.CharField(max_length=255, write_only=True)
     name = serializers.CharField(max_length=255, write_only=True)
     identifier = serializers.CharField(max_length=255, read_only=True)
+    
+    def __init__(self, *args, **kwargs):
+        super(RecordSerializer, self).__init__(*args, **kwargs)
+        request = kwargs['context']['request']
+        format_date = request.GET.get('format_date',False)
+        if format_date:
+            self.fields['publication_date'] = serializers.DateTimeField(format='%a, %d %B %Y')
+    
     class Meta:
         model = Record
         fields = (
