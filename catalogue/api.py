@@ -48,6 +48,7 @@ class RecordSerializer(serializers.ModelSerializer):
     workspace =  serializers.CharField(max_length=255, write_only=True)
     name = serializers.CharField(max_length=255, write_only=True)
     identifier = serializers.CharField(max_length=255, read_only=True)
+    url = serializers.SerializerMethodField(read_only=True)
     
     def __init__(self, *args, **kwargs):
         super(RecordSerializer, self).__init__(*args, **kwargs)
@@ -56,9 +57,13 @@ class RecordSerializer(serializers.ModelSerializer):
         if format_date:
             self.fields['publication_date'] = serializers.DateTimeField(format='%a, %d %B %Y')
     
+    def get_url(self,obj):
+        return '/catalogue/api/records/{0}.json'.format(obj.identifier)
+
     class Meta:
         model = Record
         fields = (
+            'url',
             'identifier',
             'title',
             'insert_date',
