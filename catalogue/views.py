@@ -59,7 +59,7 @@ class Mapper(BaseMapper):
 class CswEndpoint(View):
     application_records = {}
     def get(self, request,app=None):
-        pycsw_settings = build_pycsw_settings()
+        pycsw_settings = build_pycsw_settings(app)
         server = Csw(rtconfig=pycsw_settings, env=request.META.copy())
         if not app:
             app = "all"

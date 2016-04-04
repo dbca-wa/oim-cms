@@ -8,6 +8,20 @@ import base64
 from django.views.decorators.csrf import csrf_exempt
 import os
 
+#Ows Resource Serializer
+class OwsResourceSerializer(serializers.Serializer):
+    class Meta:
+        fields = (
+            'wfs',
+            'wfs_endpoint',
+            'wfs_version',
+            'wms',
+            'wms_endpoint',
+            'wms_version',
+            'gwc',
+            'gwc_endpoint',
+        )
+
 # Style Serializer
 class StyleSerializer(serializers.ModelSerializer):
     raw_content = serializers.SerializerMethodField(read_only=True)
