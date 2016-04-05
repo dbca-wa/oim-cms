@@ -19,7 +19,12 @@ class DepartmentUserAdmin(admin.ModelAdmin):
             'description': '''<p class="errornote">Do not edit information in this section
             without written permission from People Services or the cost centre manager
             (forms are required).</p>''',
-            'fields': (('given_name', 'surname'), ('employee_id', 'cost_centre'), ('name', 'org_unit')),
+            'fields': (
+                ('given_name', 'surname'),
+                ('employee_id', 'cost_centre'),
+                ('name', 'org_unit'),
+                ('name_update_reference'),
+            ),
         }),
         ('Other details', {
             'fields': (
