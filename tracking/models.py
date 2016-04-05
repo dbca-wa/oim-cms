@@ -71,14 +71,16 @@ class DepartmentUser(MPTTModel):
     ad_dn = models.CharField(max_length=512, unique=True, editable=False)
     ad_data = JSONField(null=True, editable=False)
     org_data = JSONField(null=True, editable=False)
-    employee_id = models.CharField(max_length=128, null=True, unique=True,
-                                   blank=True, help_text="HR Employee ID, use 'n/a' if a contractor")
+    employee_id = models.CharField(
+        max_length=128, null=True, unique=True, blank=True,
+        help_text="HR Employee ID, use 'n/a' if a contractor")
     name = models.CharField(max_length=128)
     username = models.CharField(max_length=128, editable=False, unique=True)
     given_name = models.CharField(max_length=128, null=True)
     surname = models.CharField(max_length=128, null=True)
     name_update_reference = models.CharField(
-        max_length=512, null=True, blank=True, help_text='Reference for name/CC change request')
+        max_length=512, null=True, blank=True, verbose_name='update reference',
+        help_text='Reference for name/CC change request')
     title = models.CharField(max_length=128, null=True,
                              help_text='Staff position')
     email = models.EmailField(unique=True, editable=False)
