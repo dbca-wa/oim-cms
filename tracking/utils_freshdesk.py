@@ -189,19 +189,29 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
             physical_location = user.org_data.get('location', {}).get('name', "") if user.org_data else ""
             department = user.org_data.get('units', []) if user.org_data else []
             department = department[0].get('name', "") if len(department) > 0 else ""
+            changes = []
 
-            if (user.name != fd['name'] or user.telephone != fd['phone'] or user.title != fd['job_title']):
+            if user.name != fd['name']:
                 user_sync = True
                 data['name'] = user.name
+                changes.append('name')
+            if user.telephone != fd['phone']:
+                user_sync = True
                 data['phone'] = user.telephone
+                changes.append('phone')
+            if user.title != fd['job_title']:
+                user_sync = True
                 data['job_title'] = user.title
+                changes.append('job_title')
             if department and department in companies and fd['company_id'] != companies[department]['id']:
                 user_sync = True
                 data['company_id'] = companies[department]['id']
+                changes.append('company_id')
             # Custom fields in Freshdesk: Cost Centre no.
             if fd['custom_field']['cf_cost_centre'] != cost_centre:
                 user_sync = True
                 data['custom_field'] = {'cf_cost_centre': cost_centre}
+                changes.append('cost_centre')
             # Custom fields in Freshdesk: Physical location
             if fd['custom_field']['cf_location'] != physical_location:
                 user_sync = True
@@ -209,6 +219,7 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
                     data['custom_field']['cf_location'] = physical_location
                 else:
                     data['custom_field'] = {'cf_location': physical_location}
+                changes.append('physical_location')
             if user_sync:  # Sync user details to their Freshdesk contact.
                 resp = freshdesk_contact_update(fd['id'], data)
                 if resp.status_code == 403:  # Forbidden
@@ -216,7 +227,8 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
                     # Abort the synchronisation.
                     logger.error('HTTP403 received from Freshdesk API, aborting')
                     return False
-                logger.info('{} was updated in Freshdesk (status {})'.format(user.email.lower(), resp.status_code))
+                logger.info('{} was updated in Freshdesk (status {}), changed: {}'.format(
+                    user.email.lower(), resp.status_code, ', '.join(changes)))
             else:
                 logger.info('{} already up to date in Freshdesk'.format(user.email.lower()))
         elif user.email.lower() in agents:
