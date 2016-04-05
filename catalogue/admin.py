@@ -32,7 +32,7 @@ class StyleAdmin(admin.ModelAdmin):
         if request.path == "/django-admin/catalogue/style/":
             #request the list page
             return super(StyleAdmin,self).has_delete_permission(request,obj)
-        elif obj and obj.name == "builtin":
+        elif obj and obj.name == models.Style.BUILTIN:
             # request the edit page and the style is a builtin style
             return False
         else:
@@ -73,7 +73,7 @@ class StyleAdmin(admin.ModelAdmin):
 class RecordAdmin(admin.ModelAdmin):
     list_display = ("identifier","service_type","crs","title", "auto_update","active","modified")
     inlines = [StyleInline,]
-    readonly_fields = ('service_type','service_type_version','crs','_bounding_box','publication_date','modified','insert_date')
+    readonly_fields = ('service_type','service_type_version','crs','_bounding_box','active','publication_date','modified','insert_date')
     search_fields = ["identifier",'service_type']
     form = RecordForm
     """

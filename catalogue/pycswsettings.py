@@ -11,19 +11,21 @@ from .models import PycswConfig
 
 
 def build_pycsw_settings(app=None):
-    record_table = "catalogue_{}".format(app) if app else "catalogue_record"
+    record_table = "public.catalogue_record"
     config = PycswConfig.objects.first()
-    url = "{}{}".format(settings.BASE_URL,
-                               reverse("csw_endpoint"))
+    if app:
+        url = "{}{}".format(settings.BASE_URL,
+                reverse("csw_app_endpoint",kwargs={"app":app or ""}))
+    else:
+        url = "{}{}".format(settings.BASE_URL,
+                reverse("csw_endpoint"))
     poc = config.point_of_contact
     org = poc.organization
     django_db = settings.DATABASES["default"]
     db_connection = {
         "django.db.backends.sqlite3": "sqlite:///{}".format(django_db["NAME"]),
         "django.contrib.gis.db.backends.postgis":
-            "postgresql://{}:{}@localhost/{}".format(django_db["USER"],
-                                                     django_db["PASSWORD"],
-                                                     django_db["NAME"])
+        "postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{NAME}".format(USER=django_db.get("USER") or "anonymous",PASSWORD=django_db.get("PASSWORD") or "",HOST=django_db.get("HOST") or "127.0.0.1",PORT=django_db.get("PORT") or "5432" ,NAME=django_db["NAME"])
     }.get(django_db["ENGINE"])
     mappings_path = os.path.join(apps.get_app_config("catalogue").path,
                                  "mappings.py")
