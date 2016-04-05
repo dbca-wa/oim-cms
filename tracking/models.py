@@ -77,6 +77,8 @@ class DepartmentUser(MPTTModel):
     username = models.CharField(max_length=128, editable=False, unique=True)
     given_name = models.CharField(max_length=128, null=True)
     surname = models.CharField(max_length=128, null=True)
+    name_update_reference = models.CharField(
+        max_length=512, null=True, blank=True, help_text='Reference for name/CC change request')
     title = models.CharField(max_length=128, null=True,
                              help_text='Staff position')
     email = models.EmailField(unique=True, editable=False)

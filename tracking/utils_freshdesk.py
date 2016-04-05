@@ -5,6 +5,7 @@ import os
 import requests
 import socket
 from tracking.models import DepartmentUser
+from tracking.utils import logger_setup
 
 
 FRESHDESK_ENDPOINT = os.environ['FRESHDESK_ENDPOINT']
@@ -152,12 +153,7 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
     information is synced correctly to a Freshdesk contact.
     May optionally be passed in dicts of contacts & companies.
     """
-    import logging as logger
-    logger.basicConfig(
-        level=logger.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-
+    logger = logger_setup('freshdesk_sync_contacts')
 
     try:
         if not contacts:
