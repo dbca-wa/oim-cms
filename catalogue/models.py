@@ -37,6 +37,7 @@ import md5
 import base64
 import os
 import re
+import json
 
 slug_re = re.compile(r'^[a-z0-9_]+$')
 validate_slug = RegexValidator(slug_re, "Slug can only contain lowercase letters, numbers and underscores", "invalid")
@@ -168,6 +169,63 @@ class Record(models.Model):
             return self.styles.get(format=format,default=True)
         except Style.DoesNotExist:
             return None
+
+    def get_resources(self,_type):
+        if self.links:
+            resources = re.split(",\s*(?=[^}]*(?:\{|$))",self.links)
+        else:
+            resources = []
+        if _type =='style':
+            style_resources = []
+            for r in resources:
+                r = json.loads(r)
+                if r['protocol'] == 'FILE:GEO':
+                    style_resources.append(r)
+            resources = style_resources
+        elif _type == 'ows':
+            ows_resources = []
+            for r in resources:
+                r = json.loads(r)
+                if 'OGC' in r['protocol']:
+                    ows_resources.append(r)
+            resources = ows_resources
+        return resources
+
+    @staticmethod
+    def generate_ows_link(service_type,service_version,record):
+        if service_type == 'WFS':
+            link = '{0}?SERVICE={1}&VERSION={2}&REQUEST=GetMap&BBOX={3}&CRS={4}&LAYERS={4}'.format(
+            enpoint,service_type.upper(),service_version,record.bounding_box,record.crs,record.identifier)
+        else:
+            link = '{0}?SERVICE={1}&VERSION={2}&REQUEST=GetMap&BBOX={3}&CRS={4}&WIDTH=500&HEIGHT=400&LAYERS={5}&FORMAT=image/png'.format(
+            enpoint,service_type.upper(),service_version,record.bounding_box,record.crs,record.identifier)
+        return '{{"protocol": "OGC:{0}","linkage":"{1}"}}'.format(service_type.upper(),link)
+
+    @staticmethod
+    def generate_style_link(style):
+        link =  '{{"protocol": "application:{0}","name":"{1}","format":"{2}","linkage":"{3}/media/{4}"}}'.format(style.format.lower(),style.name,style.format,settings.BASE_URL,style.content)
+        return link
+
+    @staticmethod
+    def update_style_links(resources,record):
+        pos = 1
+        links = ''
+        for r in resources:
+            if pos == 1:
+                links += '{0}'.format(json.dumps(r))
+            else:
+                links += ',{0}'.format(json.dumps(r))
+            pos += 1
+        record.links = links
+        record.save()
+
+    @property
+    def style_resources(self):
+        return self.get_resources('style')
+
+    @property
+    def ows_resources(self):
+        return self.get_resources('ows')
     
     @property
     def sld(self):
@@ -330,7 +388,34 @@ class Style(models.Model):
         checksum = md5.new()
         checksum.update(content.read())
         return base64.b64encode(checksum.digest())
-    
+
+@receiver(pre_save,sender=Style)
+def update_style_links(sender, instance, **kwargs):
+    link = Record.generate_style_link(instance)
+    json_link = json.loads(link)
+    present = False
+    style_resources = instance.record.style_resources
+    ows_resources = instance.record.ows_resources
+    if not instance.record.links:
+        instance.record.links = ''
+    for r in style_resources:
+        if r['name'] == json_link['name'] and r['format'] == json_link['format']:
+            present = True
+    if not present:
+        style_resources.append(json_link)
+        resources = ows_resources + style_resources
+        Record.update_style_links(resources,instance.record)
+
+@receiver(post_delete,sender=Style)
+def remove_style_links(sender, instance, **kwargs):
+    style_resources = instance.record.style_resources
+    ows_resources = instance.record.ows_resources
+    for r in style_resources:
+        if r['name'] == instance.name and r['format'] == instance.format:
+            style_resources.remove(r)
+            resources = ows_resources + style_resources
+            Record.update_style_links(resources,instance.record)
+
 @receiver(pre_save, sender=Style)
 def set_default_style (sender, instance, **kwargs):
     update_fields=kwargs.get("update_fields",None)
