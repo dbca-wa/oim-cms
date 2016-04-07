@@ -7,20 +7,41 @@ import md5
 import base64
 from django.views.decorators.csrf import csrf_exempt
 import os
+from django.conf import settings
 
 #Ows Resource Serializer
 class OwsResourceSerializer(serializers.Serializer):
-    class Meta:
-        fields = (
-            'wfs',
-            'wfs_endpoint',
-            'wfs_version',
-            'wms',
-            'wms_endpoint',
-            'wms_version',
-            'gwc',
-            'gwc_endpoint',
-        )
+    wfs = serializers.BooleanField(write_only=True, default=False)
+    wfs_endpoint = serializers.CharField(write_only=True,allow_null=True)
+    wfs_version = serializers.CharField(write_only=True,allow_null=True)
+    wms = serializers.BooleanField(write_only=True,default=False)
+    wms_endpoint = serializers.CharField(write_only=True,allow_null=True)
+    wms_version = serializers.CharField(write_only=True,allow_null=True)
+    gwc = serializers.BooleanField(write_only=True,default=False)
+    gwc_endpoint = serializers.CharField(write_only=True,allow_null=True)
+
+    def validate(self,data):
+        if data['wfs_endpoint'] or data['wms_endpoint'] or data['gwc_endpoint']:
+            return data
+        else:
+            raise serializers.ValidationError("An endpoint must be provided for one of the services.")
+
+    def save(self,record=None):
+        if record:
+            links = ''
+            if self.validated_data['wfs'] and self.validated_data['wfs_endpoint']:
+                links += Record.generate_ows_link('WFS',self.validated_data['wfs_version'],record)
+                record.service_type = 'WFS'
+                record.service_type_version = self.validated_data['wfs_version']
+            if self.validated_data['gwc'] and self.validated_data['gwc_endpoint']:
+                links +=  Record.generate_ows_link('WMS','',record)
+                record.service_type = 'WMS'
+            if self.validated_data['wms'] and self.validated_data['wms_endpoint']:
+                links +=  Record.generate_ows_link('WMS',self.validated_data['wms_version'],record)
+                record.service_type = 'WMS'
+                record.service_type_version = self.validated_data['wms_version']
+            record.links = links
+            record.save()
 
 # Style Serializer
 class StyleSerializer(serializers.ModelSerializer):
@@ -35,10 +56,11 @@ class StyleSerializer(serializers.ModelSerializer):
     
     def __init__(self, *args, **kwargs):
         super(StyleSerializer, self).__init__(*args, **kwargs)
-        request = kwargs['context']['request']
-        borg = request.GET.get('borg',False)
-        if borg:
-            self.fields['raw_content'] = serializers.SerializerMethodField(read_only=True)
+        if kwargs.get('context'):
+            request = kwargs['context']['request']
+            borg = request.GET.get('borg',False)
+            if borg:
+                self.fields['raw_content'] = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Style
@@ -51,6 +73,7 @@ class StyleSerializer(serializers.ModelSerializer):
 
 # Record Serializer
 class RecordSerializer(serializers.ModelSerializer):
+    ows_resource = OwsResourceSerializer(write_only=True, required=False)
     workspace =  serializers.CharField(max_length=255, write_only=True)
     name = serializers.CharField(max_length=255, write_only=True)
     identifier = serializers.CharField(max_length=255, read_only=True)
@@ -58,19 +81,23 @@ class RecordSerializer(serializers.ModelSerializer):
     
     def __init__(self, *args, **kwargs):
         super(RecordSerializer, self).__init__(*args, **kwargs)
-        request = kwargs['context']['request']
-        format_date = request.GET.get('format_date',False)
-        self.fields['styles'] = StyleSerializer(many=True,required=False, context={'request':request})
-        if format_date:
-            self.fields['publication_date'] = serializers.DateTimeField(format='%A, %d %B %Y %H:%M %p')
-            self.fields['modified'] = serializers.DateTimeField(format='%A, %d %B %Y %H:%M %p')
+        if kwargs.get('context'):
+            request = kwargs['context']['request']
+            format_date = request.GET.get('format_date',False)
+            self.fields['styles'] = StyleSerializer(many=True,required=False, context={'request':request})
+            if format_date:
+                self.fields['publication_date'] = serializers.DateTimeField(format='%A, %d %B %Y %H:%M %p')
+                self.fields['modified'] = serializers.DateTimeField(format='%A, %d %B %Y %H:%M %p')
+        else:
+            self.fields['styles'] = StyleSerializer(many=True,required=False)
 
     def get_url(self,obj):
-        return '/catalogue/api/records/{0}.json'.format(obj.identifier)
+        return '{0}/catalogue/api/records/{1}.json'.format(settings.BASE_URL,obj.identifier)
 
     class Meta:
         model = Record
         fields = (
+            'ows_resource',
             'url',
             'identifier',
             'title',
@@ -112,10 +139,13 @@ class RecordViewSet(viewsets.ModelViewSet):
 
     def create(self,request):
         styles_data = None
+        ows_data = None
         auto_update = True
         http_status = status.HTTP_200_OK
         if "styles" in request.data:
             styles_data = request.data.pop("styles")
+        if "ows_resource" in request.data:
+            ows_data = request.data.pop("ows_resource")
         #parse and valid record data
         serializer = RecordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -124,7 +154,9 @@ class RecordViewSet(viewsets.ModelViewSet):
         if style_serializers:
             for style_serializer in style_serializers:
                 style_serializer.is_valid(raise_exception=True)
-        
+        #parse and vlaidate ows data
+        ows_serializer = OwsResourceSerializer(data=ows_data)
+        ows_serializer.is_valid(raise_exception=True)
         #save record data.
         identifier = "{}:{}".format(serializer.validated_data['workspace'],serializer.validated_data['name'])
         try:
@@ -144,6 +176,8 @@ class RecordViewSet(viewsets.ModelViewSet):
         workspace = serializer.validated_data.pop("workspace")
         name = serializer.validated_data.pop("name")
         record = serializer.save()
+        #
+        #ows_serializer.save(record)
 
         if auto_update:
             #auto update is enabled update styles
