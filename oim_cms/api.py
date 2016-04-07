@@ -653,6 +653,7 @@ class UserResource(DjangoResource):
                 user.username = self.data["SamAccountName"]
                 user.expiry_date = self.data.get("AccountExpirationDate")
                 user.active = self.data["Enabled"]
+                user.ad_deleted = False
                 user.ad_data = self.data
                 if not user.name:
                     user.name = self.data["Name"]
