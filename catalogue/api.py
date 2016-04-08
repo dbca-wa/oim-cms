@@ -7,6 +7,7 @@ import md5
 import base64
 from django.views.decorators.csrf import csrf_exempt
 import os
+import json
 from django.conf import settings
 
 #Ows Resource Serializer
@@ -28,20 +29,24 @@ class OwsResourceSerializer(serializers.Serializer):
 
     def save(self,record=None):
         if record:
-            links = ''
+            links = []
             if self.validated_data['wfs'] and self.validated_data['wfs_endpoint']:
-                links += Record.generate_ows_link('WFS',self.validated_data['wfs_version'],record)
+                link = json.loads(Record.generate_ows_link('WFS',self.validated_data['wfs_version'],record))
+                links.append(link)
                 record.service_type = 'WFS'
                 record.service_type_version = self.validated_data['wfs_version']
             if self.validated_data['gwc'] and self.validated_data['gwc_endpoint']:
-                links +=  Record.generate_ows_link('WMS','',record)
+                link =  json.loads(Record.generate_ows_link('WMS','',record))
+                links.append(link)
                 record.service_type = 'WMS'
             if self.validated_data['wms'] and self.validated_data['wms_endpoint']:
-                links +=  Record.generate_ows_link('WMS',self.validated_data['wms_version'],record)
+                link =  json.loads(Record.generate_ows_link('WMS',self.validated_data['wms_version'],record))
+                links.append(link)
                 record.service_type = 'WMS'
                 record.service_type_version = self.validated_data['wms_version']
-            record.links = links
-            record.save()
+            style_resources = record.style_resources
+            resources = links + style_resources
+            Record.update_style_links(resources,record)
 
 # Style Serializer
 class StyleSerializer(serializers.ModelSerializer):
