@@ -13,19 +13,22 @@ from django.conf import settings
 #Ows Resource Serializer
 class OwsResourceSerializer(serializers.Serializer):
     wfs = serializers.BooleanField(write_only=True, default=False)
-    wfs_endpoint = serializers.CharField(write_only=True,allow_null=True)
-    wfs_version = serializers.CharField(write_only=True,allow_null=True)
+    wfs_endpoint = serializers.CharField(write_only=True,allow_null=True,default=None)
+    wfs_version = serializers.CharField(write_only=True,allow_null=True,default=None)
     wms = serializers.BooleanField(write_only=True,default=False)
-    wms_endpoint = serializers.CharField(write_only=True,allow_null=True)
-    wms_version = serializers.CharField(write_only=True,allow_null=True)
+    wms_endpoint = serializers.CharField(write_only=True,allow_null=True,default=None)
+    wms_version = serializers.CharField(write_only=True,allow_null=True,default=None)
     gwc = serializers.BooleanField(write_only=True,default=False)
-    gwc_endpoint = serializers.CharField(write_only=True,allow_null=True)
+    gwc_endpoint = serializers.CharField(write_only=True,allow_null=True,default=None)
 
     def validate(self,data):
-        if data['wfs_endpoint'] or data['wms_endpoint'] or data['gwc_endpoint']:
-            return data
+        if ((data['wfs'] and (not data['wfs_endpoint'] or not data['wfs_version'])) or 
+            (data['wms'] and (not data['wms_endpoint'] or not data['wms_version'])) or
+            (data['gwc'] and not data['gwc_endpoint'])
+            ) :
+            raise serializers.ValidationError("Both endpoint and version must have value if service is enabled.")
         else:
-            raise serializers.ValidationError("An endpoint must be provided for one of the services.")
+            return data
 
     def save(self,record=None):
         if record:
