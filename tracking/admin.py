@@ -53,29 +53,36 @@ class DepartmentUserAdmin(admin.ModelAdmin):
         'given_name', 'surname', 'employee_id', 'cost_centre', 'name', 'org_unit'
         """
         logger = logger_setup('departmentuser_updates')
+        l = 'DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}, reference: {}'
         if obj._DepartmentUser__original_given_name != obj.given_name:
-            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
-                obj.email, 'given_name', obj._DepartmentUser__original_given_name, obj.given_name, request.user.username
+            logger.info(l.format(
+                obj.email, 'given_name', obj._DepartmentUser__original_given_name, obj.given_name,
+                request.user.username, obj.name_update_reference
             ))
         if obj._DepartmentUser__original_surname != obj.surname:
-            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
-                obj.email, 'surname', obj._DepartmentUser__original_surname, obj.surname, request.user.username
+            logger.info(l.format(
+                obj.email, 'surname', obj._DepartmentUser__original_surname, obj.surname,
+                request.user.username, obj.name_update_reference
             ))
         if obj._DepartmentUser__original_employee_id != obj.employee_id:
-            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
-                obj.email, 'employee_id', obj._DepartmentUser__original_employee_id, obj.employee_id, request.user.username
+            logger.info(l.format(
+                obj.email, 'employee_id', obj._DepartmentUser__original_employee_id,
+                obj.employee_id, request.user.username, obj.name_update_reference
             ))
         if obj._DepartmentUser__original_cost_centre != obj.cost_centre:
-            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
-                obj.email, 'cost_centre', obj._DepartmentUser__original_cost_centre, obj.cost_centre, request.user.username
+            logger.info(l.format(
+                obj.email, 'cost_centre', obj._DepartmentUser__original_cost_centre,
+                obj.cost_centre, request.user.username, obj.name_update_reference
             ))
         if obj._DepartmentUser__original_name != obj.name:
-            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
-                obj.email, 'name', obj._DepartmentUser__original_name, obj.name, request.user.username
+            logger.info(l.format(
+                obj.email, 'name', obj._DepartmentUser__original_name, obj.name,
+                request.user.username, obj.name_update_reference
             ))
         if obj._DepartmentUser__original_org_unit != obj.org_unit:
-            logger.info('DepartmentUser: {}, field: {}, original_value: {} new_value: {}, changed_by: {}'.format(
-                obj.email, 'org_unit', obj._DepartmentUser__original_org_unit, obj.org_unit, request.user.username
+            logger.info(l.format(
+                obj.email, 'org_unit', obj._DepartmentUser__original_org_unit, obj.org_unit,
+                request.user.username, obj.name_update_reference
             ))
         obj.save()
 
