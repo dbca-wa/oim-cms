@@ -49,7 +49,7 @@ class OwsResourceSerializer(serializers.Serializer):
                 record.service_type_version = self.validated_data['wms_version']
             style_resources = record.style_resources
             resources = links + style_resources
-            Record.update_style_links(resources,record)
+            Record.update_links(resources,record)
 
 # Style Serializer
 class StyleSerializer(serializers.ModelSerializer):
