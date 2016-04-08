@@ -213,13 +213,22 @@ class Record(models.Model):
                 return int(bbox[3]) - int(bbox[1])
 
     @staticmethod
-    def generate_ows_link(service_type,service_version,record):
-        if service_type == 'WFS':
-            link = '{0}?SERVICE={1}&VERSION={2}&REQUEST=GetMap&BBOX={3}&CRS={4}&LAYERS={4}'.format(
-            enpoint,service_type.upper(),service_version,record.bounding_box,record.crs,record.identifier)
+    def generate_ows_link(endpoint,service_type,service_version,record):
+        if '?' in endpoint:
+            values = endpoint.split('?')
+            base_url = '{0}&'.format(endpoint)
         else:
-            link = '{0}?SERVICE={1}&VERSION={2}&REQUEST=GetMap&BBOX={3}&CRS={4}&WIDTH=500&HEIGHT=400&LAYERS={5}&FORMAT=image/png'.format(
-            enpoint,service_type.upper(),service_version,record.bounding_box,record.crs,record.identifier)
+            base_url= '{0}?'.format(endpoint)
+        # Set the version if it is a GWC endpoint
+        if not service_version:
+            service_version = record.service_type_version
+
+        if service_type == 'WFS':
+            link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetMap&BBOX={3}&CRS={4}&LAYERS={4}'.format(
+            base_url,service_type.upper(),service_version,record.bounding_box,record.crs,record.identifier)
+        else:
+            link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetMap&BBOX={3}&CRS={4}&WIDTH={5}&HEIGHT={6}&LAYERS={7}&FORMAT=image/png'.format(
+            base_url,service_type.upper(),service_version,record.bounding_box,record.crs,record.width,record.height,record.identifier)
         return '{{"protocol": "OGC:{0}","linkage":"{1}"}}'.format(service_type.upper(),link)
 
     @staticmethod
