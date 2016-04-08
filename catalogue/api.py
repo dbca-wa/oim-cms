@@ -33,18 +33,21 @@ class OwsResourceSerializer(serializers.Serializer):
     def save(self,record=None):
         if record:
             links = []
-            if self.validated_data['wfs'] and self.validated_data['wfs_endpoint']:
-                link = json.loads(Record.generate_ows_link('WFS',self.validated_data['wfs_version'],record))
-                links.append(link)
+            if self.validated_data['wfs']:
+                links.append(
+                    json.loads(Record.generate_ows_link(self.validated_data['wfs_endpoint'],'WFS',self.validated_data['wfs_version'],record))
+                )
                 record.service_type = 'WFS'
                 record.service_type_version = self.validated_data['wfs_version']
-            if self.validated_data['gwc'] and self.validated_data['gwc_endpoint']:
-                link =  json.loads(Record.generate_ows_link('WMS','',record))
-                links.append(link)
+            if self.validated_data['gwc']:
+                links.append(
+                    json.loads(Record.generate_ows_link(self.validated_data['gwc_endpoint'],'WMS',None,record))
+                )
                 record.service_type = 'WMS'
-            if self.validated_data['wms'] and self.validated_data['wms_endpoint']:
-                link =  json.loads(Record.generate_ows_link('WMS',self.validated_data['wms_version'],record))
-                links.append(link)
+            if self.validated_data['wms']:
+                links.append(
+                    json.loads(Record.generate_ows_link(self.validated_data['wms_endpoint'],'WMS',self.validated_data['wms_version'],record))
+                )
                 record.service_type = 'WMS'
                 record.service_type_version = self.validated_data['wms_version']
             style_resources = record.style_resources
