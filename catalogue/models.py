@@ -191,6 +191,27 @@ class Record(models.Model):
             resources = ows_resources
         return resources
 
+    def _calculate_from_bbox(self,side):
+        bbox = []
+        if self.bounding_box:
+            try:
+                bbox = json.loads(self.bounding_box)
+                if not bbox or not isinstance(bbox,list) or len(bbox) != 4:
+                    if side == 'width':
+                        return 400
+                    elif side == 'height':
+                        return 500
+            except:
+                if side == 'width':
+                    return 400
+                elif side == 'height':
+                    return 500
+
+            if side == 'width':
+                return int(bbox[2]) - int(bbox[0])
+            elif side == 'height':
+                return int(bbox[3]) - int(bbox[1])
+
     @staticmethod
     def generate_ows_link(service_type,service_version,record):
         if service_type == 'WFS':
@@ -207,7 +228,7 @@ class Record(models.Model):
         return link
 
     @staticmethod
-    def update_style_links(resources,record):
+    def update_links(resources,record):
         pos = 1
         links = ''
         for r in resources:
@@ -227,6 +248,14 @@ class Record(models.Model):
     def ows_resources(self):
         return self.get_resources('ows')
     
+    @property
+    def width(self):
+        return self._calculate_from_bbox('width')
+
+    @property
+    def height(self):
+        return self._calculate_from_bbox('height')
+
     @property
     def sld(self):
         """
@@ -390,7 +419,7 @@ class Style(models.Model):
         return base64.b64encode(checksum.digest())
 
 @receiver(pre_save,sender=Style)
-def update_style_links(sender, instance, **kwargs):
+def update_links(sender, instance, **kwargs):
     link = Record.generate_style_link(instance)
     json_link = json.loads(link)
     present = False
@@ -404,7 +433,7 @@ def update_style_links(sender, instance, **kwargs):
     if not present:
         style_resources.append(json_link)
         resources = ows_resources + style_resources
-        Record.update_style_links(resources,instance.record)
+        Record.update_links(resources,instance.record)
 
 @receiver(post_delete,sender=Style)
 def remove_style_links(sender, instance, **kwargs):
@@ -414,7 +443,7 @@ def remove_style_links(sender, instance, **kwargs):
         if r['name'] == instance.name and r['format'] == instance.format:
             style_resources.remove(r)
             resources = ows_resources + style_resources
-            Record.update_style_links(resources,instance.record)
+            Record.update_links(resources,instance.record)
 
 @receiver(pre_save, sender=Style)
 def set_default_style (sender, instance, **kwargs):
