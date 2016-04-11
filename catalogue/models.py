@@ -169,7 +169,17 @@ class Record(models.Model):
             return self.styles.get(format=format,default=True)
         except Style.DoesNotExist:
             return None
-
+    
+    def get_ows_resource(self):
+        resources = self.ows_resources
+        for r in resources:
+            if self.service_type.upper() in r['protocol']:
+                return {
+                    'name': self.service_type.upper(),
+                    'version': self.service_type_version,
+                    'link': r['linkage']
+                }
+    
     def get_resources(self,_type):
         if self.links:
             resources = re.split(",\s*(?=[^}]*(?:\{|$))",self.links)
