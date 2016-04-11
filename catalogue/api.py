@@ -93,6 +93,10 @@ class RecordSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField(read_only=True)
     publication_date = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
     modified = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
+    ows_resource = serializers.SerializerMethodField(read_only=True)
+
+    def get_ows_resource(self,obj):
+        return obj.ows_resource
     
     def __init__(self,*args, **kwargs):
         try:
@@ -109,7 +113,6 @@ class RecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = Record
         fields = (
-            'ows_resource',
             'url',
             'identifier',
             'title',
@@ -123,7 +126,8 @@ class RecordSerializer(serializers.ModelSerializer):
             'publication_date',
             'service_type',
             'service_type_version',
-            'links',
+            'ows_resource',
+            #'links',
             'styles',
             'workspace',
             'name',
