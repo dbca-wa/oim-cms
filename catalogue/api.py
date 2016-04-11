@@ -86,14 +86,12 @@ class StyleSerializer(serializers.ModelSerializer):
 
 # Record Serializer
 class RecordSerializer(serializers.ModelSerializer):
-    ows_resource = OwsResourceSerializer(write_only=True, required=False)
     workspace =  serializers.CharField(max_length=255, write_only=True)
     name = serializers.CharField(max_length=255, write_only=True)
     identifier = serializers.CharField(max_length=255, read_only=True)
     url = serializers.SerializerMethodField(read_only=True)
     publication_date = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
     modified = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
-    ows_resource = serializers.SerializerMethodField(read_only=True)
 
     def get_ows_resource(self,obj):
         return obj.ows_resource
@@ -103,9 +101,17 @@ class RecordSerializer(serializers.ModelSerializer):
             style_content = kwargs.pop("style_content")
         except:
             style_content = False
+        try:
+            ows_serializer_method = kwargs.pop('ows')
+        except:
+            ows_serializer_method = 'get'
 
         super(RecordSerializer, self).__init__(*args, **kwargs)
         self.fields['styles'] = StyleSerializer(many=True,required=False, style_content=style_content)
+        if ows_serializer_method == 'post':
+            self.fields['ows_resource'] = OwsResourceSerializer(write_only=True, required=False)
+        elif ows_serializer_method == 'get':
+            self.fields['ows_resource'] = serializers.SerializerMethodField(read_only=True)
 
     def get_url(self,obj):
         return '{0}/catalogue/api/records/{1}.json'.format(settings.BASE_URL,obj.identifier)
@@ -127,7 +133,6 @@ class RecordSerializer(serializers.ModelSerializer):
             'service_type',
             'service_type_version',
             'ows_resource',
-            #'links',
             'styles',
             'workspace',
             'name',
@@ -156,7 +161,7 @@ class RecordViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         style_content = bool(request.GET.get("style_content",False))
-        serializer = self.get_serializer(instance,style_content=style_content)
+        serializer = self.get_serializer(instance,style_content=style_content,ows='get')
         return Response(serializer.data)
 
     def create(self,request):
@@ -169,7 +174,7 @@ class RecordViewSet(viewsets.ModelViewSet):
         if "ows_resource" in request.data:
             ows_data = request.data.pop("ows_resource")
         #parse and valid record data
-        serializer = RecordSerializer(data=request.data)
+        serializer = RecordSerializer(data=request.data,ows='post')
         serializer.is_valid(raise_exception=True)
         #parse and valid styles data
         style_serializers = [StyleSerializer(data=style) for style in styles_data] if styles_data else []
@@ -243,5 +248,5 @@ class RecordViewSet(viewsets.ModelViewSet):
 
         record.styles = list(Style.objects.filter(record=record))
         style_content = bool(request.GET.get("style_content",False))
-        serializer = RecordSerializer(record,style_content=style_content)
+        serializer = RecordSerializer(record,style_content=style_content,ows='get')
         return Response(serializer.data,status=http_status)
