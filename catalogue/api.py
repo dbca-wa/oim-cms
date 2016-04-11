@@ -195,7 +195,7 @@ class RecordViewSet(viewsets.ModelViewSet):
         name = serializer.validated_data.pop("name")
         record = serializer.save()
         #
-        #ows_serializer.save(record)
+        ows_serializer.save(record)
 
         if auto_update:
             #auto update is enabled update styles
