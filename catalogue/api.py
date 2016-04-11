@@ -66,12 +66,14 @@ class StyleSerializer(serializers.ModelSerializer):
             return None
     
     def __init__(self, *args, **kwargs):
+        try:
+            style_content = kwargs.pop("style_content")
+        except:
+            style_content = False
+
         super(StyleSerializer, self).__init__(*args, **kwargs)
-        if kwargs.get('context'):
-            request = kwargs['context']['request']
-            borg = request.GET.get('borg',False)
-            if borg:
-                self.fields['raw_content'] = serializers.SerializerMethodField(read_only=True)
+        if style_content:
+            self.fields['raw_content'] = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Style
@@ -89,18 +91,17 @@ class RecordSerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=255, write_only=True)
     identifier = serializers.CharField(max_length=255, read_only=True)
     url = serializers.SerializerMethodField(read_only=True)
+    publication_date = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
+    modified = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self,*args, **kwargs):
+        try:
+            style_content = kwargs.pop("style_content")
+        except:
+            style_content = False
+
         super(RecordSerializer, self).__init__(*args, **kwargs)
-        if kwargs.get('context'):
-            request = kwargs['context']['request']
-            format_date = request.GET.get('format_date',False)
-            self.fields['styles'] = StyleSerializer(many=True,required=False, context={'request':request})
-            if format_date:
-                self.fields['publication_date'] = serializers.DateTimeField(format='%A, %d %B %Y %H:%M %p')
-                self.fields['modified'] = serializers.DateTimeField(format='%A, %d %B %Y %H:%M %p')
-        else:
-            self.fields['styles'] = StyleSerializer(many=True,required=False)
+        self.fields['styles'] = StyleSerializer(many=True,required=False, style_content=style_content)
 
     def get_url(self,obj):
         return '{0}/catalogue/api/records/{1}.json'.format(settings.BASE_URL,obj.identifier)
@@ -147,6 +148,12 @@ class RecordViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.active = False
         instance.save()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        style_content = bool(request.GET.get("style_content",False))
+        serializer = self.get_serializer(instance,style_content=style_content)
+        return Response(serializer.data)
 
     def create(self,request):
         styles_data = None
@@ -231,5 +238,6 @@ class RecordViewSet(viewsets.ModelViewSet):
                 style_serializer.save()
 
         record.styles = list(Style.objects.filter(record=record))
-        serializer = RecordSerializer(record)
+        style_content = bool(request.GET.get("style_content",False))
+        serializer = RecordSerializer(record,style_content=style_content)
         return Response(serializer.data,status=http_status)
