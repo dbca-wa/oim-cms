@@ -175,11 +175,15 @@ class Record(models.Model):
         for r in resources:
             if self.service_type.upper() in r['protocol']:
                 return {
-                    'name': self.service_type.upper(),
+                    'type': self.service_type.upper(),
                     'version': self.service_type_version,
                     'link': r['linkage']
                 }
-    
+
+    @property
+    def ows_resource(self ):
+        return self.get_ows_resource()
+
     def get_resources(self,_type):
         if self.links:
             resources = re.split(",\s*(?=[^}]*(?:\{|$))",self.links)
