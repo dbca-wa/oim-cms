@@ -53,7 +53,7 @@ INSTALLED_APPS = (
     'core',
     'mudmap',
     'postgrest',
-    #'catalogue'
+    'catalogue'
 )
 
 AUTHENTICATION_BACKENDS = (
