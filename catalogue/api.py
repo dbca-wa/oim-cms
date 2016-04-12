@@ -27,31 +27,37 @@ class OwsResourceSerializer(serializers.Serializer):
             (data['gwc'] and not data['gwc_endpoint'])
             ) :
             raise serializers.ValidationError("Both endpoint and version must have value if service is enabled.")
+        elif (data['gwc'] and not data['wms']):
+            raise serializers.ValidationError("WMS must be enabled if gwc is enabled.")
         else:
             return data
 
     def save(self,record=None):
         if record:
             links = []
-            if self.validated_data['wfs']:
-                links.append(
-                    json.loads(Record.generate_ows_link(self.validated_data['wfs_endpoint'],'WFS',self.validated_data['wfs_version'],record))
-                )
-                record.service_type = 'WFS'
-                record.service_type_version = self.validated_data['wfs_version']
             if self.validated_data['gwc']:
                 links.append(
                     json.loads(Record.generate_ows_link(self.validated_data['gwc_endpoint'],'WMS',None,record))
                 )
-                record.service_type = 'WMS'
             if self.validated_data['wms']:
                 links.append(
                     json.loads(Record.generate_ows_link(self.validated_data['wms_endpoint'],'WMS',self.validated_data['wms_version'],record))
                 )
-                record.service_type = 'WMS'
+            if self.validated_data['wfs']:
+                links.append(
+                    json.loads(Record.generate_ows_link(self.validated_data['wfs_endpoint'],'WFS',self.validated_data['wfs_version'],record))
+                )
+                
+            if record.service_type == "WMS":
                 record.service_type_version = self.validated_data['wms_version']
+            elif record.service_type == "WFS":
+                record.service_type_version = self.validated_data['wfs_version']
+            else:
+                record.service_type_version = ""
+
             style_resources = record.style_resources
             resources = links + style_resources
+
             Record.update_links(resources,record)
 
 # Style Serializer

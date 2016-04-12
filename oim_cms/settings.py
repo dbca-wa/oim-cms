@@ -13,6 +13,10 @@ ALLOWED_HOSTS = [env("ALLOWED_DOMAIN"), ]
 # e.g. in notification emails. Don't include '/admin' or a trailing slash
 BASE_URL = env('BASE_URL', 'http://localhost:8000')
 
+BORG_URL = env("BORG_URL","https://borg.dpaw.wa.gov.au")
+if BORG_URL.endswith("/"):
+    BORG_URL = BORG_URL[:-1]
+
 # Application definition
 
 INSTALLED_APPS = (
@@ -151,7 +155,7 @@ DATABASES = {'default': database.config()}
 LANGUAGE_CODE = 'en-gb'
 TIME_ZONE = 'Australia/Perth'
 USE_I18N = True
-USE_L10N = False
+USE_L10N = True
 USE_TZ = True
 DATE_FORMAT = 'd M Y'
 DATETIME_FORMAT = 'l d F Y, h:i A'

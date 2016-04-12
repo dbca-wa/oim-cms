@@ -5,6 +5,9 @@ import traceback
 from django.contrib import admin
 from django.contrib import messages
 from django.utils.safestring import mark_safe
+from django.conf import settings
+
+from dpaw_utils import requests
 
 from . import models
 from .forms import RecordForm,StyleForm,ApplicationForm
@@ -71,7 +74,7 @@ class StyleAdmin(admin.ModelAdmin):
     
 @admin.register(models.Record)
 class RecordAdmin(admin.ModelAdmin):
-    list_display = ("identifier","service_type","crs","title", "auto_update","active","modified")
+    list_display = ("identifier","service_type","crs","title", "auto_update","active","modified","publication_date")
     inlines = [StyleInline,]
     readonly_fields = ('service_type','service_type_version','crs','_bounding_box','active','publication_date','modified','insert_date')
     search_fields = ["identifier",'service_type']
@@ -133,6 +136,36 @@ class RecordAdmin(admin.ModelAdmin):
         else:
             return super(RecordAdmin,self).has_delete_permission(request,obj)
 
+    def publish(self,request,queryset):
+        result = None
+        failed_objects = []
+        data = {"layers":[]}
+        for record in queryset:
+            data["layers"].append(record.identifier)
+
+        res = None
+        try:
+            res = requests.post(request,"{}/api/metajobs/".format(settings.BORG_URL),json=data)
+            res.raise_for_status()
+            result = res.json()
+            if result["status"]:
+                messages.success(request, "All selected records are published successfully")
+            else:
+                for layer,status in result.iteritems():
+                    if layer == "status": continue
+                    if status["status"]: continue
+                    failed_objects.append((layer,status["message"]))
+                if failed_objects:
+                    messages.warning(request, mark_safe("Some selected records are published failed:<ul>{0}</ul>".format("".join(["<li>{0} : {1}</li>".format(o[0],o[1]) for o in failed_objects]))))
+                else:
+                    messages.success(request, "All selected records are published successfully")
+
+        except Exception as e:
+            traceback.print_exc()
+            messages.warning(request, str(e))
+    publish.short_description = "Publish"
+
+
     def custom_delete_selected(self,request,queryset):
         if request.POST.get('post') != 'yes':
             #the confirm page, or user not confirmed
@@ -156,6 +189,7 @@ class RecordAdmin(admin.ModelAdmin):
         else:
             messages.success(request, "All selected records are deleted successfully")
 
+    actions = ["publish"]
     def get_actions(self, request):
         actions = super(RecordAdmin, self).get_actions(request)
         self.default_delete_action = actions['delete_selected']
