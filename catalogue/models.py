@@ -256,7 +256,7 @@ class Record(models.Model):
         if bbox:
             if service_type == 'WFS' and service_version != '1.0.0':
                 # Transform bounding box if WFS version is higher than 1.0.0
-                bbox[0], bbox[1], bbox[2], bbox[3] = bbox[1], bbox[0], bbox[3], bbox[2]
+                bbox = [bbox[1], bbox[0], bbox[3], bbox[2]]
             bbox = ','.join(str(i) for i in bbox)
 
         if service_type == 'WFS':
