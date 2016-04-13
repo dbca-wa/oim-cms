@@ -1,3 +1,4 @@
+import traceback
 from rest_framework import serializers, viewsets, status, generics
 from models import Record, Style
 from rest_framework.response import Response
@@ -9,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 import os
 import json
 from django.conf import settings
+from pycsw import util
 
 #Ows Resource Serializer
 class OwsResourceSerializer(serializers.Serializer):
@@ -37,15 +39,15 @@ class OwsResourceSerializer(serializers.Serializer):
             links = []
             if self.validated_data['gwc']:
                 links.append(
-                    json.loads(Record.generate_ows_link(self.validated_data['gwc_endpoint'],'WMS',None,record))
+                    json.loads(record.generate_ows_link(self.validated_data['gwc_endpoint'],'WMS',self.validated_data['wms_version']))
                 )
-            if self.validated_data['wms']:
+            elif self.validated_data['wms']:
                 links.append(
-                    json.loads(Record.generate_ows_link(self.validated_data['wms_endpoint'],'WMS',self.validated_data['wms_version'],record))
+                    json.loads(record.generate_ows_link(self.validated_data['wms_endpoint'],'WMS',self.validated_data['wms_version']))
                 )
             if self.validated_data['wfs']:
                 links.append(
-                    json.loads(Record.generate_ows_link(self.validated_data['wfs_endpoint'],'WFS',self.validated_data['wfs_version'],record))
+                    json.loads(record.generate_ows_link(self.validated_data['wfs_endpoint'],'WFS',self.validated_data['wfs_version']))
                 )
                 
             if record.service_type == "WMS":
@@ -192,6 +194,19 @@ class RecordViewSet(viewsets.ModelViewSet):
         ows_serializer.is_valid(raise_exception=True)
         #save record data.
         identifier = "{}:{}".format(serializer.validated_data['workspace'],serializer.validated_data['name'])
+        #transform the bbox data format
+        if serializer.validated_data.get('bounding_box'):
+            bounding_box = json.loads(serializer.validated_data['bounding_box'])
+            bounding_box = ','.join([str(o) for o in bounding_box])
+            try:
+                serializer.validated_data['bounding_box'] = util.bbox2wktpolygon(bounding_box)
+            except:
+                traceback.print_exc()
+                raise serializers.ValidationError("Incorrect bounding box dataformat.")
+
+            print serializer.validated_data
+
+
         try:
             serializer.instance = Record.objects.get(identifier=identifier)
             serializer.instance.active = True

@@ -160,6 +160,18 @@ class Record(models.Model):
     # Custom fields
     auto_update = models.BooleanField(default=True)
     active = models.BooleanField(default=True, editable=False)
+
+    bbox_re = re.compile('POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\,\s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\,\s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\,\s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\,\s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)')
+
+    @property 
+    def bbox(self):
+        if self.bounding_box:
+            try:
+                return self.bbox_re.match(self.bounding_box).groups()
+            except:
+                return None
+        else:
+            return None
     
     def __unicode__(self):
         return self.identifier
@@ -232,34 +244,27 @@ class Record(models.Model):
             elif side == 'height':
                 return int(bbox[3]) - int(bbox[1])
 
-    @staticmethod
-    def generate_ows_link(endpoint,service_type,service_version,record):
+    def generate_ows_link(self,endpoint,service_type,service_version):
         if '?' in endpoint:
             values = endpoint.split('?')
             base_url = '{0}&'.format(endpoint)
         else:
             base_url= '{0}?'.format(endpoint)
-        # Set the version if it is a GWC endpoint
-        if not service_version:
-            service_version = record.service_type_version
 
-        bbox = []
-        try:
-            bbox = json.loads(record.bounding_box)
-            if not bbox or not isinstance(bbox,list) or len(bbox) != 4:
-                bbox = []
-        except:
-            bbox = []
-        if service_type == 'WFS' and service_version != '1.0.0':
-            # Transform bounding box if WFS version is higher than 1.0.0
-            bbox[0], bbox[1], bbox[2], bbox[3] = bbox[1], bbox[0], bbox[3], bbox[2]
-        bbox = ','.join(str(i) for i in bbox)
+        bbox = self.bbox or []
+
+        if bbox:
+            if service_type == 'WFS' and service_version != '1.0.0':
+                # Transform bounding box if WFS version is higher than 1.0.0
+                bbox[0], bbox[1], bbox[2], bbox[3] = bbox[1], bbox[0], bbox[3], bbox[2]
+            bbox = ','.join(str(i) for i in bbox)
+
         if service_type == 'WFS':
-            link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetFeature&BBOX={3}&CRS={4}&TYPENAME={5}'.format(
-            base_url,service_type.upper(),service_version,bbox,record.crs,record.identifier)
+            link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetFeature{3}&CRS={4}&TYPENAME={5}'.format(
+            base_url,service_type.upper(),service_version,"&BBOX={}".format(bbox),self.crs,self.identifier)
         else:
-            link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetMap&BBOX={3}&CRS={4}&WIDTH={5}&HEIGHT={6}&LAYERS={7}&FORMAT=image/png'.format(
-            base_url,service_type.upper(),service_version,bbox,record.crs,record.width,record.height,record.identifier)
+            link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetMap{3}&CRS={4}&WIDTH={5}&HEIGHT={6}&LAYERS={7}&FORMAT=image/png'.format(
+            base_url,service_type.upper(),service_version,"&BBOX={}".format(bbox),self.crs,self.width,self.height,self.identifier)
         return '{{"protocol": "OGC:{0}","linkage":"{1}","version":"{2}"}}'.format(service_type.upper(),link,service_version)
 
     @staticmethod

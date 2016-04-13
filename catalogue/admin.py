@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.contrib import messages
 from django.utils.safestring import mark_safe
 from django.conf import settings
+from django.template import Context, Template
 
 from dpaw_utils import requests
 
@@ -76,7 +77,7 @@ class StyleAdmin(admin.ModelAdmin):
 class RecordAdmin(admin.ModelAdmin):
     list_display = ("identifier","service_type","crs","title", "auto_update","active","modified","publication_date")
     inlines = [StyleInline,]
-    readonly_fields = ('service_type','service_type_version','crs','_bounding_box','active','publication_date','modified','insert_date')
+    readonly_fields = ('service_type','service_type_version','crs','_bounding_box',"_ows_resources",'active','publication_date','modified','insert_date')
     search_fields = ["identifier",'service_type']
     form = RecordForm
     """
@@ -103,17 +104,41 @@ class RecordAdmin(admin.ModelAdmin):
     def _bounding_box(self,instance):
         bounding_box = ["-","-","-","-"]
         if instance.bounding_box:
-            try:
-                bounding_box = json.loads(instance.bounding_box)
-                if not bounding_box or not isinstance(bounding_box,list) or len(bounding_box) != 4:
-                    bounding_box = ["-","-","-","-"]
-            except:
-                bounding_box = ["-","-","-","-"]
+            bounding_box = instance.bbox or ["-","-","-","-"]
 
         return self.html.format(*bounding_box)
 
     _bounding_box.allow_tags = True
     _bounding_box.short_description = "bounding_box"
+
+    ows_resources_template  = """<table>
+<tr>
+    <th style='width:100px;border-bottom:None'>Service Type</th>
+    <th style='width:100px;border-bottom:None'>Version</th>
+    <th style='width:100px;border-bottom:None'>Link</th>
+</tr>
+{% for resource in resources %}
+<tr>
+    <td style='border-bottom:None'>{{resource.protocol}}</td>
+    <td style='border-bottom:None'>{{resource.version}}</td>
+    <td style='border-bottom:None'>{{resource.linkage}}</td>
+</tr>
+{% endfor %}
+</table>
+"""
+    def _ows_resources(self,instance):
+        resources = ""
+        ows_resources = instance.ows_resources
+        if ows_resources:
+            context = Context({"resources": ows_resources})
+            resources =  Template(self.ows_resources_template).render(context)
+
+        return resources
+
+    _ows_resources.allow_tags = True
+    _ows_resources.short_description = "OWS Resources"
+
+
     def get_inline_instances(self, request, obj=None):
         if obj and obj.service_type == "WMS":
             return []
