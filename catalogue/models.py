@@ -172,13 +172,19 @@ class Record(models.Model):
     
     def get_ows_resource(self):
         resources = self.ows_resources
+        links = []
         for r in resources:
-            if self.service_type.upper() in r['protocol']:
-                return {
-                    'type': self.service_type.upper(),
-                    'version': self.service_type_version,
-                    'link': r['linkage']
-                }
+            if 'WMS' in r['protocol']:
+                _type = 'WMS'
+            elif 'WFS' in r['protocol']:
+                _type = 'WFS'
+            link = {
+                'type': _type,
+                'version': r['version'],
+                'link': r['linkage']
+            }
+            links.append(link)
+        return links
 
     @property
     def ows_resource(self ):
@@ -244,15 +250,17 @@ class Record(models.Model):
                 bbox = []
         except:
             bbox = []
-
+        if service_type == 'WFS' and service_version != '1.0.0':
+            # Transform bounding box if WFS version is higher than 1.0.0
+            bbox[0], bbox[1], bbox[2], bbox[3] = bbox[1], bbox[0], bbox[3], bbox[2]
         bbox = ','.join(str(i) for i in bbox)
         if service_type == 'WFS':
-            link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetMap&BBOX={3}&CRS={4}&LAYERS={4}'.format(
+            link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetFeature&BBOX={3}&CRS={4}&TYPENAME={5}'.format(
             base_url,service_type.upper(),service_version,bbox,record.crs,record.identifier)
         else:
             link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetMap&BBOX={3}&CRS={4}&WIDTH={5}&HEIGHT={6}&LAYERS={7}&FORMAT=image/png'.format(
             base_url,service_type.upper(),service_version,bbox,record.crs,record.width,record.height,record.identifier)
-        return '{{"protocol": "OGC:{0}","linkage":"{1}"}}'.format(service_type.upper(),link)
+        return '{{"protocol": "OGC:{0}","linkage":"{1}","version":"{2}"}}'.format(service_type.upper(),link,service_version)
 
     @staticmethod
     def generate_style_link(style):
