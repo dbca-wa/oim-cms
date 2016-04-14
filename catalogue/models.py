@@ -185,7 +185,10 @@ class Record(models.Model):
     def get_ows_resource(self):
         resources = self.ows_resources
         links = []
-        for r in resources:
+        for resource in resources:
+            r = re.split("\t",resource)
+            link = r[3]
+            r = json.loads(r[2].replace("'","\""))
             if 'WMS' in r['protocol']:
                 _type = 'WMS'
             elif 'WFS' in r['protocol']:
@@ -193,7 +196,7 @@ class Record(models.Model):
             link = {
                 'type': _type,
                 'version': r['version'],
-                'link': r['linkage']
+                'link': link
             }
             links.append(link)
         return links
@@ -203,9 +206,6 @@ class Record(models.Model):
         return self.get_ows_resource()
 
     def get_resources(self,_type):
-        #if self.links:
-        #    resources = re.split(",\s*(?=[^}]*(?:\{|$))",self.links)
-        # Split using ^
         if self.links:
             resources = self.links.split('^')
         else:
@@ -213,16 +213,16 @@ class Record(models.Model):
         if _type =='style':
             style_resources = []
             for resource in resources:
-                r = re.split(",\s*(?![^{}]*\})",resource)
-                r_json = json.loads(r[2])
-                if r_json['protocol'] == 'FILE:GEO':
+                r = re.split("\t",resource)
+                r_json = json.loads(r[2].replace("'","\""))
+                if 'application' in r_json['protocol']:
                     style_resources.append(resource)
             resources = style_resources
         elif _type == 'ows':
             ows_resources = []
             for resource in resources:
-                r = re.split(",\s*(?![^{}]*\})",resource)
-                r_json = json.loads(r[2])
+                r = re.split("\t",resource)
+                r_json = json.loads(r[2].replace("'","\""))
                 if 'OGC' in r_json['protocol']:
                     ows_resources.append(resource)
             resources = ows_resources
@@ -270,22 +270,23 @@ class Record(models.Model):
         else:
             link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetMap{3}&CRS={4}&WIDTH={5}&HEIGHT={6}&LAYERS={7}&FORMAT=image/png'.format(
             base_url,service_type.upper(),service_version,"&BBOX={}".format(bbox),self.crs,self.width,self.height,self.identifier)
-        schema =  '{{"protocol": "OGC:{0}","linkage":"{1}","version":"{2}"}}'.format(service_type.upper(),base_url,service_version)
-        return 'None,None,{0},{1}'.format(schema,link) 
+        schema =  '{{"protocol":"OGC:{0}","linkage":"{1}","version":"{2}"}}'.format(service_type.upper(),base_url,service_version)
+        return 'None\tNone\t{0}\t{1}'.format(schema,link)
     @staticmethod
     def generate_style_link(style):
-        schema =  '{{"protocol": "application:{0}","name":"{1}","format":"{2}","linkage":"{3}/media/"}}'.format(style.format.lower(),style.name,style.format,settings.BASE_URL)
-        return 'None,None,{0},{1}/media/{2}'.format(schema,settings.BASE_URL,style.content) 
+        schema =  '{{"protocol":"application/{0}","name":"{1}","default":"{2}","linkage":"{3}/media/"}}'.format(style.format.lower(),style.name,style.default,settings.BASE_URL)
+        return 'None\tNone\t{0}\t{1}/media/{2}'.format(schema,settings.BASE_URL,style.content)
 
     @staticmethod
     def update_links(resources,record):
         pos = 1
         links = ''
         for r in resources:
+            r = r.replace('"','\'')
             if pos == 1:
-                links += '{0}'.format(json.dumps(r))
+                links += r
             else:
-                links += ',{0}'.format(json.dumps(r))
+                links += '^{0}'.format(r)
             pos += 1
         record.links = links
         record.save()
@@ -471,19 +472,20 @@ class Style(models.Model):
 @receiver(pre_save,sender=Style)
 def update_links(sender, instance, **kwargs):
     link = Record.generate_style_link(instance)
-    json_link = json.loads(link)
+    links_parts = re.split("\t",link)
+    json_link = json.loads(links_parts[2])
     present = False
     style_resources = instance.record.style_resources
     ows_resources = instance.record.ows_resources
     if not instance.record.links:
         instance.record.links = ''
     for resource in style_resources:
-        parts = re.split(",\s*(?![^{}]*\})",resource)
-        r = json.loads(parts[2])
-        if r['name'] == json_link['name'] and r['format'] == json_link['format']:
+        parts = re.split("\t",resource)
+        r = json.loads(parts[2].replace("'","\""))
+        if r['name'] == json_link['name'] and r['protocol'] == json_link['protocol']:
             present = True
     if not present:
-        style_resources.append(json_link)
+        style_resources.append(link)
         resources = ows_resources + style_resources
         Record.update_links(resources,instance.record)
 
@@ -492,9 +494,9 @@ def remove_style_links(sender, instance, **kwargs):
     style_resources = instance.record.style_resources
     ows_resources = instance.record.ows_resources
     for resource in style_resources:
-        parts = re.split(",\s*(?![^{}]*\})",resource)
-        r = json.loads(parts[2])
-        if r['name'] == instance.name and r['format'] == instance.format:
+        parts = re.split("\t",resource)
+        r = json.loads(parts[2].replace("'","\""))
+        if r['name'] == instance.name and instance.format.lower() in r['protocol']:
             style_resources.remove(resource)
             resources = ows_resources + style_resources
             Record.update_links(resources,instance.record)
