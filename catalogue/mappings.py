@@ -58,6 +58,7 @@ MD_CORE_MODEL = {
         'pycsw:Publisher': 'publisher',
         'pycsw:Contributor': 'contributor',
         'pycsw:Relation': 'relation',
-        'pycsw:Links': 'download_links',
+        'pycsw:Links': 'non_existant_column',
+        'pycsw:ResourceLinks': 'links',
     }
 }

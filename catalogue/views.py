@@ -12,16 +12,36 @@ from sqlalchemy.schema import Column
 from sqlalchemy import inspection,log,util
 from sqlalchemy.sql import util as sql_util
 from sqlalchemy.orm.mapper import Mapper as BaseMapper
-from pycsw.server import Csw
+from pycsw.server import Csw as PyCsw
 from itertools import chain
 from .models import Application
 
 from .pycswsettings import build_pycsw_settings
 
 import logging
-
+from pycsw import util
+from lxml import etree
 
 logger = logging.getLogger(__name__)
+
+class Csw(PyCsw):
+    def _write_record(self, recobj, queryables):
+        record = super(Csw, self)._write_record(recobj,queryables)
+        if self.kvp['elementsetname'] in ['summary', 'full']:
+            # links:
+            rlinks = util.getqattr(recobj,
+            self.context.md_core_model['mappings']['pycsw:ResourceLinks'])
+
+            if rlinks:
+                links = rlinks.split('^')
+
+                for link in links:
+                    linkset = link.split('\t')
+                    etree.SubElement(record,
+                    util.nspath_eval('dct:references',
+                    self.context.namespaces),
+                    scheme=linkset[2]).text = linkset[-1]
+        return record
 
 @inspection._self_inspects
 @log.class_logger

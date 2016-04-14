@@ -39,17 +39,16 @@ class OwsResourceSerializer(serializers.Serializer):
             links = []
             if self.validated_data['gwc']:
                 links.append(
-                    json.loads(record.generate_ows_link(self.validated_data['gwc_endpoint'],'WMS',self.validated_data['wms_version']))
+                    record.generate_ows_link(self.validated_data['gwc_endpoint'],'WMS',self.validated_data['wms_version'])
                 )
             elif self.validated_data['wms']:
                 links.append(
-                    json.loads(record.generate_ows_link(self.validated_data['wms_endpoint'],'WMS',self.validated_data['wms_version']))
+                    record.generate_ows_link(self.validated_data['wms_endpoint'],'WMS',self.validated_data['wms_version'])
                 )
             if self.validated_data['wfs']:
                 links.append(
-                    json.loads(record.generate_ows_link(self.validated_data['wfs_endpoint'],'WFS',self.validated_data['wfs_version']))
+                    record.generate_ows_link(self.validated_data['wfs_endpoint'],'WFS',self.validated_data['wfs_version'])
                 )
-                
             if record.service_type == "WMS":
                 record.service_type_version = self.validated_data['wms_version']
             elif record.service_type == "WFS":
@@ -203,10 +202,6 @@ class RecordViewSet(viewsets.ModelViewSet):
             except:
                 traceback.print_exc()
                 raise serializers.ValidationError("Incorrect bounding box dataformat.")
-
-            print serializer.validated_data
-
-
         try:
             serializer.instance = Record.objects.get(identifier=identifier)
             serializer.instance.active = True
