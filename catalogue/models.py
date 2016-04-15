@@ -342,7 +342,6 @@ class Record(models.Model):
                 xtile = int((bbox[0] + 180) / degreePerTile)
                 ytile = int((bbox[1] + 90) / degreePerTile)
                 tile_bbox = [xtile * degreePerTile - 180,ytile * degreePerTile - 90,(xtile + 1) * degreePerTile - 180,(ytile + 1) * degreePerTile - 90]
-                print "{}:{}  {}".format(max_level,tile_bbox,bbox)
                 if tile_bbox[0] <= bbox[0] and tile_bbox[1] <= bbox[1] and tile_bbox[2] >= bbox[2] and tile_bbox[3] >= bbox[3]:
                     break
                 else:
@@ -368,7 +367,6 @@ class Record(models.Model):
 
         is_exist = lambda k: any([ any([base_url_upper.find(s) >= 0 for s in ["&{}=".format(n.upper()),"?{}=".format(n.upper())]]) for n in (k if isinstance(k,tuple) or isinstance(k,list) else [k])])
         
-        print kvp
         querystring = "&".join(["{}={}".format(k[0] if isinstance(k,tuple) or isinstance(k,list) else k,v) for k,v in kvp.iteritems() if not is_exist(k)  ])
         link = base_url + querystring
 
