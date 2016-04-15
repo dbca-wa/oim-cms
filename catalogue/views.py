@@ -26,21 +26,109 @@ logger = logging.getLogger(__name__)
 
 class Csw(PyCsw):
     def _write_record(self, recobj, queryables):
-        record = super(Csw, self)._write_record(recobj,queryables)
-        if self.kvp['elementsetname'] in ['summary', 'full']:
-            # links:
-            rlinks = util.getqattr(recobj,
-            self.context.md_core_model['mappings']['pycsw:ResourceLinks'])
+        ''' replicate from original method.
+           Only changes is the column separator in links is "\t" instead of ","
+        '''
+        if self.kvp['elementsetname'] == 'brief':
+            elname = 'BriefRecord'
+        elif self.kvp['elementsetname'] == 'summary':
+            elname = 'SummaryRecord'
+        else:
+            elname = 'Record'
 
-            if rlinks:
-                links = rlinks.split('^')
+        record = etree.Element(util.nspath_eval('csw:%s' % elname,
+                 self.context.namespaces))
 
-                for link in links:
-                    linkset = link.split('\t')
+        if ('elementname' in self.kvp and
+            len(self.kvp['elementname']) > 0):
+            for elemname in self.kvp['elementname']:
+                if (elemname.find('BoundingBox') != -1 or
+                    elemname.find('Envelope') != -1):
+                    bboxel = write_boundingbox(util.getqattr(recobj,
+                    self.context.md_core_model['mappings']['pycsw:BoundingBox']),
+                    self.context.namespaces)
+                    if bboxel is not None:
+                        record.append(bboxel)
+                else:
+                    value = util.getqattr(recobj, queryables[elemname]['dbcol'])
+                    if value:
+                        etree.SubElement(record,
+                        util.nspath_eval(elemname,
+                        self.context.namespaces)).text = value
+        elif 'elementsetname' in self.kvp:
+            if (self.kvp['elementsetname'] == 'full' and
+            util.getqattr(recobj, self.context.md_core_model['mappings']\
+            ['pycsw:Typename']) == 'csw:Record' and
+            util.getqattr(recobj, self.context.md_core_model['mappings']\
+            ['pycsw:Schema']) == 'http://www.opengis.net/cat/csw/2.0.2' and
+            util.getqattr(recobj, self.context.md_core_model['mappings']\
+            ['pycsw:Type']) != 'service'):
+                # dump record as is and exit
+                return etree.fromstring(util.getqattr(recobj,
+                self.context.md_core_model['mappings']['pycsw:XML']), self.context.parser)
+
+            etree.SubElement(record,
+            util.nspath_eval('dc:identifier', self.context.namespaces)).text = \
+            util.getqattr(recobj,
+            self.context.md_core_model['mappings']['pycsw:Identifier'])
+
+            for i in ['dc:title', 'dc:type']:
+                val = util.getqattr(recobj, queryables[i]['dbcol'])
+                if not val:
+                    val = ''
+                etree.SubElement(record, util.nspath_eval(i,
+                self.context.namespaces)).text = val
+
+            if self.kvp['elementsetname'] in ['summary', 'full']:
+                # add summary elements
+                keywords = util.getqattr(recobj, queryables['dc:subject']['dbcol'])
+                if keywords is not None:
+                    for keyword in keywords.split(','):
+                        etree.SubElement(record,
+                        util.nspath_eval('dc:subject',
+                        self.context.namespaces)).text = keyword
+
+                val = util.getqattr(recobj, queryables['dc:format']['dbcol'])
+                if val:
                     etree.SubElement(record,
-                    util.nspath_eval('dct:references',
-                    self.context.namespaces),
-                    scheme=linkset[2]).text = linkset[-1]
+                    util.nspath_eval('dc:format',
+                    self.context.namespaces)).text = val
+
+                # links
+                rlinks = util.getqattr(recobj,
+                self.context.md_core_model['mappings']['pycsw:Links'])
+
+                if rlinks:
+                    links = rlinks.split('^')
+                    for link in links:
+                        linkset = link.split('\t')
+                        etree.SubElement(record,
+                        util.nspath_eval('dct:references',
+                        self.context.namespaces),
+                        scheme=linkset[2]).text = linkset[-1]
+
+                for i in ['dc:relation', 'dct:modified', 'dct:abstract']:
+                    val = util.getqattr(recobj, queryables[i]['dbcol'])
+                    if val is not None:
+                        etree.SubElement(record,
+                        util.nspath_eval(i, self.context.namespaces)).text = val
+
+            if self.kvp['elementsetname'] == 'full':  # add full elements
+                for i in ['dc:date', 'dc:creator', \
+                'dc:publisher', 'dc:contributor', 'dc:source', \
+                'dc:language', 'dc:rights']:
+                    val = util.getqattr(recobj, queryables[i]['dbcol'])
+                    if val:
+                        etree.SubElement(record,
+                        util.nspath_eval(i, self.context.namespaces)).text = val
+
+            # always write out ows:BoundingBox
+            bboxel = write_boundingbox(getattr(recobj,
+            self.context.md_core_model['mappings']['pycsw:BoundingBox']),
+            self.context.namespaces)
+
+            if bboxel is not None:
+                record.append(bboxel)
         return record
 
 @inspection._self_inspects

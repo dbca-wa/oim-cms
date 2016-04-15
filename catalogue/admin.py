@@ -115,20 +115,22 @@ class RecordAdmin(admin.ModelAdmin):
 <tr>
     <th style='width:100px;border-bottom:None'>Service Type</th>
     <th style='width:100px;border-bottom:None'>Version</th>
-    <th style='width:100px;border-bottom:None'>Link</th>
+    <th style='width:100px;border-bottom:None'>Endpoint</th>
+    <th style='width:100px;border-bottom:None'>Preview</th>
 </tr>
 {% for resource in resources %}
 <tr>
     <td style='border-bottom:None'>{{resource.protocol}}</td>
     <td style='border-bottom:None'>{{resource.version}}</td>
-    <td style='border-bottom:None'>{{resource.linkage}}</td>
+    <td style='border-bottom:None'>{{resource.endpoint}}</td>
+    <td style='border-bottom:None'><A target='_blank' href='{{resource.link}}'>preview</A></td>
 </tr>
 {% endfor %}
 </table>
 """
     def _ows_resources(self,instance):
         resources = ""
-        ows_resources = instance.ows_resources
+        ows_resources = instance.ows_resource
         if ows_resources:
             context = Context({"resources": ows_resources})
             resources =  Template(self.ows_resources_template).render(context)

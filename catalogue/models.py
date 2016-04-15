@@ -26,6 +26,7 @@ http://localhost:8000/csw/server/?
     typenames=gmd:MD_Metadata
 
 """
+import math
 
 from django.db import models,connection
 from django.dispatch import receiver
@@ -167,7 +168,7 @@ class Record(models.Model):
     def bbox(self):
         if self.bounding_box:
             try:
-                return self.bbox_re.match(self.bounding_box).groups()
+                return [float(v) for v in self.bbox_re.match(self.bounding_box).groups()]
             except:
                 return None
         else:
@@ -182,51 +183,57 @@ class Record(models.Model):
         except Style.DoesNotExist:
             return None
     
-    def get_ows_resource(self):
-        resources = self.ows_resources
-        links = []
-        for resource in resources:
-            r = re.split("\t",resource)
-            link = r[3]
+    @property
+    def ows_resource(self ):
+        links = self.ows_links
+        resources = []
+        for link in links:
+            r = re.split("\t",link)
+            sample_link = r[3]
             r = json.loads(r[2].replace("'","\""))
             if 'WMS' in r['protocol']:
                 _type = 'WMS'
             elif 'WFS' in r['protocol']:
                 _type = 'WFS'
-            link = {
+            resource = {
                 'type': _type,
                 'version': r['version'],
-                'link': link
+                'endpoint': r['linkage'],
+                'link': sample_link
             }
-            links.append(link)
-        return links
+            resources.append(resource)
+        return resources
 
     @property
-    def ows_resource(self ):
-        return self.get_ows_resource()
+    def style_links(self):
+        return self.get_resource_links('style')
 
-    def get_resources(self,_type):
+    @property
+    def ows_links(self):
+        return self.get_resource_links('ows')
+    
+    def get_resource_links(self,_type):
         if self.links:
-            resources = self.links.split('^')
+            links = self.links.split('^')
         else:
-            resources = []
+            links = []
         if _type =='style':
-            style_resources = []
-            for resource in resources:
-                r = re.split("\t",resource)
+            style_links = []
+            for link in links:
+                r = re.split("\t",link)
                 r_json = json.loads(r[2].replace("'","\""))
                 if 'application' in r_json['protocol']:
-                    style_resources.append(resource)
-            resources = style_resources
+                    style_links.append(link)
+            links = style_links
         elif _type == 'ows':
-            ows_resources = []
-            for resource in resources:
-                r = re.split("\t",resource)
+            ows_links = []
+            for link in links:
+                r = re.split("\t",link)
                 r_json = json.loads(r[2].replace("'","\""))
                 if 'OGC' in r_json['protocol']:
-                    ows_resources.append(resource)
-            resources = ows_resources
-        return resources
+                    ows_links.append(link)
+            links = ows_links
+        return links
 
     def _calculate_from_bbox(self,side):
         bbox = []
@@ -250,28 +257,125 @@ class Record(models.Model):
                 return int(bbox[3]) - int(bbox[1])
 
     def generate_ows_link(self,endpoint,service_type,service_version):
-        if '?' in endpoint:
-            values = endpoint.split('?')
+        if service_version in ("1.1.0","1.1"):
+            service_version = "1.1.0"
+        elif service_version in ("2.0.0","2","2.0"):
+            service_version = "2.0.0"
+        elif service_version in ("1","1.0","1.0.0"):
+            service_version = "1.0.0"
+
+        bbox = self.bbox or []
+        if bbox:
+            if service_type == "WFS":
+                #to limit the returned features, shrink the original bbox to 10 percent
+                percent = 0.1
+                shrinked_min = lambda min,max :(max - min) / 2 - (max - min) * percent / 2
+                shrinked_max = lambda min,max :(max - min) / 2 + (max - min) * percent / 2
+                shrinked_bbox = [shrinked_min(bbox[0],bbox[2]),shrinked_min(bbox[1],bbox[3]),shrinked_max(bbox[0],bbox[2]),shrinked_max(bbox[1],bbox[3])]
+        else:
+            shrinked_bbox = None
+
+        bbox2str = lambda bbox,service,version: ','.join(str(c) for c in bbox) if service != "WFS" or version == "1.0.0" else ",".join([str(c) for c in [bbox[1],bbox[0],bbox[3],bbox[2]]])
+
+        if service_type == "WFS":
+            kvp = {
+                "SERVICE":"WFS",
+                "REQUEST":"GetFeature",
+                "VERSION":service_version,
+                "SRSNAME":self.crs,
+                "TYPENAMES":self.identifier,
+            }
+            is_geoserver = endpoint.find("geoserver") >= 0
+
+            if service_version == "1.1.0":
+                if is_geoserver:
+                    kvp["maxFeatures"] = 20
+                elif shrinked_bbox:
+                    kvp["BBOX"] = bbox2str(shrinked_bbox,service_type,service_version)
+            elif service_version == "2.0.0":
+                if is_geoserver:
+                    kvp["count"] = 20
+                elif shrinked_bbox:
+                    kvp["BBOX"] = bbox2str(shrinked_bbox,service_type,service_version)
+            else:
+                kvp["BBOX"] = bbox2str(shrinked_bbox,service_type,service_version)
+        elif service_type == "WMS":
+            kvp = {
+                "SERVICE":"WMS",
+                "REQUEST":"GetMap",
+                "VERSION":service_version,
+                "SRSNAME":self.crs,
+                "LAYERS":self.identifier,
+                ("SRS","CRS"):self.crs,
+                "WIDTH":self.width,
+                "HEIGHT":self.height,
+                "FORMAT":"image/png"
+            }
+            if bbox:
+                kvp["BBOX"] = bbox2str(bbox,service_type,service_version)
+        elif service_type == "GWC":
+            service_type = "WMS"
+            kvp = {
+                "SERVICE":"WMS",
+                "REQUEST":"GetMap",
+                "VERSION":service_version,
+                "SRSNAME":self.crs,
+                "LAYERS":self.identifier,
+                ("SRS","CRS"):"EPSG:4326",
+                "WIDTH":1024,
+                "HEIGHT":1024,
+                "FORMAT":"image/png"
+            }
+            if not bbox:
+                #bbox is null,use australian bbox
+                bbox = [108.0000, -45.0000, 155.0000, -10.0000]
+            #compute the tile which can cover the whole bbox
+            tile_size = max([bbox[2] - bbox[0],bbox[3] - bbox[1]])
+            max_tiles = int(180 / tile_size)
+            max_level = -1
+            tile_bbox = None
+            while (max_tiles > 0):
+                max_tiles /= 2
+                max_level += 1
+            while(max_level >= 0):
+                degreePerTile = 180.0 / math.pow(2,max_level)
+                xtile = int((bbox[0] + 180) / degreePerTile)
+                ytile = int((bbox[1] + 90) / degreePerTile)
+                tile_bbox = [xtile * degreePerTile - 180,ytile * degreePerTile - 90,(xtile + 1) * degreePerTile - 180,(ytile + 1) * degreePerTile - 90]
+                print "{}:{}  {}".format(max_level,tile_bbox,bbox)
+                if tile_bbox[0] <= bbox[0] and tile_bbox[1] <= bbox[1] and tile_bbox[2] >= bbox[2] and tile_bbox[3] >= bbox[3]:
+                    break
+                else:
+                    max_level -= 1
+                    tile_bbox = None
+                tile_bbox = []
+            if not tile_bbox:
+                tile_bbox = [0,-90,180,90]
+
+            kvp["BBOX"] = bbox2str(tile_bbox,service_type,service_version)
+        else:
+            raise Exception("Unknown service type({})".format(service_type))
+
+        endpoint = endpoint.strip()
+        if endpoint[-1] in ("?","&"):
+            base_url = endpoint
+        elif '?' in endpoint:
             base_url = '{0}&'.format(endpoint)
         else:
             base_url= '{0}?'.format(endpoint)
 
-        bbox = self.bbox or []
+        base_url_upper = base_url.upper()
 
-        if bbox:
-            if service_type == 'WFS' and service_version != '1.0.0':
-                # Transform bounding box if WFS version is higher than 1.0.0
-                bbox = [bbox[1], bbox[0], bbox[3], bbox[2]]
-            bbox = ','.join(str(i) for i in bbox)
+        is_exist = lambda k: any([ any([base_url_upper.find(s) >= 0 for s in ["&{}=".format(n.upper()),"?{}=".format(n.upper())]]) for n in (k if isinstance(k,tuple) or isinstance(k,list) else [k])])
+        
+        print kvp
+        querystring = "&".join(["{}={}".format(k[0] if isinstance(k,tuple) or isinstance(k,list) else k,v) for k,v in kvp.iteritems() if not is_exist(k)  ])
+        link = base_url + querystring
 
-        if service_type == 'WFS':
-            link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetFeature{3}&CRS={4}&TYPENAME={5}'.format(
-            base_url,service_type.upper(),service_version,"&BBOX={}".format(bbox),self.crs,self.identifier)
-        else:
-            link = '{0}SERVICE={1}&VERSION={2}&REQUEST=GetMap{3}&CRS={4}&WIDTH={5}&HEIGHT={6}&LAYERS={7}&FORMAT=image/png'.format(
-            base_url,service_type.upper(),service_version,"&BBOX={}".format(bbox),self.crs,self.width,self.height,self.identifier)
         schema =  '{{"protocol":"OGC:{0}","linkage":"{1}","version":"{2}"}}'.format(service_type.upper(),base_url,service_version)
         return 'None\tNone\t{0}\t{1}'.format(schema,link)
+
+
     @staticmethod
     def generate_style_link(style):
         schema =  '{{"protocol":"application/{0}","name":"{1}","default":"{2}","linkage":"{3}/media/"}}'.format(style.format.lower(),style.name,style.default,settings.BASE_URL)
@@ -291,14 +395,6 @@ class Record(models.Model):
         record.links = links
         record.save()
 
-    @property
-    def style_resources(self):
-        return self.get_resources('style')
-
-    @property
-    def ows_resources(self):
-        return self.get_resources('ows')
-    
     @property
     def width(self):
         return self._calculate_from_bbox('width')
@@ -475,31 +571,33 @@ def update_links(sender, instance, **kwargs):
     links_parts = re.split("\t",link)
     json_link = json.loads(links_parts[2])
     present = False
-    style_resources = instance.record.style_resources
-    ows_resources = instance.record.ows_resources
+    style_links = instance.record.style_links
+    ows_links = instance.record.ows_links
     if not instance.record.links:
         instance.record.links = ''
-    for resource in style_resources:
-        parts = re.split("\t",resource)
+    for link in style_links:
+        parts = re.split("\t",link)
         r = json.loads(parts[2].replace("'","\""))
         if r['name'] == json_link['name'] and r['protocol'] == json_link['protocol']:
             present = True
     if not present:
-        style_resources.append(link)
-        resources = ows_resources + style_resources
-        Record.update_links(resources,instance.record)
+        style_links.append(link)
+        links = ows_links + style_links
+        Record.update_links(links,instance.record)
 
 @receiver(post_delete,sender=Style)
 def remove_style_links(sender, instance, **kwargs):
-    style_resources = instance.record.style_resources
-    ows_resources = instance.record.ows_resources
-    for resource in style_resources:
+    style_links = instance.record.style_links
+    ows_links = instance.record.ows_links
+    #remote deleted style's link
+    for link in style_links:
         parts = re.split("\t",resource)
         r = json.loads(parts[2].replace("'","\""))
         if r['name'] == instance.name and instance.format.lower() in r['protocol']:
-            style_resources.remove(resource)
-            resources = ows_resources + style_resources
-            Record.update_links(resources,instance.record)
+            style_links.remove(link)
+
+    links = ows_links + style_links
+    Record.update_links(links,instance.record)
 
 @receiver(pre_save, sender=Style)
 def set_default_style (sender, instance, **kwargs):
