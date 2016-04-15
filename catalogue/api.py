@@ -39,7 +39,7 @@ class OwsResourceSerializer(serializers.Serializer):
             links = []
             if self.validated_data['gwc']:
                 links.append(
-                    record.generate_ows_link(self.validated_data['gwc_endpoint'],'WMS',self.validated_data['wms_version'])
+                    record.generate_ows_link(self.validated_data['gwc_endpoint'],'GWC',self.validated_data['wms_version'])
                 )
             elif self.validated_data['wms']:
                 links.append(
@@ -56,8 +56,8 @@ class OwsResourceSerializer(serializers.Serializer):
             else:
                 record.service_type_version = ""
 
-            style_resources = record.style_resources
-            resources = links + style_resources
+            style_links = record.style_links
+            resources = links + style_links
 
             Record.update_links(resources,record)
 
