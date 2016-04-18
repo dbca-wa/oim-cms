@@ -9,7 +9,8 @@ from lxml import etree
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.types import Integer
 from sqlalchemy.schema import Column
-from sqlalchemy import inspection,log,util
+from sqlalchemy import inspection,log
+from sqlalchemy import util as sqlalchemy_util
 from sqlalchemy.sql import util as sql_util
 from sqlalchemy.orm.mapper import Mapper as BaseMapper
 from pycsw.server import Csw as PyCsw
@@ -19,6 +20,7 @@ from .models import Application
 from .pycswsettings import build_pycsw_settings
 
 import logging
+import traceback
 from pycsw import util
 from lxml import etree
 from pycsw.server import write_boundingbox
@@ -141,11 +143,9 @@ class Mapper(BaseMapper):
         self._pks_by_table = {}
         self._cols_by_table = {}
 
-        all_cols = util.column_set(chain(*[
-            col.proxy_set for col in
-            self._columntoproperty]))
+        all_cols = sqlalchemy_util.column_set(chain(*[col.proxy_set for col in self._columntoproperty]))
 
-        pk_cols = util.column_set(c for c in all_cols if c.primary_key)
+        pk_cols = sqlalchemy_util.column_set(c for c in all_cols if c.primary_key)
         # identify primary key columns which are also mapped by this mapper.
         tables = set(self.tables + [self.mapped_table])
         self._all_tables.update(tables)
@@ -173,7 +173,7 @@ class CswEndpoint(View):
         if not app:
             app = "all"
         #request by named app, use app related view
-        record_table = Application.get_view_name(app) 
+        record_table = Application.get_view_name(app)
         try:
             if not self.application_records.get(app,None):
                 base = declarative_base(bind=server.repository.engine,mapper=Mapper)
