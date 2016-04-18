@@ -106,7 +106,7 @@ class Csw(PyCsw):
                         etree.SubElement(record,
                         util.nspath_eval('dct:references',
                         self.context.namespaces),
-                        scheme=linkset[2]).text = linkset[-1]
+                        scheme=linkset[2].replace("\"","&quot;")).text = linkset[-1]
 
                 for i in ['dc:relation', 'dct:modified', 'dct:abstract']:
                     val = util.getqattr(recobj, queryables[i]['dbcol'])

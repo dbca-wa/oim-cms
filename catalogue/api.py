@@ -172,97 +172,102 @@ class RecordViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def create(self,request):
-        styles_data = None
-        ows_data = None
-        auto_update = True
-        http_status = status.HTTP_200_OK
-        if "styles" in request.data:
-            styles_data = request.data.pop("styles")
-        if "ows_resource" in request.data:
-            ows_data = request.data.pop("ows_resource")
-        #parse and valid record data
-        serializer = RecordSerializer(data=request.data,ows='post')
-        serializer.is_valid(raise_exception=True)
-        #parse and valid styles data
-        style_serializers = [StyleSerializer(data=style) for style in styles_data] if styles_data else []
-        if style_serializers:
-            for style_serializer in style_serializers:
-                style_serializer.is_valid(raise_exception=True)
-        #parse and vlaidate ows data
-        ows_serializer = OwsResourceSerializer(data=ows_data)
-        ows_serializer.is_valid(raise_exception=True)
-        #save record data.
-        identifier = "{}:{}".format(serializer.validated_data['workspace'],serializer.validated_data['name'])
-        #transform the bbox data format
-        if serializer.validated_data.get('bounding_box'):
-            bounding_box = json.loads(serializer.validated_data['bounding_box'])
-            bounding_box = ','.join([str(o) for o in bounding_box])
-            try:
-                serializer.validated_data['bounding_box'] = util.bbox2wktpolygon(bounding_box)
-            except:
-                traceback.print_exc()
-                raise serializers.ValidationError("Incorrect bounding box dataformat.")
         try:
-            serializer.instance = Record.objects.get(identifier=identifier)
-            serializer.instance.active = True
-            auto_update = serializer.instance.auto_update
-            if not serializer.instance.auto_update:
-                #auto update disabled
-                for key in ["title","abstract","auto_update","modified","insert_date"]:
-                    if key in serializer.validated_data: serializer.validated_data.pop(key)
-
-        except Record.DoesNotExist:
-            serializer.validated_data['identifier']=identifier
-            http_status = status.HTTP_201_CREATED
-
-        #remove fake fields
-        workspace = serializer.validated_data.pop("workspace")
-        name = serializer.validated_data.pop("name")
-        record = serializer.save()
-        #
-        ows_serializer.save(record)
-
-        if auto_update:
-            #auto update is enabled update styles
-            #set the missing data and transform the content
-            for style_serializer in style_serializers:
-                uploaded_style = style_serializer.validated_data
-                uploaded_style["record"] = record
-                uploaded_style["content"] = self.createStyle(uploaded_style["content"].decode("base64"))
-
-            #set default style
-            origin_default_style = {"sld":record.sld.name if record.sld else None,"qml":record.qml.name if record.qml else None, "lyr":record.lyr.name if record.lyr else None }
-            default_style = { }
-            for style_serializer in style_serializers:
-                uploaded_style = style_serializer.validated_data
-                if uploaded_style.get("default",False):
-                    #user set this style as default style, use the user's setting
-                    default_style[uploaded_style["format"]] = uploaded_style
-                elif origin_default_style.get(uploaded_style["format"].lower(),None) == uploaded_style["name"]:
-                    #the current style is configured default style.
-                    default_style[uploaded_style["format"]] = uploaded_style
-                elif not origin_default_style.get(uploaded_style["format"].lower(),None) and  uploaded_style["format"] not in default_style:
-                    #no default style has been set, set the current style as the default style
-                    default_style[uploaded_style["format"]] = uploaded_style
-                #clear the default flag
-                uploaded_style["default"] = False
-
-            #set the default style
-            for uploaded_style in default_style.itervalues():
-                uploaded_style["default"] = True
-
-            #save  style
-            for style_serializer in style_serializers:
-                if http_status != status.HTTP_201_CREATED:
-                    #record is already exist,should check whether style exist or not.
-                    try:
-                        style_serializer.instance = Style.objects.get(record=record,name=style_serializer.validated_data["name"],format=style_serializer.validated_data["format"])
-                        setattr(style_serializer.instance,"access_channel","restapi")
-                    except Style.DoesNotExist:
-                        pass
-                style_serializer.save()
-
-        record.styles = list(Style.objects.filter(record=record))
-        style_content = bool(request.GET.get("style_content",False))
-        serializer = RecordSerializer(record,style_content=style_content,ows='get')
-        return Response(serializer.data,status=http_status)
+            styles_data = None
+            ows_data = None
+            auto_update = True
+            http_status = status.HTTP_200_OK
+            if "styles" in request.data:
+                styles_data = request.data.pop("styles")
+            if "ows_resource" in request.data:
+                ows_data = request.data.pop("ows_resource")
+            #parse and valid record data
+            serializer = RecordSerializer(data=request.data,ows='post')
+            serializer.is_valid(raise_exception=True)
+            #parse and valid styles data
+            style_serializers = [StyleSerializer(data=style) for style in styles_data] if styles_data else []
+            if style_serializers:
+                for style_serializer in style_serializers:
+                    style_serializer.is_valid(raise_exception=True)
+            #parse and vlaidate ows data
+            ows_serializer = OwsResourceSerializer(data=ows_data)
+            ows_serializer.is_valid(raise_exception=True)
+            #save record data.
+            identifier = "{}:{}".format(serializer.validated_data['workspace'],serializer.validated_data['name'])
+            #transform the bbox data format
+            if serializer.validated_data.get('bounding_box'):
+                bounding_box = json.loads(serializer.validated_data['bounding_box'])
+                bounding_box = ','.join([str(o) for o in bounding_box])
+                try:
+                    serializer.validated_data['bounding_box'] = util.bbox2wktpolygon(bounding_box)
+                except:
+                    traceback.print_exc()
+                    raise serializers.ValidationError("Incorrect bounding box dataformat.")
+            try:
+                serializer.instance = Record.objects.get(identifier=identifier)
+                serializer.instance.active = True
+                auto_update = serializer.instance.auto_update
+                if not serializer.instance.auto_update:
+                    #auto update disabled
+                    for key in ["title","abstract","auto_update","modified","insert_date"]:
+                        if key in serializer.validated_data: serializer.validated_data.pop(key)
+    
+            except Record.DoesNotExist:
+                serializer.validated_data['identifier']=identifier
+                http_status = status.HTTP_201_CREATED
+    
+            #remove fake fields
+            workspace = serializer.validated_data.pop("workspace")
+            name = serializer.validated_data.pop("name")
+            record = serializer.save()
+            #
+            ows_serializer.save(record)
+    
+            if auto_update:
+                #auto update is enabled update styles
+                #set the missing data and transform the content
+                for style_serializer in style_serializers:
+                    uploaded_style = style_serializer.validated_data
+                    uploaded_style["record"] = record
+                    uploaded_style["content"] = self.createStyle(uploaded_style["content"].decode("base64"))
+    
+                #set default style
+                origin_default_style = {"sld":record.sld.name if record.sld else None,"qml":record.qml.name if record.qml else None, "lyr":record.lyr.name if record.lyr else None }
+                default_style = { }
+                for style_serializer in style_serializers:
+                    uploaded_style = style_serializer.validated_data
+                    if uploaded_style.get("default",False):
+                        #user set this style as default style, use the user's setting
+                        default_style[uploaded_style["format"]] = uploaded_style
+                    elif origin_default_style.get(uploaded_style["format"].lower(),None) == uploaded_style["name"]:
+                        #the current style is configured default style.
+                        default_style[uploaded_style["format"]] = uploaded_style
+                    elif not origin_default_style.get(uploaded_style["format"].lower(),None) and  uploaded_style["format"] not in default_style:
+                        #no default style has been set, set the current style as the default style
+                        default_style[uploaded_style["format"]] = uploaded_style
+                    #clear the default flag
+                    uploaded_style["default"] = False
+    
+                #set the default style
+                for uploaded_style in default_style.itervalues():
+                    uploaded_style["default"] = True
+    
+                #save  style
+                for style_serializer in style_serializers:
+                    if http_status != status.HTTP_201_CREATED:
+                        #record is already exist,should check whether style exist or not.
+                        try:
+                            style_serializer.instance = Style.objects.get(record=record,name=style_serializer.validated_data["name"],format=style_serializer.validated_data["format"])
+                            setattr(style_serializer.instance,"access_channel","restapi")
+                        except Style.DoesNotExist:
+                            pass
+                    style_serializer.save()
+    
+            record.styles = list(Style.objects.filter(record=record))
+            style_content = bool(request.GET.get("style_content",False))
+            serializer = RecordSerializer(record,style_content=style_content,ows='get')
+            return Response(serializer.data,status=http_status)
+        except serializers.ValidationError:
+            raise
+        except Exception as e:
+            raise serializers.ValidationError(str(e))
