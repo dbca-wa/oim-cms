@@ -21,6 +21,7 @@ from .pycswsettings import build_pycsw_settings
 import logging
 from pycsw import util
 from lxml import etree
+from pycsw.server import write_boundingbox
 
 logger = logging.getLogger(__name__)
 
