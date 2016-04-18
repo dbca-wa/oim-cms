@@ -27,6 +27,13 @@ http://localhost:8000/csw/server/?
 
 """
 import math
+import md5
+import base64
+import os
+import re
+import json
+
+import pyproj
 
 from django.db import models,connection
 from django.dispatch import receiver
@@ -34,14 +41,31 @@ from django.db.models.signals import post_save, pre_save, post_delete,pre_delete
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-import md5
-import base64
-import os
-import re
-import json
 
 slug_re = re.compile(r'^[a-z0-9_]+$')
 validate_slug = RegexValidator(slug_re, "Slug can only contain lowercase letters, numbers and underscores", "invalid")
+
+
+#load extra epsg
+epsg_extra = {}
+try:
+    epsgs = None
+    with open(settings.EPSG_EXTRA_FILE,'rb') as f:
+        epsgs = f.read()
+    epsg_re = re.compile("^<([0-9]+)>\s+(.+)\s+<>$")
+    epsgs = [l.strip() for l in epsgs.splitlines()]
+    #remove empty lines, comment lines and incorrect lines
+    epsgs = [l for l in epsgs if l and l[0] != "#"]
+    #parse each line
+    for l in epsgs:
+        try:
+            m = epsg_re.match(l)
+            if m:
+                epsg_extra["EPSG:{}".format(m.group(1))] = m.group(2)
+        except:
+            pass
+except:
+    pass
 
 class PycswConfig(models.Model):
     language = models.CharField(max_length=10, default="en-US")
@@ -190,7 +214,7 @@ class Record(models.Model):
         for link in links:
             r = re.split("\t",link)
             sample_link = r[3]
-            r = json.loads(r[2].replace("'","\""))
+            r = json.loads(r[2])
             if 'WMS' in r['protocol']:
                 _type = 'WMS'
             elif 'WFS' in r['protocol']:
@@ -221,7 +245,7 @@ class Record(models.Model):
             style_links = []
             for link in links:
                 r = re.split("\t",link)
-                r_json = json.loads(r[2].replace("'","\""))
+                r_json = json.loads(r[2])
                 if 'application' in r_json['protocol']:
                     style_links.append(link)
             links = style_links
@@ -229,7 +253,7 @@ class Record(models.Model):
             ows_links = []
             for link in links:
                 r = re.split("\t",link)
-                r_json = json.loads(r[2].replace("'","\""))
+                r_json = json.loads(r[2])
                 if 'OGC' in r_json['protocol']:
                     ows_links.append(link)
             links = ows_links
@@ -264,8 +288,49 @@ class Record(models.Model):
         elif service_version in ("1","1.0","1.0.0"):
             service_version = "1.0.0"
 
+        endpoint = endpoint.strip()
+        original_endpoint = endpoint
+        #parse endpoint's parameters
+        endpoint = endpoint.split("?",1)
+        endpoint,endpoint_parameters = (endpoint[0],endpoint[1]) if len(endpoint) == 2 else (endpoint[0],None)
+        endpoint_parameters = endpoint_parameters.split("&") if endpoint_parameters else None
+        endpoint_parameters = dict([(p.split("=",1)[0].upper(),p.split("=",1)) for p in endpoint_parameters] if endpoint_parameters else [])
+
+        #transform the bbox between coordinate systems,if required
         bbox = self.bbox or []
         if bbox:
+            if service_type == "WFS":
+                if any([ k in endpoint_parameters for k in ["SRSNAME"]]) :
+                    target_crs = endpoint_parameters.get("SRSNAME")[1]
+                else:
+                    target_crs = None
+            elif service_type in ["WMS","GWC"]:
+                if any([ k in endpoint_parameters for k in ["SRS","CRS"]]) :
+                    target_crs = (endpoint_parameters.get("SRS") or endpoint_parameters.get("CRS"))[1]
+                else:
+                    target_crs = None
+            else:
+                target_crs = None
+
+            if target_crs and target_crs != self.crs:
+                try:
+                    if self.crs.upper() in epsg_extra:
+                        p1 = pyproj.Proj(epsg_extra[self.crs.upper()])
+                    else:
+                        p1 = pyproj.Proj(init=self.crs)
+
+                    if target_crs.upper() in epsg_extra:
+                        p2 = pyproj.Proj(epsg_extra[target_crs.upper()])
+                    else:
+                        p2 = pyproj.Proj(init=target_crs)
+
+                    bbox[0],bbox[1] = pyproj.transform(p1,p2,bbox[0],bbox[1])
+                    bbox[2],bbox[3] = pyproj.transform(p1,p2,bbox[2],bbox[3])
+                except Exception as e:
+                    raise ValidationError("Transform the bbox of layer({0}) from crs({1}) to crs({2}) failed.{3}".format(self.identifier,self.crs,target_crs,str(e)))
+
+            
+
             if service_type == "WFS":
                 #to limit the returned features, shrink the original bbox to 10 percent
                 percent = 0.1
@@ -276,6 +341,7 @@ class Record(models.Model):
             shrinked_bbox = None
 
         bbox2str = lambda bbox,service,version: ','.join(str(c) for c in bbox) if service != "WFS" or version == "1.0.0" else ",".join([str(c) for c in [bbox[1],bbox[0],bbox[3],bbox[2]]])
+
 
         if service_type == "WFS":
             kvp = {
@@ -304,7 +370,6 @@ class Record(models.Model):
                 "SERVICE":"WMS",
                 "REQUEST":"GetMap",
                 "VERSION":service_version,
-                "SRSNAME":self.crs,
                 "LAYERS":self.identifier,
                 ("SRS","CRS"):self.crs,
                 "WIDTH":self.width,
@@ -319,7 +384,6 @@ class Record(models.Model):
                 "SERVICE":"WMS",
                 "REQUEST":"GetMap",
                 "VERSION":service_version,
-                "SRSNAME":self.crs,
                 "LAYERS":self.identifier,
                 ("SRS","CRS"):"EPSG:4326",
                 "WIDTH":1024,
@@ -355,36 +419,51 @@ class Record(models.Model):
         else:
             raise Exception("Unknown service type({})".format(service_type))
 
-        endpoint = endpoint.strip()
-        if endpoint[-1] in ("?","&"):
-            base_url = endpoint
-        elif '?' in endpoint:
-            base_url = '{0}&'.format(endpoint)
-        else:
-            base_url= '{0}?'.format(endpoint)
-
-        base_url_upper = base_url.upper()
-
-        is_exist = lambda k: any([ any([base_url_upper.find(s) >= 0 for s in ["&{}=".format(n.upper()),"?{}=".format(n.upper())]]) for n in (k if isinstance(k,tuple) or isinstance(k,list) else [k])])
+        is_exist = lambda k: any([n.upper() in endpoint_parameters for n in (k if isinstance(k,tuple) or isinstance(k,list) else [k])])
         
         querystring = "&".join(["{}={}".format(k[0] if isinstance(k,tuple) or isinstance(k,list) else k,v) for k,v in kvp.iteritems() if not is_exist(k)  ])
-        link = base_url + querystring
+        if querystring:
+            if original_endpoint[-1] in ("?","&"):
+                link = "{}{}".format(original_endpoint,querystring)
+            elif '?' in original_endpoint:
+                link = "{}&{}".format(original_endpoint,querystring)
+            else:
+                link = "{}?{}".format(original_endpoint,querystring)
+        else:
+            link = original_endpoint
+        
+        #get the endpoint after removing ows related parameters
+        if endpoint_parameters:
+            is_exist = lambda k: any([ any([k == key.upper() for key in item_key]) if isinstance(item_key,tuple) or isinstance(item_key,list) else k == item_key.upper()  for item_key in kvp ])
+            endpoint_querystring = "&".join(["{}={}".format(*v) for k,v in endpoint_parameters.iteritems() if not is_exist(k)  ])
+            if endpoint_querystring:
+                endpoint = "{}?{}".format(endpoint,endpoint_querystring)
 
-        schema =  '{{"protocol":"OGC:{0}","linkage":"{1}","version":"{2}"}}'.format(service_type.upper(),base_url,service_version)
-        return 'None\tNone\t{0}\t{1}'.format(schema,link)
+        #schema =  '{{"protocol":"OGC:{0}","linkage":"{1}","version":"{2}"}}'.format(service_type.upper(),endpoint,service_version)
+        schema = {
+            "protocol":"OGC:{}".format(service_type.upper()),
+            "linkage":endpoint,
+            "version":service_version
+        }
+        return 'None\tNone\t{0}\t{1}'.format(json.dumps(schema),link)
 
 
     @staticmethod
     def generate_style_link(style):
-        schema =  '{{"protocol":"application/{0}","name":"{1}","default":"{2}","linkage":"{3}/media/"}}'.format(style.format.lower(),style.name,style.default,settings.BASE_URL)
-        return 'None\tNone\t{0}\t{1}/media/{2}'.format(schema,settings.BASE_URL,style.content)
+        #schema =  '{{"protocol":"application/{0}","name":"{1}","default":"{2}","linkage":"{3}/media/"}}'.format(style.format.lower(),style.name,style.default,settings.BASE_URL)
+        schema = {
+            "protocol" : "application/{}".format(style.format.lower()),
+            "name": style.name,
+            "default": style.default,
+            "linkage":"{}/media/a".format(settings.BASE_URL)
+        }
+        return 'None\tNone\t{0}\t{1}/media/{2}'.format(json.dumps(schema),settings.BASE_URL,style.content)
 
     @staticmethod
     def update_links(resources,record):
         pos = 1
         links = ''
         for r in resources:
-            r = r.replace('"','\'')
             if pos == 1:
                 links += r
             else:
@@ -575,7 +654,7 @@ def update_links(sender, instance, **kwargs):
         instance.record.links = ''
     for link in style_links:
         parts = re.split("\t",link)
-        r = json.loads(parts[2].replace("'","\""))
+        r = json.loads(parts[2])
         if r['name'] == json_link['name'] and r['protocol'] == json_link['protocol']:
             present = True
     if not present:
@@ -590,7 +669,7 @@ def remove_style_links(sender, instance, **kwargs):
     #remote deleted style's link
     for link in style_links:
         parts = re.split("\t",resource)
-        r = json.loads(parts[2].replace("'","\""))
+        r = json.loads(parts[2])
         if r['name'] == instance.name and instance.format.lower() in r['protocol']:
             style_links.remove(link)
 
