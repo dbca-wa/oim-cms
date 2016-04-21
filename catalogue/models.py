@@ -67,6 +67,49 @@ try:
 except:
     pass
 
+class PreviewTile(object):
+    @staticmethod
+    def _preview_tile(srs_bbox,bbox,default_tilebox):
+        #compute the tile which can cover the whole bbox
+        min_distance = min([srs_bbox[2] - srs_bbox[0],srs_bbox[3] - srs_bbox[1]])
+        tile_size = max([bbox[2] - bbox[0],bbox[3] - bbox[1]])
+        max_tiles = int(min_distance / tile_size)
+        max_level = -1
+        tile_bbox = None
+        while (max_tiles > 0):
+            max_tiles /= 2
+            max_level += 1
+
+        while(max_level >= 0):
+            distancePerTile = float(min_distance) / math.pow(2,max_level)
+            xtile = int((bbox[0] - srs_bbox[0]) / distancePerTile)
+            ytile = int((bbox[1] - srs_bbox[1]) / distancePerTile)
+            tile_bbox = [xtile * distancePerTile + srs_bbox[0],ytile * distancePerTile + srs_bbox[1],(xtile + 1) * distancePerTile + srs_bbox[0],(ytile + 1) * distancePerTile + srs_bbox[1]]
+            if tile_bbox[0] <= bbox[0] and tile_bbox[1] <= bbox[1] and tile_bbox[2] >= bbox[2] and tile_bbox[3] >= bbox[3]:
+                break
+            else:
+                max_level -= 1
+                tile_bbox = None
+
+        if not tile_bbox:
+            tile_bbox = default_tilebox
+
+        return tile_bbox
+
+    @staticmethod
+    def EPSG_4326(bbox):
+        #compute the tile which can cover the whole bbox
+        #gridset bound [-180,-90,180,90]
+        return PreviewTile._preview_tile([-180,-90,180,90],bbox,[0,-90,180,90])
+
+    @staticmethod
+    def EPSG_3857(bbox):
+        #compute the tile which can cover the whole bbox
+        #gridset bound [-20,037,508.34,-20,037,508.34,20,037,508.34,20,037,508.34]
+        return PreviewTile._preview_tile([-20037508.34,-20037508.34,20037508.34,20037508.34],bbox,[-20037508.34,-20037508.34,20037508.34,20037508.34])
+
+
+
 class PycswConfig(models.Model):
     language = models.CharField(max_length=10, default="en-US")
     max_records = models.IntegerField(default=10)
@@ -230,6 +273,7 @@ class Record(models.Model):
                 'endpoint': r['linkage'],
                 'link': sample_link
             }
+            resource.update(r)
             resources.append(resource)
         return resources
 
@@ -311,7 +355,7 @@ class Record(models.Model):
                     target_crs = None
             elif service_type in ["WMS","GWC"]:
                 if any([ k in endpoint_parameters for k in ["SRS","CRS"]]) :
-                    target_crs = (endpoint_parameters.get("SRS") or endpoint_parameters.get("CRS"))[1]
+                    target_crs = (endpoint_parameters.get("SRS") or endpoint_parameters.get("CRS"))[1].upper()
                 else:
                     target_crs = None
             else:
@@ -324,8 +368,8 @@ class Record(models.Model):
                     else:
                         p1 = pyproj.Proj(init=self.crs)
 
-                    if target_crs.upper() in epsg_extra:
-                        p2 = pyproj.Proj(epsg_extra[target_crs.upper()])
+                    if target_crs in epsg_extra:
+                        p2 = pyproj.Proj(epsg_extra[target_crs])
                     else:
                         p2 = pyproj.Proj(init=target_crs)
 
@@ -333,8 +377,8 @@ class Record(models.Model):
                     bbox[2],bbox[3] = pyproj.transform(p1,p2,bbox[2],bbox[3])
                 except Exception as e:
                     raise ValidationError("Transform the bbox of layer({0}) from crs({1}) to crs({2}) failed.{3}".format(self.identifier,self.crs,target_crs,str(e)))
-
-            
+            else:
+                target_crs = self.crs.upper()
 
             if service_type == "WFS":
                 #to limit the returned features, shrink the original bbox to 10 percent
@@ -344,9 +388,9 @@ class Record(models.Model):
                 shrinked_bbox = [shrinked_min(bbox[0],bbox[2]),shrinked_min(bbox[1],bbox[3]),shrinked_max(bbox[0],bbox[2]),shrinked_max(bbox[1],bbox[3])]
         else:
             shrinked_bbox = None
+            target_crs = self.crs.upper()
 
         bbox2str = lambda bbox,service,version: ','.join(str(c) for c in bbox) if service != "WFS" or version == "1.0.0" else ",".join([str(c) for c in [bbox[1],bbox[0],bbox[3],bbox[2]]])
-
 
         if service_type == "WFS":
             kvp = {
@@ -354,7 +398,9 @@ class Record(models.Model):
                 "REQUEST":"GetFeature",
                 "VERSION":service_version,
                 "SRSNAME":self.crs,
-                "TYPENAMES":self.identifier,
+            }
+            parameters = {
+                "crs":target_crs
             }
             is_geoserver = endpoint.find("geoserver") >= 0
 
@@ -363,13 +409,16 @@ class Record(models.Model):
                     kvp["maxFeatures"] = 20
                 elif shrinked_bbox:
                     kvp["BBOX"] = bbox2str(shrinked_bbox,service_type,service_version)
+                kvp["TYPENAME"] = self.identifier
             elif service_version == "2.0.0":
                 if is_geoserver:
                     kvp["count"] = 20
                 elif shrinked_bbox:
                     kvp["BBOX"] = bbox2str(shrinked_bbox,service_type,service_version)
+                kvp["TYPENAMES"] = self.identifier
             else:
                 kvp["BBOX"] = bbox2str(shrinked_bbox,service_type,service_version)
+                kvp["TYPENAME"] = self.identifier
         elif service_type == "WMS":
             kvp = {
                 "SERVICE":"WMS",
@@ -381,6 +430,10 @@ class Record(models.Model):
                 "HEIGHT":self.height,
                 "FORMAT":"image/png"
             }
+            parameters = {
+                "crs":target_crs,
+                "format":endpoint_parameters["FORMAT"][1] if "FORMAT" in endpoint_parameters else kvp["FORMAT"],
+            }
             if bbox:
                 kvp["BBOX"] = bbox2str(bbox,service_type,service_version)
         elif service_type == "GWC":
@@ -390,35 +443,29 @@ class Record(models.Model):
                 "REQUEST":"GetMap",
                 "VERSION":service_version,
                 "LAYERS":self.identifier,
-                ("SRS","CRS"):"EPSG:4326",
+                ("SRS","CRS"):self.crs.upper(),
                 "WIDTH":1024,
                 "HEIGHT":1024,
                 "FORMAT":"image/png"
             }
+            parameters = {
+                "crs": target_crs,
+                "format":endpoint_parameters["FORMAT"][1] if "FORMAT" in endpoint_parameters else kvp["FORMAT"],
+                "width":endpoint_parameters["WIDTH"][1] if "WIDTH" in endpoint_parameters else kvp["WIDTH"],
+                "height":endpoint_parameters["HEIGHT"][1] if "HEIGHT" in endpoint_parameters else kvp["HEIGHT"],
+            }
             if not bbox:
                 #bbox is null,use australian bbox
                 bbox = [108.0000, -45.0000, 155.0000, -10.0000]
-            #compute the tile which can cover the whole bbox
-            tile_size = max([bbox[2] - bbox[0],bbox[3] - bbox[1]])
-            max_tiles = int(180 / tile_size)
-            max_level = -1
-            tile_bbox = None
-            while (max_tiles > 0):
-                max_tiles /= 2
-                max_level += 1
-            while(max_level >= 0):
-                degreePerTile = 180.0 / math.pow(2,max_level)
-                xtile = int((bbox[0] + 180) / degreePerTile)
-                ytile = int((bbox[1] + 90) / degreePerTile)
-                tile_bbox = [xtile * degreePerTile - 180,ytile * degreePerTile - 90,(xtile + 1) * degreePerTile - 180,(ytile + 1) * degreePerTile - 90]
-                if tile_bbox[0] <= bbox[0] and tile_bbox[1] <= bbox[1] and tile_bbox[2] >= bbox[2] and tile_bbox[3] >= bbox[3]:
-                    break
-                else:
-                    max_level -= 1
-                    tile_bbox = None
-                tile_bbox = []
-            if not tile_bbox:
-                tile_bbox = [0,-90,180,90]
+                p1 = pyproj.Proj(init="EPSG:4283")
+                p2 = pyproj.Proj(init=target_crs)
+                bbox[0],bbox[1] = pyproj.transform(p1,p2,bbox[0],bbox[1])
+                bbox[2],bbox[3] = pyproj.transform(p1,p2,bbox[2],bbox[3])
+
+            if not hasattr(PreviewTile,target_crs.replace(":","_")):
+                raise Exception("GWC service don't support crs({}) ").format(target_crs)
+
+            tile_bbox = getattr(PreviewTile,target_crs.replace(":","_"))(bbox)
 
             kvp["BBOX"] = bbox2str(tile_bbox,service_type,service_version)
         else:
@@ -448,8 +495,10 @@ class Record(models.Model):
         schema = {
             "protocol":"OGC:{}".format(service_type.upper()),
             "linkage":endpoint,
-            "version":service_version
+            "version":service_version,
         }
+        schema.update(parameters)
+
         return 'None\tNone\t{0}\t{1}'.format(json.dumps(schema),link)
 
 
@@ -673,7 +722,7 @@ def remove_style_links(sender, instance, **kwargs):
     ows_links = instance.record.ows_links
     #remote deleted style's link
     for link in style_links:
-        parts = re.split("\t",resource)
+        parts = re.split("\t",link)
         r = json.loads(parts[2])
         if r['name'] == instance.name and instance.format.lower() in r['protocol']:
             style_links.remove(link)

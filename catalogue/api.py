@@ -38,9 +38,11 @@ class OwsResourceSerializer(serializers.Serializer):
         if record:
             links = []
             if self.validated_data['gwc']:
-                links.append(
-                    record.generate_ows_link(self.validated_data['gwc_endpoint'],'GWC',self.validated_data['wms_version'])
-                )
+                gwc_endpoints =[endpoint.strip() for endpoint in self.validated_data['gwc_endpoint'].split("^") if endpoint.strip()]
+                for endpoint in gwc_endpoints:
+                    links.append(
+                        record.generate_ows_link(endpoint,'GWC',self.validated_data['wms_version'])
+                    )
             elif self.validated_data['wms']:
                 links.append(
                     record.generate_ows_link(self.validated_data['wms_endpoint'],'WMS',self.validated_data['wms_version'])

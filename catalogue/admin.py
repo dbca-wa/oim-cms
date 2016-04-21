@@ -115,6 +115,8 @@ class RecordAdmin(admin.ModelAdmin):
 <tr>
     <th style='width:100px;border-bottom:None'>Service Type</th>
     <th style='width:100px;border-bottom:None'>Version</th>
+    <th style='width:100px;border-bottom:None'>CRS</th>
+    <th style='width:100px;border-bottom:None'>TileSize</th>
     <th style='border-bottom:None'>Endpoint</th>
     <th style='width:100px;border-bottom:None'>Preview</th>
 </tr>
@@ -122,6 +124,8 @@ class RecordAdmin(admin.ModelAdmin):
 <tr>
     <td style='border-bottom:None'>{{resource.type}}</td>
     <td style='border-bottom:None'>{{resource.version}}</td>
+    <td style='border-bottom:None'>{{resource.crs}}</td>
+    <td style='border-bottom:None'>{{resource.tileSize}} </td>
     <td style='border-bottom:None'>{{resource.endpoint}}</td>
     <td style='border-bottom:None'><A target='_blank' href='{{resource.link}}'>preview</A></td>
 </tr>
@@ -132,6 +136,8 @@ class RecordAdmin(admin.ModelAdmin):
         resources = ""
         ows_resources = instance.ows_resource
         if ows_resources:
+            for resource in ows_resources:
+                resource["tileSize"] = "{}x{}".format(resource["width"],resource["height"]) if "width" in resource else ""
             context = Context({"resources": ows_resources})
             resources =  Template(self.ows_resources_template).render(context)
 
