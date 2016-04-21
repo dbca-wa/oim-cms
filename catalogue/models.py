@@ -252,9 +252,13 @@ class Record(models.Model):
         
     @property
     def metadata_link(self ):
-        return '{0}/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={1}'.format(settings.BASE_URL,self.identifier)
-    
-    
+        return {
+            'endpoint': '{0}/catalogue/'.format(settings.BASE_URL),
+            'version': '2.0.2',
+            'type': 'CSW',
+            'link':'{0}/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={1}'.format(settings.BASE_URL,self.identifier)
+        }
+
     @property
     def ows_resource(self ):
         links = self.ows_links

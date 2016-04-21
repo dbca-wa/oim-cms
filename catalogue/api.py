@@ -101,10 +101,14 @@ class RecordSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField(read_only=True)
     publication_date = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
     modified = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
+    metadata_link = serializers.SerializerMethodField(read_only=True)
 
     def get_ows_resource(self,obj):
         return obj.ows_resource
     
+    def get_metadata_link(self, obj):
+        return obj.metadata_link
+
     def __init__(self,*args, **kwargs):
         try:
             style_content = kwargs.pop("style_content")
@@ -142,6 +146,7 @@ class RecordSerializer(serializers.ModelSerializer):
             'service_type',
             'service_type_version',
             'ows_resource',
+            'metadata_link',
             'styles',
             'workspace',
             'name',
