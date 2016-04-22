@@ -710,8 +710,8 @@ def update_links(sender, instance, **kwargs):
     ows_links = instance.record.ows_links
     if not instance.record.links:
         instance.record.links = ''
-    for link in style_links:
-        parts = re.split("\t",link)
+    for style_link in style_links:
+        parts = re.split("\t",style_link)
         r = json.loads(parts[2])
         if r['name'] == json_link['name'] and r['protocol'] == json_link['protocol']:
             present = True
