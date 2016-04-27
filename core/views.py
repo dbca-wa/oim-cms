@@ -105,7 +105,7 @@ def auth(request):
             return response
     response = HttpResponse(whoamiResource.as_detail()(request).content)
     headers, cache_headers = json.loads(response.content), dict()
-    headers["full_name"] = "{}, {}".format(headers.get("last_name", ""), headers.get("first_name", ""))
+    headers["full_name"] = u"{}, {}".format(headers.get("last_name", ""), headers.get("first_name", ""))
     headers["logout_url"] = "https://oim.dpaw.wa.gov.au/logout" # TODO: use url reverse on logout alias
     try:
         headers["kmi_roles"] = DepartmentUser.objects.get(email__iexact=headers["email"]).extra_data.get("KMIRoles", '')
