@@ -58,17 +58,18 @@ class ITSystemAdmin(VersionAdmin):
         ("preferred_contact",),
         ('bh_support', 'ah_support'),
         ('documentation', 'technical_documentation'),
-        ("status_html"),
-        ("authentication", "access"),
-        ("description", "extra_data"),
-        ("criticality", "availability"),
-        ("schema_url"),
-        ("softwares", "hardwares"),
-        ("user_groups"),
+        ('status_html'),
+        ('authentication', 'access'),
+        ('description', 'extra_data'),
+        ('criticality', 'availability'),
+        ('schema_url'),
+        ('softwares', 'hardwares'),
+        ('user_groups'),
         ('system_reqs', 'system_type'),
         ('vulnerability_docs', 'recovery_docs'),
         ('workaround'),
         ('mtd', 'rto', 'rpo'),
+        ('contingency_plan', 'contingency_plan_status'),
     )
 
 
@@ -186,7 +187,7 @@ class BusinessProcessAdmin(VersionAdmin):
 
 class ProcessITSystemRelationshipAdmin(VersionAdmin):
     list_display = ('process', 'itsystem', 'importance')
-    list_filter = ('importance',)
+    list_filter = ('importance','process', 'itsystem')
     search_fields = ('process__name', 'itsystem__name')
 
 

@@ -21,6 +21,11 @@ IMPORTANCE_CHOICES = (
     (2, 'Medium'),
     (3, 'Low'),
 )
+DOC_STATUS_CHOICES = (
+    (1, 'Draft'),
+    (2, 'Released'),
+    (3, 'Superseded'),
+)
 
 
 class Location(models.Model):
@@ -177,7 +182,7 @@ class Software(models.Model):
 
 class Hardware(tracking.CommonFields):
     device_type = models.PositiveSmallIntegerField(choices=(
-        (1, 'Network'), (2, 'Mobile'), (3, 'Domain PC'), (4, 'Hostname')), editable=False)
+        (1, 'Network'), (2, 'Mobile'), (3, 'Domain PC'), (4, 'Hostname')))
     computer = models.OneToOneField(tracking.Computer, null=True, editable=False)
     mobile = models.OneToOneField(tracking.Mobile, null=True, editable=False)
     username = models.CharField(max_length=128, null=True, editable=False)
@@ -319,6 +324,10 @@ class ITSystem(tracking.CommonFields):
     mtd = models.DurationField(help_text="Maximum Tolerable Downtime (days hh:mm:ss)", default=timedelta(days=14))
     rto = models.DurationField(help_text="Recovery Time Objective (days hh:mm:ss)", default=timedelta(days=7))
     rpo = models.DurationField(help_text="Recovery Point Objective/Data Loss Interval (days hh:mm:ss)", default=timedelta(hours=24))
+    contingency_plan = models.FileField(
+        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d')
+    contingency_plan_status = models.PositiveIntegerField(
+        choices=DOC_STATUS_CHOICES, null=True, blank=True)
 
     def description_html(self):
         return mark_safe(self.description)
@@ -338,6 +347,7 @@ class ITSystem(tracking.CommonFields):
 
     class Meta:
         verbose_name = "IT System"
+        ordering = ['name']
 
 
 class Backup(tracking.CommonFields):
@@ -489,6 +499,9 @@ class ProcessITSystemRelationship(models.Model):
     class Meta:
         unique_together = ('process', 'itsystem')
 
+    def __str__(self):
+        return '{} - {} ({})'.format(self.itsystem.name, self.process.name, self.get_importance_display())
+
 
 class ITSystemDependency(models.Model):
     """A model to represent a dependency that an ITSystem has on another, plus
@@ -497,10 +510,14 @@ class ITSystemDependency(models.Model):
     itsystem = models.ForeignKey(ITSystem, on_delete=models.PROTECT, help_text='The IT System')
     dependency = models.ForeignKey(
         ITSystem, on_delete=models.PROTECT, related_name='dependency',
-        help_text='The system which is depended upon by')
+        help_text='The system which is depended upon by the IT System')
     criticality = models.PositiveIntegerField(
         choices=CRITICALITY_CHOICES, help_text='How critical is the dependency?')
 
     class Meta:
+        verbose_name = 'IT System dependency'
         verbose_name_plural = 'IT System dependencies'
         unique_together = ('itsystem', 'dependency')
+
+    def __str__(self):
+        return '{} - {} ({})'.format(self.itsystem.name, self.dependency.name, self.get_criticality_display())

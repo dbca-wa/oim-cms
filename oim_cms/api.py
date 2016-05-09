@@ -522,7 +522,7 @@ class ITSystemResource(CSVDjangoResource):
                         )
                     )]
                 )))
-            } for i in data.processitsystemrelationship_set.all()]},
+            } for i in data.processitsystemrelationship_set.all().order_by('importance')]},
             'dependencies': {'relationships': [{
                 'dependency__system_id': i.dependency.system_id,
                 'dependency__name': i.dependency.name,
