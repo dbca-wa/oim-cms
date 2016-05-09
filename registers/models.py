@@ -338,6 +338,7 @@ class ITSystem(tracking.CommonFields):
 
     class Meta:
         verbose_name = "IT System"
+        ordering = ['name']
 
 
 class Backup(tracking.CommonFields):
@@ -488,6 +489,9 @@ class ProcessITSystemRelationship(models.Model):
 
     class Meta:
         unique_together = ('process', 'itsystem')
+
+    def __str__(self):
+        return '{} - {} ({})'.format(self.itsystem.name, self.process.name, self.get_importance_display())
 
 
 class ITSystemDependency(models.Model):

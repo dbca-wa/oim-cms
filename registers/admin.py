@@ -186,7 +186,7 @@ class BusinessProcessAdmin(VersionAdmin):
 
 class ProcessITSystemRelationshipAdmin(VersionAdmin):
     list_display = ('process', 'itsystem', 'importance')
-    list_filter = ('importance',)
+    list_filter = ('importance','process', 'itsystem')
     search_fields = ('process__name', 'itsystem__name')
 
 
