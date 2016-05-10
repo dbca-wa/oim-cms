@@ -1,6 +1,6 @@
 from __future__ import unicode_literals, absolute_import
 from django.conf import settings
-from django.contrib import admin
+from django.contrib.admin import register, ModelAdmin
 from django.template.loader import render_to_string
 from django.core.urlresolvers import reverse
 from django.utils.html import format_html
@@ -12,50 +12,69 @@ from .models import (
     UserGroup, Software, Hardware, Device, SoftwareLicense, CostCentre,
     Backup, ITSystem, OrgUnit, Location, SecondaryLocation,
     Vendor, ITSystemHardware, BusinessService, BusinessFunction,
-    BusinessProcess, ProcessITSystemRelationship, ITSystemDependency)
+    BusinessProcess, ProcessITSystemRelationship, ITSystemDependency,
+    DocumentApproval)
 
 
+@register(DocumentApproval)
+class DocumentApprovalAdmin(ModelAdmin):
+    list_diplay = ('department_user', 'approval_role', 'date_created')
+    raw_id_fields = ('department_user',)
+
+
+@register(UserGroup)
 class UserGroupAdmin(VersionAdmin):
     list_display = ('name', 'user_count')
     search_fields = ('name',)
 
 
+@register(Software)
 class SoftwareAdmin(VersionAdmin):
     list_display = ('name', 'url', 'license', 'os')
     list_filter = ('license', 'os')
     search_fields = (
-        'name', 'url', 'license__name', 'license__url', 'license__support', 'license__vendor__name')
+        'name', 'url', 'license__name', 'license__url', 'license__support',
+        'license__vendor__name')
 
 
+@register(Hardware)
 class HardwareAdmin(VersionAdmin):
     list_display = (
-        'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4', 'ports', 'serials', 'os')
+        'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4',
+        'ports', 'serials', 'os')
     list_filter = ('device_type', 'os', 'ports', 'cost_centre')
-    search_fields = ('name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')
+    search_fields = (
+        'name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')
 
 
+@register(SoftwareLicense)
 class SoftwareLicenseAdmin(VersionAdmin):
     list_display = ('name', 'vendor', 'oss')
     list_filter = ('oss', 'vendor')
     search_fields = ('name', 'url', 'support', 'support_url', 'vendor')
 
 
+@register(ITSystem)
 class ITSystemAdmin(VersionAdmin):
     list_display = (
         'system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian',
         'preferred_contact', 'access', 'authentication')
-    list_filter = ('access', 'authentication', 'status')
+    list_filter = ('access', 'authentication', 'status', 'contingency_plan_status')
     search_fields = (
         'system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description',
         'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
     raw_id_fields = (
-        "devices", "owner", "custodian", "data_custodian", "preferred_contact", "cost_centre",
+        'devices', 'owner', 'custodian', 'data_custodian', 'preferred_contact', 'cost_centre',
         'bh_support', 'ah_support')
-    readonly_fields = ("extra_data_pretty", "description_html")
+    readonly_fields = ('extra_data_pretty', 'description_html')
+    filter_horizontal = ('contingency_plan_approvals',)
     fields = (
-        ("system_id", "acronym"), ("name", "status"), ('link',),
-        ("cost_centre", "owner"), ("custodian", "data_custodian"),
-        ("preferred_contact",),
+        ('system_id', 'acronym'),
+        ('name', 'status'),
+        ('link',),
+        ('cost_centre', 'owner'),
+        ('custodian', 'data_custodian'),
+        ('preferred_contact',),
         ('bh_support', 'ah_support'),
         ('documentation', 'technical_documentation'),
         ('status_html'),
@@ -70,9 +89,27 @@ class ITSystemAdmin(VersionAdmin):
         ('workaround'),
         ('mtd', 'rto', 'rpo'),
         ('contingency_plan', 'contingency_plan_status'),
+        ('contingency_plan_approvals'),
     )
 
+    def save_model(self, request, obj, form, change):
+        """Override save_model in order to log any changes to the
+        contingency_plan field.
+        """
+        # If contingency_plan changes, delete any associated DocumentApproval
+        # objects.
+        if obj._ITSystem__original_contingency_plan != obj.contingency_plan:
+            # Clear the selected approvals from the modeladmin form.
+            form.cleaned_data['contingency_plan_approvals'] = []
+            approvals = [i for i in obj.contingency_plan_approvals.all()]
+            obj.contingency_plan_approvals.clear()  # Remove M2M relationships
+            obj.save()
+            for i in approvals:
+                i.delete()  # Delete each approval object.
+        super(ITSystemAdmin, self).save_model(request, obj, form, change)
 
+
+@register(Backup)
 class BackupAdmin(VersionAdmin):
     raw_id_fields = ("system", "parent_host")
     list_display = (
@@ -96,6 +133,7 @@ class BackupAdmin(VersionAdmin):
         )
 
 
+@register(Device)
 class DeviceAdmin(VersionAdmin):
     list_display = ('name', 'owner', 'cost_centre', 'guid')
     raw_id_fields = ('owner', 'cost_centre')
@@ -106,6 +144,7 @@ class DeviceAdmin(VersionAdmin):
         return self.readonly_fields
 
 
+@register(OrgUnit)
 class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
     list_display = ("name", "unit_type", "users", "members", "it_systems", "cc", "acronym", "manager")
     search_fields = ('name', 'acronym')
@@ -133,6 +172,7 @@ class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
             obj.pk, obj.itsystem_set.count())
 
 
+@register(CostCentre)
 class CostCentreAdmin(VersionAdmin):
     list_display = (
         'code', 'name', 'org_position', 'division', 'users', 'manager', 'business_manager',
@@ -149,6 +189,7 @@ class CostCentreAdmin(VersionAdmin):
             obj.pk, obj.departmentuser_set.count())
 
 
+@register(Location)
 class LocationAdmin(LeafletGeoAdmin, VersionAdmin):
     list_display = ('name', 'address', 'phone', 'fax', 'email', 'point')
     search_fields = ('name', 'address', 'phone', 'fax', 'email')
@@ -158,17 +199,20 @@ class LocationAdmin(LeafletGeoAdmin, VersionAdmin):
     }
 
 
+@register(ITSystemHardware)
 class ITSystemHardwareAdmin(VersionAdmin):
     list_display = ('host', 'role')
     list_filter = ('role',)
     raw_id_fields = ('host',)
 
 
+@register(BusinessService)
 class BusinessServiceAdmin(VersionAdmin):
     list_display = ('number', 'name')
     search_fields = ('name', 'description')
 
 
+@register(BusinessFunction)
 class BusinessFunctionAdmin(VersionAdmin):
     list_display = ('name', 'function_services')
     list_filter = ('services',)
@@ -179,39 +223,32 @@ class BusinessFunctionAdmin(VersionAdmin):
     function_services.short_description = 'services'
 
 
+@register(BusinessProcess)
 class BusinessProcessAdmin(VersionAdmin):
     list_display = ('name', 'criticality')
     list_filter = ('criticality', 'functions')
     search_fields = ('name', 'description', 'functions__name')
 
 
+@register(ProcessITSystemRelationship)
 class ProcessITSystemRelationshipAdmin(VersionAdmin):
     list_display = ('process', 'itsystem', 'importance')
-    list_filter = ('importance','process', 'itsystem')
+    list_filter = ('importance', 'process', 'itsystem')
     search_fields = ('process__name', 'itsystem__name')
 
 
+@register(ITSystemDependency)
 class ITSystemDependencyAdmin(VersionAdmin):
     list_display = ('itsystem', 'dependency', 'criticality')
     list_filter = ('criticality',)
     search_fields = ('itsystem__name', 'dependency__name')
 
 
-admin.site.register(UserGroup, UserGroupAdmin)
-admin.site.register(Software, SoftwareAdmin)
-admin.site.register(Hardware, HardwareAdmin)
-admin.site.register(Device, DeviceAdmin)
-admin.site.register(Backup, BackupAdmin)
-admin.site.register(CostCentre, CostCentreAdmin)
-admin.site.register(OrgUnit, OrgUnitAdmin)
-admin.site.register(Location, LocationAdmin)
-admin.site.register(SecondaryLocation, VersionAdmin)
-admin.site.register(Vendor, VersionAdmin)
-admin.site.register(SoftwareLicense, SoftwareLicenseAdmin)
-admin.site.register(ITSystemHardware, ITSystemHardwareAdmin)
-admin.site.register(ITSystem, ITSystemAdmin)
-admin.site.register(BusinessService, BusinessServiceAdmin)
-admin.site.register(BusinessFunction, BusinessFunctionAdmin)
-admin.site.register(BusinessProcess, BusinessProcessAdmin)
-admin.site.register(ProcessITSystemRelationship, ProcessITSystemRelationshipAdmin)
-admin.site.register(ITSystemDependency, ITSystemDependencyAdmin)
+@register(SecondaryLocation)
+class SecondaryLocationAdmin(VersionAdmin):
+    pass
+
+
+@register(Vendor)
+class VendorAdmin(VersionAdmin):
+    pass
