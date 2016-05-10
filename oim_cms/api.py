@@ -449,6 +449,7 @@ class ITSystemResource(CSVDjangoResource):
                     if data.owner.cost_centre.division.manager:
                         cost_centre__division__manager__name = data.owner.cost_centre.division.manager.name
 
+        domain = self.request.build_absolute_uri().replace(self.request.get_full_path(), '')
         prepped = {
             'pk': data.pk,
             'name': data.name,
@@ -529,6 +530,8 @@ class ITSystemResource(CSVDjangoResource):
                 'criticality': i.get_criticality_display()
             } for i in data.itsystemdependency_set.all()]},
             'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
+            'contingency_plan_url': domain + settings.MEDIA_URL + data.contingency_plan.name if data.contingency_plan else '',
+            'contingency_plan_status': data.contingency_plan_status,
         }
         return prepped
 
