@@ -47,7 +47,6 @@ INSTALLED_APPS = (
     'wagtail.wagtailsearch',
     'wagtail.wagtailredirects',
     'wagtail.wagtailforms',
-    'wagtailplus.wagtailrollbacks',
     'django_uwsgi',
 
     'social.apps.django_app.default',
