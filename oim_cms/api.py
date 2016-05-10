@@ -531,7 +531,7 @@ class ITSystemResource(CSVDjangoResource):
             } for i in data.itsystemdependency_set.all()]},
             'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
             'contingency_plan_url': domain + settings.MEDIA_URL + data.contingency_plan.name if data.contingency_plan else '',
-            'contingency_plan_status': data.contingency_plan_status,
+            'contingency_plan_status': data.get_contingency_plan_status_display(),
         }
         return prepped
 
