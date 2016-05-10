@@ -6,7 +6,7 @@ from django.contrib.gis.db import models
 
 from mptt.models import MPTTModel, TreeForeignKey
 from dateutil.relativedelta import relativedelta
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from tracking import models as tracking
 
@@ -26,6 +26,29 @@ DOC_STATUS_CHOICES = (
     (2, 'Released'),
     (3, 'Superseded'),
 )
+
+
+class DocumentApproval(models.Model):
+    """A model to represent an approval/endorsement by a DepartmentUser for an
+    uploaded file.
+    """
+    department_user = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT)
+    approval_role = models.CharField(
+        max_length=256, blank=True, null=True,
+        help_text='The role in which the user is approving the document.')
+    evidence = models.FileField(
+        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d',
+        help_text='Optional evidence to support the document approval (email, etc.)')
+    date_created = models.DateTimeField(auto_now_add=True, editable=False)
+
+    def __str__(self):
+        if self.approval_role:
+            return "{}, {} ({})".format(
+                self.department_user, self.approval_role,
+                datetime.strftime(self.date_created, '%d-%b-%Y'))
+        else:
+            return "{} ({})".format(
+                self.department_user, datetime.strftime(self.date_created, '%d-%b-%Y'))
 
 
 class Location(models.Model):
@@ -325,9 +348,23 @@ class ITSystem(tracking.CommonFields):
     rto = models.DurationField(help_text="Recovery Time Objective (days hh:mm:ss)", default=timedelta(days=7))
     rpo = models.DurationField(help_text="Recovery Point Objective/Data Loss Interval (days hh:mm:ss)", default=timedelta(hours=24))
     contingency_plan = models.FileField(
-        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d')
+        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d',
+        help_text='NOTE: changes to this field will delete current contingency plan approvals.')
     contingency_plan_status = models.PositiveIntegerField(
         choices=DOC_STATUS_CHOICES, null=True, blank=True)
+    contingency_plan_approvals = models.ManyToManyField(DocumentApproval, blank=True)
+
+    def __init__(self, *args, **kwargs):
+        super(ITSystem, self).__init__(*args, **kwargs)
+        # Store the pre-save values of some fields on object init.
+        self.__original_contingency_plan = self.contingency_plan
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "IT System"
+        ordering = ['name']
 
     def description_html(self):
         return mark_safe(self.description)
@@ -341,13 +378,6 @@ class ITSystem(tracking.CommonFields):
             self.access = 4
         self.access_display = self.get_access_display()
         super(ITSystem, self).save(*args, **kwargs)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = "IT System"
-        ordering = ['name']
 
 
 class Backup(tracking.CommonFields):
