@@ -90,6 +90,7 @@ class ITSystemAdmin(VersionAdmin):
         ('mtd', 'rto', 'rpo'),
         ('contingency_plan', 'contingency_plan_status'),
         ('contingency_plan_approvals'),
+        ('contingency_plan_last_tested'),
     )
 
     def save_model(self, request, obj, form, change):

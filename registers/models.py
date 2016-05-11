@@ -353,6 +353,8 @@ class ITSystem(tracking.CommonFields):
     contingency_plan_status = models.PositiveIntegerField(
         choices=DOC_STATUS_CHOICES, null=True, blank=True)
     contingency_plan_approvals = models.ManyToManyField(DocumentApproval, blank=True)
+    contingency_plan_last_tested = models.DateField(
+        null=True, blank=True, help_text='Date that the plan was last tested.')
 
     def __init__(self, *args, **kwargs):
         super(ITSystem, self).__init__(*args, **kwargs)
