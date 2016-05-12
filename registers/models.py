@@ -539,7 +539,8 @@ class ITSystemDependency(models.Model):
     """A model to represent a dependency that an ITSystem has on another, plus
     the criticality of that dependency.
     """
-    itsystem = models.ForeignKey(ITSystem, on_delete=models.PROTECT, help_text='The IT System')
+    itsystem = models.ForeignKey(
+        ITSystem, on_delete=models.PROTECT, verbose_name='IT System', help_text='The IT System')
     dependency = models.ForeignKey(
         ITSystem, on_delete=models.PROTECT, related_name='dependency',
         help_text='The system which is depended upon by the IT System')

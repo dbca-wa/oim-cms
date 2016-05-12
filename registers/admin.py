@@ -52,6 +52,7 @@ class SoftwareLicenseAdmin(VersionAdmin):
     list_display = ('name', 'vendor', 'oss')
     list_filter = ('oss', 'vendor')
     search_fields = ('name', 'url', 'support', 'support_url', 'vendor')
+    raw_id_fields = ('org_unit', 'primary_user')
 
 
 @register(ITSystem)
