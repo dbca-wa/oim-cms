@@ -353,6 +353,8 @@ class ITSystem(tracking.CommonFields):
     contingency_plan_status = models.PositiveIntegerField(
         choices=DOC_STATUS_CHOICES, null=True, blank=True)
     contingency_plan_approvals = models.ManyToManyField(DocumentApproval, blank=True)
+    contingency_plan_last_tested = models.DateField(
+        null=True, blank=True, help_text='Date that the plan was last tested.')
 
     def __init__(self, *args, **kwargs):
         super(ITSystem, self).__init__(*args, **kwargs)
@@ -537,7 +539,8 @@ class ITSystemDependency(models.Model):
     """A model to represent a dependency that an ITSystem has on another, plus
     the criticality of that dependency.
     """
-    itsystem = models.ForeignKey(ITSystem, on_delete=models.PROTECT, help_text='The IT System')
+    itsystem = models.ForeignKey(
+        ITSystem, on_delete=models.PROTECT, verbose_name='IT System', help_text='The IT System')
     dependency = models.ForeignKey(
         ITSystem, on_delete=models.PROTECT, related_name='dependency',
         help_text='The system which is depended upon by the IT System')

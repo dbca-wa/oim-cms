@@ -52,6 +52,7 @@ class SoftwareLicenseAdmin(VersionAdmin):
     list_display = ('name', 'vendor', 'oss')
     list_filter = ('oss', 'vendor')
     search_fields = ('name', 'url', 'support', 'support_url', 'vendor')
+    raw_id_fields = ('org_unit', 'primary_user')
 
 
 @register(ITSystem)
@@ -90,6 +91,7 @@ class ITSystemAdmin(VersionAdmin):
         ('mtd', 'rto', 'rpo'),
         ('contingency_plan', 'contingency_plan_status'),
         ('contingency_plan_approvals'),
+        ('contingency_plan_last_tested'),
     )
 
     def save_model(self, request, obj, form, change):

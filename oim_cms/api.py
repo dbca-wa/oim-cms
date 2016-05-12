@@ -436,6 +436,8 @@ class ITSystemResource(CSVDjangoResource):
         """
         # Owner > CC > Division > Manager
         cost_centre__division__manager__name = ''
+        cost_centre__division__manager__email = ''
+        cost_centre__division__manager__title = ''
         cost_centre__division__name = ''
         cost_centre__name = ''
         cost_centre__code = ''
@@ -448,6 +450,8 @@ class ITSystemResource(CSVDjangoResource):
                     cost_centre__division__name = data.owner.cost_centre.division.name
                     if data.owner.cost_centre.division.manager:
                         cost_centre__division__manager__name = data.owner.cost_centre.division.manager.name
+                        cost_centre__division__manager__email = data.owner.cost_centre.division.manager.email
+                        cost_centre__division__manager__title = data.owner.cost_centre.division.manager.title
 
         domain = self.request.build_absolute_uri().replace(self.request.get_full_path(), '')
         prepped = {
@@ -462,16 +466,22 @@ class ITSystemResource(CSVDjangoResource):
             'access_display': data.access_display or '',
             'preferred_contact__name': data.preferred_contact.name if data.preferred_contact else '',
             'preferred_contact__email': data.preferred_contact.email if data.preferred_contact else '',
+            'preferred_contact__title': data.preferred_contact.title if data.preferred_contact else '',
             'cost_centre__division__manager__name': cost_centre__division__manager__name,
+            'cost_centre__division__manager__email': cost_centre__division__manager__email,
+            'cost_centre__division__manager__title': cost_centre__division__manager__title,
             'cost_centre__division__name': cost_centre__division__name,
             'cost_centre__name': cost_centre__name,
             'cost_centre__code': cost_centre__code,
             'owner__name': data.owner.name if data.owner else '',
             'owner__email': data.owner.email if data.owner else '',
+            'owner__title': data.owner.title if data.owner else '',
             'custodian__name': data.custodian.name if data.custodian else '',
             'custodian__email': data.custodian.email if data.custodian else '',
+            'custodian__title': data.custodian.title if data.custodian else '',
             'data_custodian__name': data.data_custodian.name if data.data_custodian else '',
             'data_custodian__email': data.data_custodian.email if data.data_custodian else '',
+            'data_custodian__title': data.data_custodian.title if data.data_custodian else '',
             'link': data.link,
             'status_html': data.status_html or '',
             'schema': data.schema_url or '',
@@ -485,9 +495,9 @@ class ITSystemResource(CSVDjangoResource):
             'availability': data.get_availability_display() if data.availability else '',
             'status_display': data.status_display or '',
             'criticality': data.get_criticality_display() if data.criticality else '',
-            "mtd": format_timedelta(data.mtd),
-            "rto": format_timedelta(data.rto),
-            "rpo": format_timedelta(data.rpo),
+            'mtd': format_timedelta(data.mtd),
+            'rto': format_timedelta(data.rto),
+            'rpo': format_timedelta(data.rpo),
             'softwares': [{
                 'name': i.name,
                 'url': i.url,
@@ -532,6 +542,7 @@ class ITSystemResource(CSVDjangoResource):
             'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
             'contingency_plan_url': domain + settings.MEDIA_URL + data.contingency_plan.name if data.contingency_plan else '',
             'contingency_plan_status': data.get_contingency_plan_status_display(),
+            'contingency_plan_last_tested': data.contingency_plan_last_tested,
         }
         return prepped
 
