@@ -9,8 +9,10 @@ class DepartmentUserAdmin(admin.ModelAdmin):
     list_filter = ['active', 'vip', 'executive', 'date_ad_updated']
     search_fields = ['name', 'email', 'username', 'employee_id']
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
-    readonly_fields = ['username', 'email', 'org_data_pretty', 'ad_data_pretty',
-                       'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date']
+    readonly_fields = [
+        'username', 'email', 'org_data_pretty', 'ad_data_pretty',
+        'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
+        'alesco_data']
     fieldsets = (
         ('Email/username', {
             'fields': ('email', 'username'),
@@ -29,6 +31,7 @@ class DepartmentUserAdmin(admin.ModelAdmin):
         ('Other details', {
             'fields': (
                 'photo',
+                'account_type',
                 ('cost_centres_secondary', 'org_units_secondary'),
                 ('telephone', 'mobile_phone', 'other_phone'),
                 ('populate_primary_group', 'vip', 'executive', 'contractor'),
@@ -44,6 +47,7 @@ class DepartmentUserAdmin(admin.ModelAdmin):
                 ('active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date'),
                 'org_data_pretty',
                 'ad_data_pretty',
+                'alesco_data',
             )
         })
     )
