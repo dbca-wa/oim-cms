@@ -54,6 +54,16 @@ class DepartmentUser(MPTTModel):
     """
     ACTIVE_FILTER = {"active": True, "email__isnull": False,
                      "cost_centre__isnull": False, "contractor": False}
+    ACCOUNT_TYPE_CHOICES = (
+        (0, 'Dept fixed-term contract'),
+        (1, 'N/A'),
+        (2, 'Permanent'),
+        (3, 'Recruitment agency contract'),
+        (4, 'Resigned'),
+        (5, 'Shared account'),
+        (6, 'Vendor'),
+        (7, 'Volunteer'),
+    )
     # These fields are populated from Active Directory.
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
@@ -113,6 +123,10 @@ class DepartmentUser(MPTTModel):
     secondary_locations = models.ManyToManyField("registers.Location", blank=True)
     populate_primary_group = models.BooleanField(
         default=True, help_text="If unchecked, user will not be added to primary group email")
+    account_type = models.PositiveSmallIntegerField(
+        choices=ACCOUNT_TYPE_CHOICES, null=True, blank=True)
+    alesco_data = JSONField(
+        null=True, blank=True, help_text='Readonly data from Alesco')
 
     def __init__(self, *args, **kwargs):
         super(DepartmentUser, self).__init__(*args, **kwargs)
@@ -217,6 +231,11 @@ class DepartmentUser(MPTTModel):
         if not self.ad_data:
             return self.ad_data
         return format_html(json2html.convert(json=self.ad_data))
+
+    def alesco_data_pretty(self):
+        if not self.alesco_data:
+            return self.alesco_data
+        return format_html(json2html.convert(json=self.alesco_data))
 
     class MPTTMeta:
         order_insertion_by = ['name']
