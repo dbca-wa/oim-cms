@@ -16,7 +16,7 @@ from wagtail.wagtailcore import blocks
 from wagtail.wagtailcore.fields import StreamField
 from wagtail.wagtailsearch import index
 from wagtail.wagtailadmin.edit_handlers import FieldPanel, StreamFieldPanel
-from wagtailmarkdown import MarkdownBlock
+#from wagtailmarkdown import MarkdownBlock
 from modelcluster.fields import ParentalKey
 from modelcluster.contrib.taggit import ClusterTaggableManager
 from taggit.models import TaggedItemBase
@@ -41,6 +41,7 @@ from wagtail.wagtailimages.formats import Format, register_image_format
 
 register_image_format(Format('600x600', '600x600', 'richtext-image 600x600', 'max-600x600'))
 register_image_format(Format('logo_icon', 'Logo_Icon', 'richtext-image logo_icon', 'max-30x30'))
+
 
 class UserSession(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
@@ -86,7 +87,7 @@ class Content(Page):
         ('raw', blocks.RawHTMLBlock()),
         ('include_content', blocks.CharBlock()),
         ('content_list', blocks.CharBlock()),
-        ('markdown', MarkdownBlock()),
+        #('markdown', MarkdownBlock()),
     ], null=True, blank=True)
     date = models.DateField("Content updated date", default=timezone.now)
     template_filename = models.CharField(max_length=64, choices=(
@@ -129,5 +130,3 @@ class Content(Page):
 
     class Meta:
         ordering = ("date",)
-
-
