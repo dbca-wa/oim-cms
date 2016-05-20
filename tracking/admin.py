@@ -1,6 +1,14 @@
-from django.contrib import admin
-from .models import DepartmentUser, Computer, Mobile, EC2Instance
-from .utils import logger_setup
+from datetime import datetime
+from django import forms
+from django.conf.urls import url
+from django.contrib import admin, messages
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
+from openpyxl import load_workbook
+import tempfile
+
+from tracking.models import DepartmentUser, Computer, Mobile, EC2Instance
+from tracking.utils import logger_setup
 
 
 class DepartmentUserAdmin(admin.ModelAdmin):
@@ -89,6 +97,83 @@ class DepartmentUserAdmin(admin.ModelAdmin):
                 request.user.username, obj.name_update_reference
             ))
         obj.save()
+
+    def get_urls(self):
+        urls = super(DepartmentUserAdmin, self).get_urls()
+        urls = [
+            url(r'^alesco-import/$', self.alesco_import, name='alesco_import'),
+        ] + urls
+        return urls
+
+    class AlescoImportForm(forms.Form):
+        spreadsheet = forms.FileField()
+
+    def alesco_import(self, request):
+        """Displays a form prompting user to upload an Excel spreadsheet of
+        employee data from Alesco. Temporary measure until database link is
+        worked out.
+        """
+        context = dict(
+            admin.site.each_context(request),
+            title='Alesco data import'
+        )
+
+        if request.method == 'POST':
+            form = self.AlescoImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                upload = request.FILES['spreadsheet']
+                # Write the uploaded file to a temp file.
+                f = tempfile.NamedTemporaryFile(suffix='.' + upload.name.split('.')[-1])
+                f.write(upload.read())
+                f.seek(0)
+                wb = load_workbook(filename=f.name, read_only=True)
+                ws = wb.worksheets[0]
+                keys = []
+                values = []
+                non_matched = 0
+                multi_matched = 0
+                updates = 0
+                # Iterate over each row in the worksheet.
+                for k, row in enumerate(ws.iter_rows()):
+                    values = []
+                    for cell in row:
+                        # First row: generate keys.
+                        if k == 0:
+                            keys.append(cell.value)
+                        # Otherwise make a list of values.
+                        else:
+                            # Serialise datetime objects.
+                            if isinstance(cell.value, datetime):
+                                values.append(cell.value.isoformat())
+                            else:
+                                values.append(cell.value)
+                    if k > 0:
+                        # Construct a dictionary of row values.
+                        record = dict(zip(keys, values))
+                        # Try to find a matching DepartmentUser by employee id.
+                        d = DepartmentUser.objects.filter(employee_id=record['EMPLOYEE_NO'])
+                        if d.count() > 1:
+                            multi_matched += 1
+                        elif d.count() == 1:
+                            d = d[0]
+                            d.alesco_data = record
+                            d.save()
+                            updates += 1
+                        else:
+                            non_matched += 0
+                # Messages then redirect to DepartmentUser change_list
+                if updates > 0:
+                    messages.success(request, 'Alesco data for {} DepartmentUsers was updated.'.format(updates))
+                if non_matched > 0:
+                    messages.warning(request, 'Employee ID was not matched for {} rows.'.format(non_matched))
+                if multi_matched > 0:
+                    messages.error(request, 'Employee ID was matched for >1 DepartmentUsers for {} rows.'.format(multi_matched))
+                return redirect('admin:tracking_departmentuser_changelist')
+        else:
+            form = self.AlescoImportForm()
+        context['form'] = form
+
+        return TemplateResponse(request, 'tracking/alesco_import.html', context)
 
 
 class ComputerAdmin(admin.ModelAdmin):

@@ -21,3 +21,4 @@ Babel==2.2.0
 pycsw==1.10.3
 SQLAlchemy==1.0.12
 pyproj==1.9.5.1
+openpyxl==2.3.5

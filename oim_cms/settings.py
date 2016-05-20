@@ -8,12 +8,12 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG', False)
 ALLOWED_HOSTS = [env("ALLOWED_DOMAIN"), ]
+INTERNAL_IPS = ['127.0.0.1', '::1']
 
 # Base URL to use when referring to full URLs within the Wagtail admin backend -
 # e.g. in notification emails. Don't include '/admin' or a trailing slash
 BASE_URL = env('BASE_URL', 'http://localhost:8000')
-
-BORG_URL = env("BORG_URL","https://borg.dpaw.wa.gov.au")
+BORG_URL = env("BORG_URL", "https://borg.dpaw.wa.gov.au")
 if BORG_URL.endswith("/"):
     BORG_URL = BORG_URL[:-1]
 
@@ -298,3 +298,12 @@ LOGGING = {
         },
     }
 }
+if DEBUG:
+    # Developer local IP may be required for debug_toolbar to work/
+    if env('INTERNAL_IP', False):
+        INTERNAL_IPS.append(env('INTERNAL_IP'))
+    INSTALLED_APPS += (
+        'debug_toolbar',
+    )
+    DEBUG_TOOLBAR_PATCH_SETTINGS = True
+    MIDDLEWARE_CLASSES = ('debug_toolbar.middleware.DebugToolbarMiddleware',) + MIDDLEWARE_CLASSES
