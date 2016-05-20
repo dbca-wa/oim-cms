@@ -148,10 +148,12 @@ class DeviceAdmin(VersionAdmin):
 
 @register(OrgUnit)
 class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
-    list_display = ("name", "unit_type", "users", "members", "it_systems", "cc", "acronym", "manager")
-    search_fields = ('name', 'acronym')
-    raw_id_fields = ('manager', "parent", "location")
-    list_filter = ("unit_type", "location")
+    list_display = (
+        'name', 'unit_type', 'users', 'members', 'it_systems', 'cc', 'acronym',
+        'manager')
+    search_fields = ('name', 'acronym', 'manager__name', 'location__name')
+    raw_id_fields = ('manager', 'parent', 'location')
+    list_filter = ('unit_type',)
 
     def users(self, obj):
         return format_html(
