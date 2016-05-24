@@ -202,6 +202,11 @@ TEMPLATES = [
     },
 ]
 
+# Pusher settings
+PUSHER_APP_ID = env('PUSHER_APP_ID', None)
+PUSHER_KEY = env('PUSHER_KEY', None)
+PUSHER_SECRET = env('PUSHER_SECRET', None)
+PUSHER_CLUSTER=env('PUSHER_CLUSTER', None)
 # Incredibus settings
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))

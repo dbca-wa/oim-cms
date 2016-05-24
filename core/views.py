@@ -17,6 +17,43 @@ from django_auth_ldap.backend import LDAPBackend
 from ipware.ip import get_ip
 from django.views.decorators.csrf import csrf_exempt
 
+from django.conf import settings
+from pusher import Pusher
+
+pusher = Pusher(
+    app_id=str(settings.PUSHER_APP_ID),
+    key=settings.PUSHER_KEY,
+    secret=settings.PUSHER_SECRET,
+    cluster=settings.PUSHER_CLUSTER,
+    ssl=True
+)
+
+
+@csrf_exempt
+def auth_pusher(request):
+    auth = pusher.authenticate(
+        channel = str(request.GET.get("channel_name")),
+        socket_id = str(request.GET.get("socket_id")),
+        custom_data = {
+            "user_id": request.user.email,
+            "user_info": whoamiResource.as_detail()(request).content
+        })
+    auth = '{0}({1})'.format(request.GET.get("callback"),json.dumps(auth))
+    response = HttpResponse(auth)
+    response["Content-Type"] = "application/javascript"
+    return response
+
+
+@csrf_exempt
+def pusher_publish(request):
+    data = request.POST.get("data")
+    private_data = 'using private channel {0}'.format(data)
+    pusher.trigger('test_channel','my_event',{'message': json.dumps(data)})
+    pusher.trigger('private-test_channel','private_event',{'message': json.dumps(private_data)})
+    response = HttpResponse(json.dumps(data))
+    response["Content-Type"] = "application/json"
+    return response
+
 
 @csrf_exempt
 def auth_ip(request):
@@ -180,5 +217,3 @@ def error404(request):
             status=404
         )
         return response
-
-
