@@ -87,7 +87,6 @@ class Content(Page):
         ('raw', blocks.RawHTMLBlock()),
         ('include_content', blocks.CharBlock()),
         ('content_list', blocks.CharBlock()),
-        #('markdown', MarkdownBlock()),
     ], null=True, blank=True)
     date = models.DateField("Content updated date", default=timezone.now)
     template_filename = models.CharField(max_length=64, choices=(
