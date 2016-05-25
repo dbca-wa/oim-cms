@@ -55,9 +55,11 @@ class DepartmentUser(MPTTModel):
     ACTIVE_FILTER = {"active": True, "email__isnull": False,
                      "cost_centre__isnull": False, "contractor": False}
     ACCOUNT_TYPE_CHOICES = (
+        (9, 'Casual'),  # Added later :/
         (0, 'Dept fixed-term contract'),
         (1, 'N/A'),
-        (2, 'Permanent'),
+        (2, 'Permanent fulltime'),
+        (8, 'Permanent part time'),  # Added later :/
         (3, 'Recruitment agency contract'),
         (4, 'Resigned'),
         (5, 'Shared account'),
