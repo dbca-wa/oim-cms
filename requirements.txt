@@ -2,13 +2,13 @@ Django==1.9.5
 django-extensions==1.6.1
 https://static.dpaw.wa.gov.au/static/py/dpaw-utils/dist/dpaw-utils-0.3a10.tar.gz
 wagtail==1.4.5
--e git://github.com/torchbox/wagtail-markdown.git@0.4.1#egg=wagtail-markdown
 django-queryset-csv==0.3.3
 django-mptt==0.8.0
 django-leaflet==0.18.0
 django-reversion==1.10.2
 python-dateutil==2.4.2
 django-model-utils==2.4
+django-debug-toolbar==1.4
 restless==2.0.1
 python-ldap==2.4.22
 django-auth-ldap==1.2.7
@@ -22,3 +22,4 @@ pycsw==1.10.3
 SQLAlchemy==1.0.12
 pyproj==1.9.5.1
 pusher
+openpyxl==2.3.5
