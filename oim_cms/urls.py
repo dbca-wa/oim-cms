@@ -11,6 +11,7 @@ from core import views
 from oim_cms import api
 
 #from catalogue import urls as catalogue_urls
+from rooms import urls as room_urls
 
 admin.site.site_header = 'OIM CMS Database Administration'
 
@@ -31,6 +32,7 @@ api_patterns = [
 ]
 
 urlpatterns = [
+    url(r'^rooms/', include(room_urls)),
     #url(r'^catalogue/', include(catalogue_urls)),
     url(r'^django-admin/', include(admin.site.urls)),
 
