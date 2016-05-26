@@ -27,6 +27,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    #
+    'django.contrib.gis',
 
     'compressor',
     'taggit',
@@ -56,7 +58,8 @@ INSTALLED_APPS = (
     'core',
     'mudmap',
     'postgrest',
-    #'catalogue'
+    #'catalogue',
+    'rooms'
 )
 
 AUTHENTICATION_BACKENDS = (
