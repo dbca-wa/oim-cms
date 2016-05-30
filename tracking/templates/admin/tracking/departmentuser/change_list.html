@@ -1,0 +1,8 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    <li>
+        <a href="{% url 'admin:alesco_import' %}">Import Alesco data</a>
+    </li>
+    {{ block.super }}
+{% endblock %}
