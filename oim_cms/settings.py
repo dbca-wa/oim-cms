@@ -10,7 +10,7 @@ DEBUG = env('DEBUG', False)
 ALLOWED_HOSTS = [env("ALLOWED_DOMAIN"), ]
 INTERNAL_IPS = ['127.0.0.1', '::1']
 
-# Base URL to use when referring to full URLs within the Wagtail admin backend -
+# Base URL to use when referring to full URLs within the Wagtail admin backend
 # e.g. in notification emails. Don't include '/admin' or a trailing slash
 BASE_URL = env('BASE_URL', 'http://localhost:8000')
 BORG_URL = env("BORG_URL", "https://borg.dpaw.wa.gov.au")
@@ -306,6 +306,18 @@ LOGGING = {
         },
     }
 }
+
+
+# Celery settings
+BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_IMPORTS = ('tracking.tasks',)
+
+
+# Alter some settings in debug mode.
 if DEBUG:
     # Developer local IP may be required for debug_toolbar to work/
     if env('INTERNAL_IP', False):

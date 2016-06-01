@@ -1,6 +1,6 @@
 Django==1.9.5
 django-extensions==1.6.1
-https://static.dpaw.wa.gov.au/static/py/dpaw-utils/dist/dpaw-utils-0.3a10.tar.gz
+https://static.dpaw.wa.gov.au/static/py/dpaw-utils/dist/dpaw-utils-0.3a11.tar.gz
 wagtail==1.4.5
 django-queryset-csv==0.3.3
 django-mptt==0.8.0
@@ -23,3 +23,5 @@ SQLAlchemy==1.0.12
 pyproj==1.9.5.1
 pusher
 openpyxl==2.3.5
+celery==3.1.23
+redis==2.10.5

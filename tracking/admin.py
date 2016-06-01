@@ -1,14 +1,13 @@
-from datetime import datetime
+from __future__ import absolute_import
 from django import forms
 from django.conf.urls import url
 from django.contrib import admin, messages
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
-from openpyxl import load_workbook
-import tempfile
 
 from tracking.models import DepartmentUser, Computer, Mobile, EC2Instance
 from tracking.utils import logger_setup
+from tracking.tasks import alesco_data_import
 
 
 class DepartmentUserAdmin(admin.ModelAdmin):
@@ -20,7 +19,7 @@ class DepartmentUserAdmin(admin.ModelAdmin):
     readonly_fields = [
         'username', 'email', 'org_data_pretty', 'ad_data_pretty',
         'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
-        'alesco_data']
+        'alesco_data_pretty']
     fieldsets = (
         ('Email/username', {
             'fields': ('email', 'username'),
@@ -55,7 +54,7 @@ class DepartmentUserAdmin(admin.ModelAdmin):
                 ('active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date'),
                 'org_data_pretty',
                 'ad_data_pretty',
-                'alesco_data',
+                'alesco_data_pretty',
             )
         })
     )
@@ -123,51 +122,12 @@ class DepartmentUserAdmin(admin.ModelAdmin):
             if form.is_valid():
                 upload = request.FILES['spreadsheet']
                 # Write the uploaded file to a temp file.
-                f = tempfile.NamedTemporaryFile(suffix='.' + upload.name.split('.')[-1])
+                f = open('/tmp/alesco-data.xlsx', 'w')
                 f.write(upload.read())
-                f.seek(0)
-                wb = load_workbook(filename=f.name, read_only=True)
-                ws = wb.worksheets[0]
-                keys = []
-                values = []
-                non_matched = 0
-                multi_matched = 0
-                updates = 0
-                # Iterate over each row in the worksheet.
-                for k, row in enumerate(ws.iter_rows()):
-                    values = []
-                    for cell in row:
-                        # First row: generate keys.
-                        if k == 0:
-                            keys.append(cell.value)
-                        # Otherwise make a list of values.
-                        else:
-                            # Serialise datetime objects.
-                            if isinstance(cell.value, datetime):
-                                values.append(cell.value.isoformat())
-                            else:
-                                values.append(cell.value)
-                    if k > 0:
-                        # Construct a dictionary of row values.
-                        record = dict(zip(keys, values))
-                        # Try to find a matching DepartmentUser by employee id.
-                        d = DepartmentUser.objects.filter(employee_id=record['EMPLOYEE_NO'])
-                        if d.count() > 1:
-                            multi_matched += 1
-                        elif d.count() == 1:
-                            d = d[0]
-                            d.alesco_data = record
-                            d.save()
-                            updates += 1
-                        else:
-                            non_matched += 0
-                # Messages then redirect to DepartmentUser change_list
-                if updates > 0:
-                    messages.success(request, 'Alesco data for {} DepartmentUsers was updated.'.format(updates))
-                if non_matched > 0:
-                    messages.warning(request, 'Employee ID was not matched for {} rows.'.format(non_matched))
-                if multi_matched > 0:
-                    messages.error(request, 'Employee ID was matched for >1 DepartmentUsers for {} rows.'.format(multi_matched))
+                f.close()
+                # Process the uploaded form as an asynchronous task.
+                alesco_data_import.delay(f.name)
+                messages.info(request, 'Spreadsheet uploaded successfully, please allow several minutes for processing.')
                 return redirect('admin:tracking_departmentuser_changelist')
         else:
             form = self.AlescoImportForm()
