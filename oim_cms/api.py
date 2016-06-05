@@ -16,6 +16,7 @@ from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.db.models import F
+from mptt.templatetags.mptt_tags import cache_tree_children
 
 from django.views.decorators.csrf import csrf_exempt
 from djqscsv import render_to_csv_response
@@ -204,11 +205,26 @@ def freshdesk(request):
         settings.FRESHDESK_ENDPOINT + "/support/tickets/{}".format(ticket_id))
 
 
+def recursive_node_to_dict(node):
+    # http://stackoverflow.com/questions/12556268/fastest-way-to-create-json-to-reflect-a-tree-structure-in-python-django-using
+    result = {
+        'name': node.name, 'id': node.pk,
+        'children': [recursive_node_to_dict(c) for c in node._cached_children]
+    }
+    if not result["children"]:
+        del result["children"]
+    return result
+
+
 class OptionResource(DjangoResource):
 
     @skip_prepare
     def list(self):
         return getattr(self, "data_" + self.request.GET["list"])()
+
+    def data_org_structure(self):
+        return [recursive_node_to_dict(cache_tree_children(dept.get_descendants(include_self=True))[0])
+                for dept in OrgUnit.objects.filter(unit_type=0).order_by('name')]
 
     def data_cost_centre(self):
         return ["CC{} / {}".format(
@@ -244,7 +260,7 @@ class OptionResource(DjangoResource):
         return [i.name for i in OrgUnit.objects.filter(unit_type=7).order_by('name')]
 
     def data_regiondistrict(self):
-        return [i.name for i in OrgUnit.objects.filter(unit_type__in=[3,6]).order_by('name')]
+        return [i.name for i in OrgUnit.objects.filter(unit_type__in=[3, 6]).order_by('name')]
 
     def data_office(self):
         return [i.name for i in OrgUnit.objects.filter(unit_type=5).order_by('name')]
@@ -344,7 +360,7 @@ class EC2InstanceResource(CSVDjangoResource):
     def list_qs(self):
         if "ec2id" in self.request.GET:
             return EC2Instance.objects.filter(
-                ec2id=request.GET["ec2id"]).values(*self.VALUES_ARGS)
+                ec2id=self.request.GET["ec2id"]).values(*self.VALUES_ARGS)
         else:
             return EC2Instance.objects.exclude(
                 running=F("next_state")).values(*self.VALUES_ARGS)

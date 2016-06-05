@@ -20,7 +20,7 @@ class DepartmentUserAdmin(admin.ModelAdmin):
     readonly_fields = [
         'username', 'email', 'org_data_pretty', 'ad_data_pretty',
         'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
-        'alesco_data']
+        'alesco_data_pretty']
     fieldsets = (
         ('Email/username', {
             'fields': ('email', 'username'),
@@ -55,7 +55,7 @@ class DepartmentUserAdmin(admin.ModelAdmin):
                 ('active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date'),
                 'org_data_pretty',
                 'ad_data_pretty',
-                'alesco_data',
+                'alesco_data_pretty',
             )
         })
     )
