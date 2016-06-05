@@ -2,6 +2,7 @@ from __future__ import unicode_literals, absolute_import
 from django.db import models
 from django.contrib.postgres.fields import JSONField
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from mptt.models import MPTTModel, TreeForeignKey
 from json2html import json2html
 import os
@@ -55,9 +56,11 @@ class DepartmentUser(MPTTModel):
     ACTIVE_FILTER = {"active": True, "email__isnull": False,
                      "cost_centre__isnull": False, "contractor": False}
     ACCOUNT_TYPE_CHOICES = (
+        (9, 'Casual'),  # Added later :/
         (0, 'Dept fixed-term contract'),
         (1, 'N/A'),
-        (2, 'Permanent'),
+        (2, 'Permanent fulltime'),
+        (8, 'Permanent part time'),  # Added later :/
         (3, 'Recruitment agency contract'),
         (4, 'Resigned'),
         (5, 'Shared account'),
@@ -235,7 +238,30 @@ class DepartmentUser(MPTTModel):
     def alesco_data_pretty(self):
         if not self.alesco_data:
             return self.alesco_data
-        return format_html(json2html.convert(json=self.alesco_data))
+        # Manually generate HTML table output, to guarantee field order.
+        t = '''<table border="1">
+            <tr><th>FIRST_NAME</th><td>{FIRST_NAME}</td></tr>
+            <tr><th>SECOND_NAME</th><td>{SECOND_NAME}</td></tr>
+            <tr><th>SURNAME</th><td>{SURNAME}</td></tr>
+            <tr><th>EMPLOYEE_NO</th><td>{EMPLOYEE_NO}</td></tr>
+            <tr><th>PAYPOINT</th><td>{PAYPOINT}</td></tr>
+            <tr><th>PAYPOINT_DESC</th><td>{PAYPOINT_DESC}</td></tr>
+            <tr><th>MANAGER_POS#</th><td>{MANAGER_POS#}</td></tr>
+            <tr><th>MANAGER_NAME</th><td>{MANAGER_NAME}</td></tr>
+            <tr><th>JOB_NO</th><td>{JOB_NO}</td></tr>
+            <tr><th>FIRST_COMMENCE</th><td>{FIRST_COMMENCE}</td></tr>
+            <tr><th>OCCUP_TERM_DATE</th><td>{OCCUP_TERM_DATE}</td></tr>
+            <tr><th>POSITION_NO</th><td>{POSITION_NO}</td></tr>
+            <tr><th>OCCUP_POS_TITLE</th><td>{OCCUP_POS_TITLE}</td></tr>
+            <tr><th>LOC_DESC</th><td>{LOC_DESC}</td></tr>
+            <tr><th>CLEVEL1_ID</th><td>{CLEVEL1_ID}</td></tr>
+            <tr><th>CLEVEL2_DESC</th><td>{CLEVEL2_DESC}</td></tr>
+            <tr><th>CLEVEL3_DESC</th><td>{CLEVEL3_DESC}</td></tr>
+            <tr><th>EMP_STAT_DESC</th><td>{EMP_STAT_DESC}</td></tr>
+            <tr><th>GEO_LOCATION_DESC</th><td>{GEO_LOCATION_DESC}</td></tr>
+            </table>'''
+        t = t.format(**self.alesco_data)
+        return mark_safe(t)
 
     class MPTTMeta:
         order_insertion_by = ['name']
