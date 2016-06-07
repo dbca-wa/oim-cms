@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-from celery import shared_task
 from datetime import datetime
 from openpyxl import load_workbook
 
@@ -10,7 +9,6 @@ from tracking.utils import logger_setup
 logger = logger_setup('alesco_data_import')
 
 
-@shared_task(name='alesco-data-import')
 def alesco_data_import(filepath):
     """Import task expects to be passed a file path to a closed .xlsx file.
     """

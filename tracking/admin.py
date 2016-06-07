@@ -126,7 +126,7 @@ class DepartmentUserAdmin(admin.ModelAdmin):
                 f.write(upload.read())
                 f.close()
                 # Process the uploaded form as an asynchronous task.
-                alesco_data_import.delay(f.name)
+                alesco_data_import(f.name)
                 messages.info(request, 'Spreadsheet uploaded successfully, please allow several minutes for processing.')
                 return redirect('admin:tracking_departmentuser_changelist')
         else:

@@ -10,7 +10,7 @@ from wagtail.wagtailcore import urls as wagtail_urls
 from core import views
 from oim_cms import api
 
-#from catalogue import urls as catalogue_urls
+from catalogue import urls as catalogue_urls
 
 admin.site.site_header = 'OIM CMS Database Administration'
 
@@ -31,7 +31,7 @@ api_patterns = [
 ]
 
 urlpatterns = [
-    #url(r'^catalogue/', include(catalogue_urls)),
+    url(r'^catalogue/', include(catalogue_urls)),
     url(r'^django-admin/', include(admin.site.urls)),
 
     url(r'^admin/', include(wagtailadmin_urls)),
