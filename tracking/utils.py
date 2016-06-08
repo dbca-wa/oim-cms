@@ -1,7 +1,6 @@
 import csv
 from datetime import datetime
 from django.conf import settings
-from django.contrib import messages
 import logging
 from openpyxl import load_workbook
 import os
@@ -101,7 +100,7 @@ def csv_sync_prop_register_data(src='it_assets.csv'):
     print('Done')
 
 
-def alesco_data_import(request, filepath):
+def alesco_data_import(filepath):
     """Import task expects to be passed a file path to a closed .xlsx file.
     """
     logger = logger_setup('alesco_data_import')
@@ -148,5 +147,4 @@ def alesco_data_import(request, filepath):
     if multi_matched > 0:
         logger.error('Employee ID was matched for >1 DepartmentUsers for {} rows.'.format(multi_matched))
 
-    messages.info(request, 'Alesco spreadsheet processed successfully!')
     return True
