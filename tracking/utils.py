@@ -1,8 +1,13 @@
 import csv
+from datetime import datetime
 from django.conf import settings
+from django.contrib import messages
 import logging
+from openpyxl import load_workbook
 import os
 import subprocess
+
+from tracking.models import DepartmentUser
 
 
 def logger_setup(name):
@@ -96,3 +101,52 @@ def csv_sync_prop_register_data(src='it_assets.csv'):
     print('Done')
 
 
+def alesco_data_import(request, filepath):
+    """Import task expects to be passed a file path to a closed .xlsx file.
+    """
+    logger = logger_setup('alesco_data_import')
+    f = open(filepath)
+    wb = load_workbook(filename=f.name, read_only=True)
+    ws = wb.worksheets[0]
+    keys = []
+    values = []
+    non_matched = 0
+    multi_matched = 0
+    updates = 0
+    # Iterate over each row in the worksheet.
+    for k, row in enumerate(ws.iter_rows()):
+        values = []
+        for cell in row:
+            # First row: generate keys.
+            if k == 0:
+                keys.append(cell.value)
+            # Otherwise make a list of values.
+            else:
+                # Serialise datetime objects.
+                if isinstance(cell.value, datetime):
+                    values.append(cell.value.isoformat())
+                else:
+                    values.append(cell.value)
+        if k > 0:
+            # Construct a dictionary of row values.
+            record = dict(zip(keys, values))
+            # Try to find a matching DepartmentUser by employee id.
+            d = DepartmentUser.objects.filter(employee_id=record['EMPLOYEE_NO'])
+            if d.count() > 1:
+                multi_matched += 1
+            elif d.count() == 1:
+                d = d[0]
+                d.alesco_data = record
+                d.save()
+                updates += 1
+            else:
+                non_matched += 0
+    if updates > 0:
+        logger.info('Alesco data for {} DepartmentUsers was updated.'.format(updates))
+    if non_matched > 0:
+        logger.warning('Employee ID was not matched for {} rows.'.format(non_matched))
+    if multi_matched > 0:
+        logger.error('Employee ID was matched for >1 DepartmentUsers for {} rows.'.format(multi_matched))
+
+    messages.info(request, 'Alesco spreadsheet processed successfully!')
+    return True

@@ -6,8 +6,7 @@ from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 
 from tracking.models import DepartmentUser, Computer, Mobile, EC2Instance
-from tracking.utils import logger_setup
-from tracking.tasks import alesco_data_import
+from tracking.utils import logger_setup, alesco_data_import
 
 
 class DepartmentUserAdmin(admin.ModelAdmin):
@@ -125,9 +124,8 @@ class DepartmentUserAdmin(admin.ModelAdmin):
                 f = open('/tmp/alesco-data.xlsx', 'w')
                 f.write(upload.read())
                 f.close()
-                # Process the uploaded form as an asynchronous task.
                 alesco_data_import(f.name)
-                messages.info(request, 'Spreadsheet uploaded successfully, please allow several minutes for processing.')
+                messages.info(request, 'Spreadsheet uploaded successfully!')
                 return redirect('admin:tracking_departmentuser_changelist')
         else:
             form = self.AlescoImportForm()
