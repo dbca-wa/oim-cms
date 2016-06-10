@@ -631,6 +631,12 @@ class FreshdeskTicket(models.Model):
     updated_at = models.DateTimeField(
         null=True, blank=True, help_text='Ticket updated timestamp.')
     # Non-Freshdesk data below.
+    freshdesk_requester = models.ForeignKey(
+        'FreshdeskContact', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='freshdesk_requester')
+    freshdesk_responder = models.ForeignKey(
+        'FreshdeskContact', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='freshdesk_responder')
     du_requester = models.ForeignKey(
         tracking.DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
         related_name='du_requester',
@@ -647,8 +653,7 @@ class FreshdeskTicket(models.Model):
 
 
 class FreshdeskConversation(models.Model):
-    """Cached representation of a Freshdesk conversation, obtained via the
-    Freshdesk API.
+    """Cached representation of a Freshdesk conversation, obtained via the API.
     """
     attachments = JSONField(
         null=True, blank=True, default=list,
@@ -684,9 +689,57 @@ class FreshdeskConversation(models.Model):
     # Non-Freshdesk data below.
     freshdesk_ticket = models.ForeignKey(
         FreshdeskTicket, on_delete=models.PROTECT, null=True, blank=True)
+    freshdesk_contact = models.ForeignKey(
+        'FreshdeskContact', on_delete=models.PROTECT, null=True, blank=True)
     du_user = models.ForeignKey(
         tracking.DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
         help_text='Department User who is adding to the conversation.')
 
     def __str__(self):
         return 'Freshdesk conversation ID {}'.format(self.conversation_id)
+
+
+class FreshdeskContact(models.Model):
+    """Cached representation of a Freshdesk contact, obtained via the API.
+    """
+    active = models.BooleanField(
+        default=False, help_text='Set to true if the contact has been verified.')
+    address = models.CharField(max_length=512, null=True, blank=True)
+    contact_id = models.BigIntegerField(
+        unique=True, help_text='ID of the contact.')
+    created_at = models.DateTimeField(null=True, blank=True)
+    custom_fields = JSONField(
+        null=True, blank=True, default=dict,
+        help_text='Key value pairs containing the names and values of custom fields.')
+    description = models.TextField(
+        null=True, blank=True, help_text='A short description of the contact.')
+    email = models.CharField(
+        max_length=256, null=True, blank=True, unique=True,
+        help_text='Primary email address of the contact.')
+    job_title = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Job title of the contact.')
+    language = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Language of the contact.')
+    mobile = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Mobile number of the contact.')
+    name = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Name of the contact.')
+    other_emails = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Additional emails associated with the contact. An array of strings.')
+    phone = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Phone number of the contact.')
+    tags = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Tags that have been associated with the contact. An array of strings.')
+    time_zone = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Time zone in which the contact resides.')
+    updated_at = models.DateTimeField(
+        null=True, blank=True, help_text='Contact updated timestamp.')
+    # Non-Freshdesk data below.
+    du_user = models.ForeignKey(
+        tracking.DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
+        help_text='Department User that is represented by this Freshdesk contact.')
+
+    def __str__(self):
+        return 'Freshdesk contact {} ({})'.format(self.contact_id, self.email)

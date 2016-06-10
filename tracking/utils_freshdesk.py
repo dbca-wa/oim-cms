@@ -1,6 +1,7 @@
 from dateutil.parser import parse
 import os
 import requests
+from requests.exceptions import HTTPError
 from tracking.models import DepartmentUser
 from tracking.utils import logger_setup
 
@@ -165,17 +166,29 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
     return True
 
 
-def freshdesk_sync_tickets(tickets=None):
-    """Sync passed-in list of Freshdesk tickets to the database. If no tickets
+def freshdesk_cache_tickets(tickets=None):
+    """Cache passed-in list of Freshdesk tickets in the database. If no tickets
     are passed in, query the API for the newest tickets.
     """
-    from registers.models import FreshdeskTicket, FreshdeskConversation
-    logger = logger_setup('freshdesk_sync_tickets')
+    from registers.models import FreshdeskTicket, FreshdeskConversation, FreshdeskContact
+    logger = logger_setup('freshdesk_cache_tickets')
 
     if not tickets:
         try:
             logger.info('Querying Freshdesk for current tickets')
-            tickets = get_freshdesk_objects(obj_type='tickets', progress=False, limit=100)
+            tickets = get_freshdesk_objects(obj_type='tickets', progress=False, limit=30)
+            for t in tickets:
+                # Rename key 'id'.
+                t['ticket_id'] = t.pop('id')
+                # Date ISO8601-formatted date strings into datetimes.
+                t['created_at'] = parse(t['created_at'])
+                t['due_by'] = parse(t['due_by'])
+                t['fr_due_by'] = parse(t['fr_due_by'])
+                t['updated_at'] = parse(t['updated_at'])
+                # Pop unused fields from the dict.
+                t.pop('company_id')
+                t.pop('email_config_id')
+                t.pop('product_id')
         except Exception as e:
             logger.exception(e)
             return False
@@ -184,18 +197,6 @@ def freshdesk_sync_tickets(tickets=None):
     # Iterate through tickets; determine if a cached FreshdeskTicket should be
     # created or updated.
     for t in tickets:
-        # Rename key 'id'.
-        t['ticket_id'] = t.pop('id')
-        # Date ISO8601-formatted date strings into datetimes.
-        t['created_at'] = parse(t['created_at'])
-        t['due_by'] = parse(t['due_by'])
-        t['fr_due_by'] = parse(t['fr_due_by'])
-        t['updated_at'] = parse(t['updated_at'])
-        # Pop unused fields from the dict.
-        t.pop('company_id')
-        t.pop('email_config_id')
-        t.pop('product_id')
-
         try:
             ft, create = FreshdeskTicket.objects.update_or_create(ticket_id=t['ticket_id'], defaults=t)
             if create:
@@ -204,6 +205,46 @@ def freshdesk_sync_tickets(tickets=None):
             else:
                 logger.info('{} updated'.format(ft))
                 updated += 1
+            # Sync contact objects (requester and responder).
+            # Check local cache first, to reduce no of API calls.
+            if ft.requester_id:
+                if FreshdeskContact.objects.filter(contact_id=ft.requester_id).exists():
+                    ft.freshdesk_requester = FreshdeskContact.objects.get(contact_id=ft.requester_id)
+                else:  # Attempt to cache the Freshdesk contact.
+                    try:
+                        c = get_freshdesk_object(obj_type='contacts', id=ft.requester_id)
+                        c['contact_id'] = c.pop('id')
+                        c['created_at'] = parse(c['created_at'])
+                        c['updated_at'] = parse(c['updated_at'])
+                        c.pop('avatar')
+                        c.pop('company_id')
+                        c.pop('twitter_id')
+                        con = FreshdeskContact.objects.create(**c)
+                        logger.info('Created {}'.format(con))
+                        ft.freshdesk_requester = con
+                    except HTTPError:  # The GET might fail if the contact is an agent.
+                        logger.error('HTTP 404 Freshdesk contact not found: {}'.format(ft.requester_id))
+                        pass
+            if ft.responder_id:
+                if FreshdeskContact.objects.filter(contact_id=ft.responder_id).exists():
+                    ft.freshdesk_responder = FreshdeskContact.objects.get(contact_id=ft.responder_id)
+                else:  # Attempt to cache the Freshdesk contact.
+                    try:
+                        c = get_freshdesk_object(obj_type='contacts', id=ft.responder_id)
+                        c['contact_id'] = c.pop('id')
+                        c['created_at'] = parse(c['created_at'])
+                        c['updated_at'] = parse(c['updated_at'])
+                        c.pop('avatar')
+                        c.pop('company_id')
+                        c.pop('twitter_id')
+                        con = FreshdeskContact.objects.create(**c)
+                        logger.info('Created {}'.format(con))
+                        ft.freshdesk_responder = con
+                    except HTTPError:  # The GET might fail if the contact is an agent.
+                        logger.error('HTTP 404 Freshdesk contact not found: {}'.format(ft.responder_id))
+                        pass
+            ft.save()
+
             # Sync ticket conversation objects.
             obj = 'tickets/{}/conversations'.format(t['ticket_id'])
             convs = get_freshdesk_objects(obj_type=obj, progress=False)
@@ -221,6 +262,26 @@ def freshdesk_sync_tickets(tickets=None):
                     logger.info('{} created'.format(fc))
                 else:
                     logger.info('{} updated'.format(fc))
+                # Link parent ticket, DepartmentUser, etc.
+                fc.freshdesk_ticket = ft
+                if FreshdeskContact.objects.filter(contact_id=fc.user_id).exists():
+                    fc.freshdesk_contact = FreshdeskContact.objects.get(contact_id=fc.user_id)
+                else:  # Attempt to cache the Freshdesk contact.
+                    try:
+                        f_con = get_freshdesk_object(obj_type='contacts', id=fc.user_id)
+                        f_con['contact_id'] = f_con.pop('id')
+                        f_con['created_at'] = parse(f_con['created_at'])
+                        f_con['updated_at'] = parse(f_con['updated_at'])
+                        f_con.pop('avatar')
+                        f_con.pop('company_id')
+                        f_con.pop('twitter_id')
+                        contact = FreshdeskContact.objects.create(**f_con)
+                        logger.info('Created {}'.format(contact))
+                        fc.freshdesk_contact = contact
+                    except HTTPError:  # The GET might fail if the contact is an agent.
+                        logger.error('HTTP 404 Freshdesk contact not found: {}'.format(ft.requester_id))
+                        pass
+                fc.save()
         except Exception as e:
             logger.exception(e)
             return False
