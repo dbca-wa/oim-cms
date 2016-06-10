@@ -590,7 +590,7 @@ class FreshdeskTicket(models.Model):
     fwd_emails = JSONField(
         null=True, blank=True, default=list,
         help_text='Email address(e)s added while forwarding a ticket. An array of strings.')
-    group_id = models.IntegerField(
+    group_id = models.BigIntegerField(
         null=True, blank=True,
         help_text='ID of the group to which the ticket has been assigned.')
     is_escalated = models.BooleanField(
@@ -605,9 +605,9 @@ class FreshdeskTicket(models.Model):
     reply_cc_emails = JSONField(
         null=True, blank=True, default=list,
         help_text='Email address added while replying to a ticket. An array of strings.')
-    requester_id = models.IntegerField(
+    requester_id = models.BigIntegerField(
         null=True, blank=True, help_text='User ID of the requester.')
-    responder_id = models.IntegerField(
+    responder_id = models.BigIntegerField(
         null=True, blank=True, help_text='ID of the agent to whom the ticket has been assigned.')
     source = models.IntegerField(
         null=True, blank=True, help_text='The channel through which the ticket was created.')
@@ -658,7 +658,7 @@ class FreshdeskConversation(models.Model):
         null=True, blank=True, default=list,
         help_text='Email address added in the "cc" field of the conversation. An array of strings.')
     created_at = models.DateTimeField(null=True, blank=True)
-    conversation_id = models.IntegerField(
+    conversation_id = models.BigIntegerField(
         unique=True, help_text='Unique ID of the conversation in Freshdesk.')
     incoming = models.BooleanField(
         default=False,
@@ -675,7 +675,7 @@ class FreshdeskConversation(models.Model):
         help_text='Email addresses of agents/users who need to be notified about this conversation. An array of strings.')
     updated_at = models.DateTimeField(
         null=True, blank=True, help_text='Ticket updated timestamp.')
-    user_id = models.IntegerField(
+    user_id = models.BigIntegerField(
         help_text='ID of the agent/user who is adding the conversation.')
     # Non-Freshdesk data below.
     freshdesk_ticket = models.ForeignKey(FreshdeskTicket, on_delete=models.PROTECT)
