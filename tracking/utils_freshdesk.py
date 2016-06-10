@@ -1,3 +1,4 @@
+from dateutil.parser import parse
 import os
 import requests
 from tracking.models import DepartmentUser
@@ -9,35 +10,33 @@ FRESHDESK_AUTH = (os.environ['FRESHDESK_KEY'], 'X')
 HEADERS_JSON = {'Content-Type': 'application/json'}
 
 
-def get_freshdesk_contact(cid):
-    """Query the Freshdesk v2 API for a single contact's details.
+def get_freshdesk_object(obj_type, id):
+    """Query the Freshdesk v2 API for a single object.
     """
-    url = FRESHDESK_ENDPOINT + '/contacts/{}'.format(cid)
+    url = FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
     r = requests.get(url, auth=FRESHDESK_AUTH)
     if not r.status_code == 200:
         r.raise_for_status()
     return r.json()
 
 
-def update_freshdesk_contact(data, create=True, cid=None):
-    """Use the Freshdesk v2 API to create or update a contact.
+def update_freshdesk_object(obj_type, data, id=None):
+    """Use the Freshdesk v2 API to create or update an object.
     Accepts a dict of fields.
     Ref: https://developer.freshdesk.com/api/#create_contact
     """
-    if not cid:
-        url = FRESHDESK_ENDPOINT + '/contacts'
+    if not id:  # Assume creation of new object.
+        url = FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
+        r = requests.post(url, auth=FRESHDESK_AUTH, data=data)
     else:
-        url = FRESHDESK_ENDPOINT + '/contacts/{}'.format(cid)
-    if create:
-        resp = requests.post(url, auth=FRESHDESK_AUTH, data=data)
-    else:
-        resp = requests.put(url, auth=FRESHDESK_AUTH, data=data)
-
-    return resp
+        url = FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
+        r = requests.put(url, auth=FRESHDESK_AUTH, data=data)
+    return r  # Return the response, so we can handle non-200 gracefully.
 
 
-def get_freshdesk_objects(obj_type, progress=True):
+def get_freshdesk_objects(obj_type, progress=True, limit=False):
     """Query the Freshdesk v2 API for all objects of a defined type.
+    ``limit`` should be an integer (maximum number of objects to return).
     May take some time, depending on the number of objects.
     """
     url = FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
@@ -60,6 +59,11 @@ def get_freshdesk_objects(obj_type, progress=True):
 
         objects.extend(r.json())
         params['page'] += 1
+
+        if limit and len(objects) >= limit:
+            further_results = False
+            objects = objects[:limit]
+
     # Return the full list of objects returned.
     return objects
 
@@ -74,7 +78,7 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
     try:
         if not contacts:
             logger.info('Querying Freshdesk for current contacts')
-            contacts = get_freshdesk_objects(obj_type='contacts', progress=True)
+            contacts = get_freshdesk_objects(obj_type='contacts', progress=False)
             contacts = {c['email'].lower(): c for c in contacts if c['email']}
         if not companies:
             logger.info('Querying Freshdesk for current companies')
@@ -132,14 +136,14 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
                     data['custom_field'] = {'cf_location': physical_location}
                 changes.append('physical_location')
             if user_sync:  # Sync user details to their Freshdesk contact.
-                resp = update_freshdesk_contact(data, create=False, cid=fd['id'])  # Update the contact.
-                if resp.status_code == 403:  # Forbidden
+                r = update_freshdesk_object(data, obj_type='contacts', id=fd['id'])
+                if r.status_code == 403:  # Forbidden
                     # A 403 response probably means that we hit the API throttle limit.
                     # Abort the synchronisation.
                     logger.error('HTTP403 received from Freshdesk API, aborting')
                     return False
                 logger.info('{} was updated in Freshdesk (status {}), changed: {}'.format(
-                    user.email.lower(), resp.status_code, ', '.join(changes)))
+                    user.email.lower(), r.status_code, ', '.join(changes)))
             else:
                 logger.info('{} already up to date in Freshdesk'.format(user.email.lower()))
         elif user.email.lower() in agents:
@@ -152,10 +156,76 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
                     'phone': user.telephone, 'job_title': user.title}
             if department and department in companies:
                 data['company_id'] = companies[department]['id']
-            resp = update_freshdesk_contact(data)  # Create the contact.
-            if not resp.status_code == 200:  # Error, unable to process request.
-                logger.warn('{} not created in Freshdesk (status {})'.format(user.email.lower(), resp.status_code))
+            r = update_freshdesk_object(data, obj_type='contacts')
+            if not r.status_code == 200:  # Error, unable to process request.
+                logger.warn('{} not created in Freshdesk (status {})'.format(user.email.lower(), r.status_code))
             else:
-                logger.info('{} created in Freshdesk (status {})'.format(user.email.lower(), resp.status_code))
+                logger.info('{} created in Freshdesk (status {})'.format(user.email.lower(), r.status_code))
+
+    return True
+
+
+def freshdesk_sync_tickets(tickets=None):
+    """Sync passed-in list of Freshdesk tickets to the database. If no tickets
+    are passed in, query the API for the newest tickets.
+    """
+    from registers.models import FreshdeskTicket, FreshdeskConversation
+    logger = logger_setup('freshdesk_sync_tickets')
+
+    if not tickets:
+        try:
+            logger.info('Querying Freshdesk for current tickets')
+            tickets = get_freshdesk_objects(obj_type='tickets', progress=False, limit=100)
+        except Exception as e:
+            logger.exception(e)
+            return False
+
+    created, updated = 0, 0
+    # Iterate through tickets; determine if a cached FreshdeskTicket should be
+    # created or updated.
+    for t in tickets:
+        # Rename key 'id'.
+        t['ticket_id'] = t.pop('id')
+        # Date ISO8601-formatted date strings into datetimes.
+        t['created_at'] = parse(t['created_at'])
+        t['due_by'] = parse(t['due_by'])
+        t['fr_due_by'] = parse(t['fr_due_by'])
+        t['updated_at'] = parse(t['updated_at'])
+        # Pop unused fields from the dict.
+        t.pop('company_id')
+        t.pop('email_config_id')
+        t.pop('product_id')
+
+        try:
+            ft, create = FreshdeskTicket.objects.update_or_create(ticket_id=t['ticket_id'], defaults=t)
+            if create:
+                logger.info('{} created'.format(ft))
+                created += 1
+            else:
+                logger.info('{} updated'.format(ft))
+                updated += 1
+            # Sync ticket conversation objects.
+            obj = 'tickets/{}/conversations'.format(t['ticket_id'])
+            convs = get_freshdesk_objects(obj_type=obj, progress=False)
+            for c in convs:
+                # Rename key 'id'.
+                c['conversation_id'] = c.pop('id')
+                # Date ISO8601-formatted date strings into datetimes.
+                c['created_at'] = parse(c['created_at'])
+                c['updated_at'] = parse(c['updated_at'])
+                # Pop unused fields from the dict.
+                c.pop('bcc_emails')
+                c.pop('support_email')
+                fc, create = FreshdeskConversation.objects.update_or_create(conversation_id=c['conversation_id'], defaults=c)
+                if create:
+                    logger.info('{} created'.format(fc))
+                else:
+                    logger.info('{} updated'.format(fc))
+        except Exception as e:
+            logger.exception(e)
+            return False
+
+    logger.info('Ticket sync: {} created, {} updated'.format(created, updated))
+    print('{} created, {} updated'.format(created, updated))
 
     return True

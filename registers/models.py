@@ -642,6 +642,9 @@ class FreshdeskTicket(models.Model):
     it_system = models.ForeignKey(
         ITSystem, blank=True, null=True, help_text='IT System to which this ticket relates.')
 
+    def __str__(self):
+        return 'Freshdesk ticket ID {}'.format(self.ticket_id)
+
 
 class FreshdeskConversation(models.Model):
     """Cached representation of a Freshdesk conversation, obtained via the
@@ -660,6 +663,7 @@ class FreshdeskConversation(models.Model):
     created_at = models.DateTimeField(null=True, blank=True)
     conversation_id = models.BigIntegerField(
         unique=True, help_text='Unique ID of the conversation in Freshdesk.')
+    from_email = models.CharField(max_length=256, null=True, blank=True)
     incoming = models.BooleanField(
         default=False,
         help_text='Set to true if a particular conversation should appear as being created from outside.')
@@ -678,7 +682,11 @@ class FreshdeskConversation(models.Model):
     user_id = models.BigIntegerField(
         help_text='ID of the agent/user who is adding the conversation.')
     # Non-Freshdesk data below.
-    freshdesk_ticket = models.ForeignKey(FreshdeskTicket, on_delete=models.PROTECT)
+    freshdesk_ticket = models.ForeignKey(
+        FreshdeskTicket, on_delete=models.PROTECT, null=True, blank=True)
     du_user = models.ForeignKey(
         tracking.DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
         help_text='Department User who is adding to the conversation.')
+
+    def __str__(self):
+        return 'Freshdesk conversation ID {}'.format(self.conversation_id)
