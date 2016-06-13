@@ -2,11 +2,12 @@ from __future__ import absolute_import
 from django import forms
 from django.conf.urls import url
 from django.contrib import admin, messages
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 
 from tracking.models import DepartmentUser, Computer, Mobile, EC2Instance
-from tracking.utils import logger_setup, alesco_data_import
+from tracking.utils import logger_setup, alesco_data_import, departmentuser_csv_report
 
 
 class DepartmentUserAdmin(admin.ModelAdmin):
@@ -100,6 +101,7 @@ class DepartmentUserAdmin(admin.ModelAdmin):
         urls = super(DepartmentUserAdmin, self).get_urls()
         urls = [
             url(r'^alesco-import/$', self.alesco_import, name='alesco_import'),
+            url(r'^export/$', self.export, name='departmentuser_export'),
         ] + urls
         return urls
 
@@ -132,6 +134,14 @@ class DepartmentUserAdmin(admin.ModelAdmin):
         context['form'] = form
 
         return TemplateResponse(request, 'tracking/alesco_import.html', context)
+
+    def export(self, request):
+        """Exports DepartmentUser data to a CSV, and returns
+        """
+        data = departmentuser_csv_report()
+        response = HttpResponse(data, content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=departmentuser_export.csv'
+        return response
 
 
 class ComputerAdmin(admin.ModelAdmin):
