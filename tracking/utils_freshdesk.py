@@ -166,6 +166,26 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
     return True
 
 
+def freshdesk_cache_agents():
+    """Cache a list of Freshdesk agents as contacts, as the API treats Agents
+    differently to Contacts.
+    """
+    from registers.models import FreshdeskContact
+    logger = logger_setup('freshdesk_cache_agents')
+    agents = get_freshdesk_objects(obj_type='agents', progress=False)
+    for i in agents:
+        data = i['contact']
+        data['contact_id'] = i['id']
+        data['created_at'] = parse(data['created_at'])
+        data['updated_at'] = parse(data['updated_at'])
+        data.pop('last_login_at')
+        fa, create = FreshdeskContact.objects.update_or_create(contact_id=data['contact_id'], defaults=data)
+        if create:
+            logger.info('{} created'.format(fa))
+        else:
+            logger.info('{} updated'.format(fa))
+
+
 def freshdesk_cache_tickets(tickets=None):
     """Cache passed-in list of Freshdesk tickets in the database. If no tickets
     are passed in, query the API for the newest tickets.
@@ -177,21 +197,23 @@ def freshdesk_cache_tickets(tickets=None):
         try:
             logger.info('Querying Freshdesk for current tickets')
             tickets = get_freshdesk_objects(obj_type='tickets', progress=False, limit=30)
-            for t in tickets:
-                # Rename key 'id'.
-                t['ticket_id'] = t.pop('id')
-                # Date ISO8601-formatted date strings into datetimes.
-                t['created_at'] = parse(t['created_at'])
-                t['due_by'] = parse(t['due_by'])
-                t['fr_due_by'] = parse(t['fr_due_by'])
-                t['updated_at'] = parse(t['updated_at'])
-                # Pop unused fields from the dict.
-                t.pop('company_id')
-                t.pop('email_config_id')
-                t.pop('product_id')
         except Exception as e:
             logger.exception(e)
             return False
+
+    # Tweak the passed-in list of ticket values, prior to caching.
+    for t in tickets:
+        # Rename key 'id'.
+        t['ticket_id'] = t.pop('id')
+        # Date ISO8601-formatted date strings into datetimes.
+        t['created_at'] = parse(t['created_at'])
+        t['due_by'] = parse(t['due_by'])
+        t['fr_due_by'] = parse(t['fr_due_by'])
+        t['updated_at'] = parse(t['updated_at'])
+        # Pop unused fields from the dict.
+        t.pop('company_id')
+        t.pop('email_config_id')
+        t.pop('product_id')
 
     created, updated = 0, 0
     # Iterate through tickets; determine if a cached FreshdeskTicket should be
@@ -206,7 +228,7 @@ def freshdesk_cache_tickets(tickets=None):
                 logger.info('{} updated'.format(ft))
                 updated += 1
             # Sync contact objects (requester and responder).
-            # Check local cache first, to reduce no of API calls.
+            # Check local cache first, to reduce the no. of API calls.
             if ft.requester_id:
                 if FreshdeskContact.objects.filter(contact_id=ft.requester_id).exists():
                     ft.freshdesk_requester = FreshdeskContact.objects.get(contact_id=ft.requester_id)
