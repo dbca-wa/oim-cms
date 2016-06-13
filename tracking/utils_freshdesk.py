@@ -179,11 +179,15 @@ def freshdesk_cache_agents():
         data['created_at'] = parse(data['created_at'])
         data['updated_at'] = parse(data['updated_at'])
         data.pop('last_login_at')
-        fa, create = FreshdeskContact.objects.update_or_create(contact_id=data['contact_id'], defaults=data)
+        fc, create = FreshdeskContact.objects.update_or_create(contact_id=data['contact_id'], defaults=data)
         if create:
-            logger.info('{} created'.format(fa))
+            logger.info('{} created'.format(fc))
         else:
-            logger.info('{} updated'.format(fa))
+            logger.info('{} updated'.format(fc))
+        # Attempt to match with a DepartmentUser.
+        if DepartmentUser.objects.filter(email__iexact=fc.email).exists():
+            fc.du_user = DepartmentUser.objects.get(email__iexact=fc.email)
+            fc.save()
 
 
 def freshdesk_cache_tickets(tickets=None):
@@ -300,9 +304,16 @@ def freshdesk_cache_tickets(tickets=None):
                         contact = FreshdeskContact.objects.create(**f_con)
                         logger.info('Created {}'.format(contact))
                         fc.freshdesk_contact = contact
+                        # Attempt to match contact with a DepartmentUser.
+                        if DepartmentUser.objects.filter(email__iexact=contact.email).exists():
+                            contact.du_user = DepartmentUser.objects.get(email__iexact=contact.email)
+                            contact.save()
                     except HTTPError:  # The GET might fail if the contact is an agent.
                         logger.error('HTTP 404 Freshdesk contact not found: {}'.format(ft.requester_id))
                         pass
+                # Attempt to match conversation with a DepartmentUser.
+                if fc.freshdesk_contact and DepartmentUser.objects.filter(email__iexact=fc.freshdesk_contact.email).exists():
+                    fc.du_user = DepartmentUser.objects.get(email__iexact=fc.freshdesk_contact.email)
                 fc.save()
         except Exception as e:
             logger.exception(e)
