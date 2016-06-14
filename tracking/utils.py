@@ -29,14 +29,16 @@ def logger_setup(name):
     return logger
 
 
-def csv_data(csv_path):
+def csv_data(csv_path, skip_header=True):
     """Pass in the path to a CSV file, returns a CSV Reader object.
     """
     csv_file = open(csv_path, 'r')
     # Determine the CSV dialect.
-    dialect = csv.Sniffer().sniff(csv_file.read(1024))
+    dialect = unicodecsv.Sniffer().sniff(csv_file.read(1024))
     csv_file.seek(0)
-    data = csv.reader(csv_file, dialect)
+    data = unicodecsv.reader(csv_file, dialect)
+    if skip_header:
+        data.next()
     return data
 
 
