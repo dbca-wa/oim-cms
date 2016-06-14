@@ -8,7 +8,10 @@ from tracking.utils import logger_setup, csv_data
 
 def pdq_load_hardware():
     """Update the database with Computer information from PDQ Inventory.
+    Also create matching Hardware objects in the register application, if
+    required.
     """
+    from registers.models import Hardware
     logger = logger_setup('pdq_load_computers')
     logger_ex = logger_setup('exceptions_pdq_load_computers')
     update_time = timezone.now()
@@ -81,7 +84,14 @@ def pdq_load_hardware():
         computer.cpu_cores = row[15]
         computer.memory = row[16]
         computer.date_pdq_updated = update_time
-        computer.save()
         logger.info('Computer {} updated from PDQ Inventory scan data'.format(computer))
+        if not computer.hardware:
+            # Check if the host already exists.
+            if Hardware.objects.filter(name__icontains=computer.hostname).exists():
+                computer.hardware = Hardware.objects.get(name__icontains=computer.hostname)
+            else:
+                hw = Hardware.objects.create(device_type=3, computer=computer, name=computer.hostname)
+                computer.hardware = hw
+        computer.save()
 
     logger.info('Created {}, updated {}, skipped {}'.format(num_created, num_updated, num_skipped))
