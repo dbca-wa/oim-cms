@@ -84,14 +84,18 @@ def pdq_load_hardware():
         computer.cpu_cores = row[15]
         computer.memory = row[16]
         computer.date_pdq_updated = update_time
+        computer.save()
         logger.info('Computer {} updated from PDQ Inventory scan data'.format(computer))
-        if not computer.hardware:
+        try:
+            hw = computer.hardware
+        except Hardware.DoesNotExist:
             # Check if the host already exists.
             if Hardware.objects.filter(name__icontains=computer.hostname).exists():
-                computer.hardware = Hardware.objects.get(name__icontains=computer.hostname)
+                hw = Hardware.objects.get(name__icontains=computer.hostname)
+                hw.computer = computer
+                hw.save()
             else:
+
                 hw = Hardware.objects.create(device_type=3, computer=computer, name=computer.hostname)
-                computer.hardware = hw
-        computer.save()
 
     logger.info('Created {}, updated {}, skipped {}'.format(num_created, num_updated, num_skipped))
