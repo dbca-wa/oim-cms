@@ -1,7 +1,7 @@
-Django==1.9.5
+Django==1.9.7
 django-extensions==1.6.1
 https://static.dpaw.wa.gov.au/static/py/dpaw-utils/dist/dpaw-utils-0.3a11.tar.gz
-wagtail==1.4.5
+wagtail==1.5.2
 django-queryset-csv==0.3.3
 django-mptt==0.8.0
 django-leaflet==0.18.0
