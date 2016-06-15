@@ -100,8 +100,8 @@ class DepartmentUserAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super(DepartmentUserAdmin, self).get_urls()
         urls = [
-            url(r'^alesco-import/$', self.alesco_import, name='alesco_import'),
-            url(r'^export/$', self.export, name='departmentuser_export'),
+            url(r'^alesco-import/$', self.admin_site.admin_view(self.alesco_import), name='alesco_import'),
+            url(r'^export/$', self.admin_site.admin_view(self.export), name='departmentuser_export'),
         ] + urls
         return urls
 

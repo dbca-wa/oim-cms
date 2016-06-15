@@ -2,23 +2,22 @@ import os
 from confy import env, database, cache
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Define the following in the environment:
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG', False)
-ALLOWED_HOSTS = [env("ALLOWED_DOMAIN"), ]
+ALLOWED_HOSTS = [env('ALLOWED_DOMAIN'), ]
 INTERNAL_IPS = ['127.0.0.1', '::1']
 
 # Base URL to use when referring to full URLs within the Wagtail admin backend
 # e.g. in notification emails. Don't include '/admin' or a trailing slash
 BASE_URL = env('BASE_URL', 'http://localhost:8000')
-BORG_URL = env("BORG_URL", "https://borg.dpaw.wa.gov.au")
-if BORG_URL.endswith("/"):
+BORG_URL = env('BORG_URL', 'https://borg.dpaw.wa.gov.au')
+if BORG_URL.endswith('/'):
     BORG_URL = BORG_URL[:-1]
 
 # Application definition
-
 INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
@@ -128,9 +127,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_HTTPONLY = env('SESSION_COOKIE_HTTPONLY', False)
 SESSION_COOKIE_SECURE = env('SESSION_COOKIE_SECURE', False)
 CSRF_COOKIE_SECURE = env('CSRF_COOKIE_SECURE', False)
-
 CACHES = {'default': cache.config()}
-
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -147,13 +144,9 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'oim_cms.urls'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
-
-
 DATABASES = {'default': database.config()}
 
 # Internationalization
-# https://docs.djangoproject.com/en/1.7/topics/i18n/
-
 LANGUAGE_CODE = 'en-gb'
 TIME_ZONE = 'Australia/Perth'
 USE_I18N = True
@@ -164,19 +157,15 @@ DATETIME_FORMAT = 'l d F Y, h:i A'
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.7/howto/static-files/
-
-STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATIC_URL = '/static/'
 COMPRESS_ENABLED = False
-
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'compressor.finders.CompressorFinder',
 )
-
-MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 # Template configuration
@@ -201,10 +190,6 @@ TEMPLATES = [
         },
     },
 ]
-
-# Incredibus settings
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Define the following in .env
 DOMAIN_SUFFIX = env('DOMAIN_SUFFIX', None)
@@ -284,7 +269,7 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'cms.log'),
             'formatter': 'verbose',
-            'maxBytes': '5242880'
+            'maxBytes': 1024 * 1024 * 5
         },
     },
     'loggers': {
@@ -298,15 +283,6 @@ LOGGING = {
         },
     }
 }
-
-
-# Celery settings
-BROKER_URL = 'redis://localhost:6379'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379'
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_IMPORTS = ('tracking.tasks',)
 
 
 # Alter some settings in debug mode.

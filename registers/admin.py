@@ -1,12 +1,16 @@
 from __future__ import unicode_literals, absolute_import
 from django.conf import settings
+from django.conf.urls import url
 from django.contrib.admin import register, ModelAdmin
-from django.template.loader import render_to_string
 from django.core.urlresolvers import reverse
+from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.utils.html import format_html
-from reversion.admin import VersionAdmin
 from mptt.admin import MPTTModelAdmin
 from leaflet.admin import LeafletGeoAdmin
+from reversion.admin import VersionAdmin
+from StringIO import StringIO
+import unicodecsv
 
 from .models import (
     UserGroup, Software, Hardware, Device, SoftwareLicense, CostCentre,
@@ -109,6 +113,38 @@ class ITSystemAdmin(VersionAdmin):
             for i in approvals:
                 i.delete()  # Delete each approval object.
         super(ITSystemAdmin, self).save_model(request, obj, form, change)
+
+    def get_urls(self):
+        urls = super(ITSystemAdmin, self).get_urls()
+        urls = [
+            # Note that we don't wrap the view below in AdminSite.admin_view()
+            # on purpose, as we want it generally accessible.
+            url(r'^export/$', self.export, name='itsystem_export'),
+        ] + urls
+        return urls
+
+    def export(self, request):
+        """Exports ITSystem data to a CSV.
+        """
+        # Define fields to output.
+        fields = [
+            'system_id', 'name', 'acronym', 'status_display', 'description',
+            'cost_centre', 'owner', 'custodian', 'data_custodian', 'preferred_contact',
+            'link', 'documentation', 'technical_documentation', 'authentication_display',
+            'access_display', 'request_access', 'status_html', 'schema_url',
+            'bh_support', 'ah_support', 'system_reqs', 'vulnerability_docs',
+            'workaround', 'recovery_docs', 'date_updated']
+
+        # Write data for ITSystem objects to the CSV:
+        stream = StringIO()
+        wr = unicodecsv.writer(stream, encoding='utf-8')
+        wr.writerow(fields)
+        for i in ITSystem.objects.all().order_by('system_id').exclude(status=3):  # Exclude decommissioned
+            wr.writerow([getattr(i, f) for f in fields])
+
+        response = HttpResponse(stream.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=itsystem_export.csv'
+        return response
 
 
 @register(Backup)
