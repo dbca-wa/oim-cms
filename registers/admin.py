@@ -97,6 +97,8 @@ class ITSystemAdmin(VersionAdmin):
         ('contingency_plan_approvals'),
         ('contingency_plan_last_tested'),
     )
+    # Override the default reversion/change_list.html template:
+    change_list_template = 'admin/registers/itsystem/change_list.html'
 
     def save_model(self, request, obj, form, change):
         """Override save_model in order to log any changes to the
