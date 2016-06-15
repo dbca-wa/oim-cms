@@ -177,23 +177,32 @@ def departmentuser_csv_report():
     }
 
     header = [f for f in FIELDS]
-    header.append('cost_centre')
     header.append('account_type')
     header += org_fields.keys()
     header += alesco_fields
-    stream = StringIO()
 
+    # Get a DepartmentUser with non-null org_data field, for keys.
+    du = DepartmentUser.objects.filter(org_data__isnull=False)[0]
+    cc_keys = du.org_data['cost_centre'].keys()
+    header += ['cost_centre_{}'.format(k) for k in cc_keys]
+    location_keys = du.org_data['location'].keys()
+    header += ['location_{}'.format(k) for k in location_keys]
+    header.append('secondary_location')
+
+    # Get a DepartmentUser with non-null ad_data field, for keys.
+    du = DepartmentUser.objects.filter(ad_data__isnull=False)[0]
+    ad_keys = du.ad_data.keys()
+    ad_keys.remove('mailbox')  # Remove the nested object.
+    header += ['ad_{}'.format(k) for k in ad_keys]
+
+    # Write data for all DepartmentUser objects to the CSV
+    stream = StringIO()
     wr = unicodecsv.writer(stream, encoding='utf-8')
     wr.writerow(header)
-    # Write data for all DepartmentUser objects to the CSV
     for u in DepartmentUser.objects.filter(active=True):
         record = []
         for f in FIELDS:
             record.append(getattr(u, f))
-        try:
-            record.append(u.cost_centre.code)
-        except:
-            record.append('')
         try:
             record.append(TYPE_CHOICES[u.account_type])
         except:
@@ -212,6 +221,27 @@ def departmentuser_csv_report():
                 record.append(u.alesco_data[a])
             except:
                 record.append('')
+        for i in cc_keys:
+            try:
+                record.append(u.org_data['cost_centre'][i])
+            except:
+                record.append('')
+        for i in location_keys:
+            try:
+                record.append(u.org_data['location'][i])
+            except:
+                record.append('')
+        if 'secondary_location' in u.org_data:
+            record.append(u.org_data['secondary_location'])
+        else:
+            record.append('')
+        for i in ad_keys:
+            try:
+                record.append(u.ad_data[i])
+            except:
+                record.append('')
+
+        # Write the row to the CSV stream.
         wr.writerow(record)
 
     return stream.getvalue()
