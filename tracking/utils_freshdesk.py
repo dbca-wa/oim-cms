@@ -35,13 +35,16 @@ def update_freshdesk_object(obj_type, data, id=None):
     return r  # Return the response, so we can handle non-200 gracefully.
 
 
-def get_freshdesk_objects(obj_type, progress=True, limit=False, page=1, per_page=100):
+def get_freshdesk_objects(obj_type, progress=True, limit=False, params={}):
     """Query the Freshdesk v2 API for all objects of a defined type.
     ``limit`` should be an integer (maximum number of objects to return).
     May take some time, depending on the number of objects.
     """
     url = FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
-    params = {'page': page, 'per_page': per_page}
+    if 'page' not in params:
+        params['page'] = 1
+    if 'per_page' not in params:
+        params['per_page'] = 100
     objects = []
     further_results = True
 

@@ -7,7 +7,7 @@ from tracking.utils import logger_setup
 
 
 class Command(BaseCommand):
-    help = 'Download and cache Freshdesk tickets.'
+    help = 'Download and cache recent Freshdesk tickets.'
 
     def add_arguments(self, parser):
         # Named (optional) arguments:
@@ -30,6 +30,10 @@ class Command(BaseCommand):
         utils_freshdesk.freshdesk_cache_agents()
         # Next, start caching tickets one page at a time.
         url = utils_freshdesk.FRESHDESK_ENDPOINT + '/tickets'
+        # By default, the 'list tickets' API returns tickets created in the
+        # past 30 days only. If older tickets need to be cached, modify the
+        # params dict below to include a value for "updated_since".
+        # Ref: https://developer.freshdesk.com/api/#list_all_tickets
         params = {'page': 1, 'per_page': 100}
         further_results = True
         cached_count = 0
