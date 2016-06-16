@@ -23,8 +23,11 @@ Development
 This project uses confy to set environment variables (in a `.env` file).
 For local development, minimum required settings are as follows:
 
-    DJANGO_SETTINGS_MODULE=oim_cms.settings
+    DJANGO_SETTINGS_MODULE="oim_cms.settings"
     DEBUG=True
     DATABASE_URL="postgis://USER:PASSWORD@HOST:PORT/DATABASE_NAME"
     SECRET_KEY="ThisIsASecretKey"
-    BASE_URL=HOST:PORT
+    BASE_URL="HOST:PORT"
+    FRESHDESK_ENDPOINT="https://dpaw.freshdesk.com/api/v2"
+    FRESHDESK_KEY="SecretAPIKeyValue"
+    PDQ_INV_PATH="/path/to/pdq_inventory/mount"

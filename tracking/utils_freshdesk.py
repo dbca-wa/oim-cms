@@ -1,21 +1,19 @@
 from dateutil.parser import parse
-import os
+from django.conf import settings
 import requests
 from requests.exceptions import HTTPError
 from tracking.models import DepartmentUser
 from tracking.utils import logger_setup
 
 
-FRESHDESK_ENDPOINT = os.environ['FRESHDESK_ENDPOINT']
-FRESHDESK_AUTH = (os.environ['FRESHDESK_KEY'], 'X')
 HEADERS_JSON = {'Content-Type': 'application/json'}
 
 
 def get_freshdesk_object(obj_type, id):
     """Query the Freshdesk v2 API for a single object.
     """
-    url = FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
-    r = requests.get(url, auth=FRESHDESK_AUTH)
+    url = settings.FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
+    r = requests.get(url, auth=settings.FRESHDESK_AUTH)
     if not r.status_code == 200:
         r.raise_for_status()
     return r.json()
@@ -27,11 +25,11 @@ def update_freshdesk_object(obj_type, data, id=None):
     Ref: https://developer.freshdesk.com/api/#create_contact
     """
     if not id:  # Assume creation of new object.
-        url = FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
-        r = requests.post(url, auth=FRESHDESK_AUTH, data=data)
+        url = settings.FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
+        r = requests.post(url, auth=settings.FRESHDESK_AUTH, data=data)
     else:
-        url = FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
-        r = requests.put(url, auth=FRESHDESK_AUTH, data=data)
+        url = settings.FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
+        r = requests.put(url, auth=settings.FRESHDESK_AUTH, data=data)
     return r  # Return the response, so we can handle non-200 gracefully.
 
 
@@ -40,7 +38,7 @@ def get_freshdesk_objects(obj_type, progress=True, limit=False, params={}):
     ``limit`` should be an integer (maximum number of objects to return).
     May take some time, depending on the number of objects.
     """
-    url = FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
+    url = settings.FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
     if 'page' not in params:
         params['page'] = 1
     if 'per_page' not in params:
@@ -52,7 +50,7 @@ def get_freshdesk_objects(obj_type, progress=True, limit=False, params={}):
         if progress:
             print('Querying page {}'.format(params['page']))
 
-        r = requests.get(url, auth=FRESHDESK_AUTH, params=params)
+        r = requests.get(url, auth=settings.FRESHDESK_AUTH, params=params)
         if not r.status_code == 200:
             r.raise_for_status()
 

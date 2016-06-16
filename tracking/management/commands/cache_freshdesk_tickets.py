@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from django.conf import settings
 import json
 import requests
 from time import sleep
@@ -29,7 +30,7 @@ class Command(BaseCommand):
         logger.info('Caching Freshdesk Agents as Contacts')
         utils_freshdesk.freshdesk_cache_agents()
         # Next, start caching tickets one page at a time.
-        url = utils_freshdesk.FRESHDESK_ENDPOINT + '/tickets'
+        url = settings.FRESHDESK_ENDPOINT + '/tickets'
         # By default, the 'list tickets' API returns tickets created in the
         # past 30 days only. If older tickets need to be cached, modify the
         # params dict below to include a value for "updated_since".
@@ -43,7 +44,7 @@ class Command(BaseCommand):
                 params['per_page'] = options['limit'] - cached_count
             print('Retrieving Freshdesk tickets page {}'.format(params['page']))
             logger.info('Retrieving Freshdesk tickets page {}'.format(params['page']))
-            r = requests.get(url, auth=utils_freshdesk.FRESHDESK_AUTH, params=params)
+            r = requests.get(url, auth=settings.FRESHDESK_AUTH, params=params)
             logger_headers.info(json.dumps(dict(r.headers)))
             # If we've been rate-limited, response status will be 429.
             # Sleep for the number of seconds specifief by the Retry-After header.
