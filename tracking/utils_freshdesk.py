@@ -1,21 +1,19 @@
 from dateutil.parser import parse
-import os
+from django.conf import settings
 import requests
 from requests.exceptions import HTTPError
 from tracking.models import DepartmentUser
 from tracking.utils import logger_setup
 
 
-FRESHDESK_ENDPOINT = os.environ['FRESHDESK_ENDPOINT']
-FRESHDESK_AUTH = (os.environ['FRESHDESK_KEY'], 'X')
 HEADERS_JSON = {'Content-Type': 'application/json'}
 
 
 def get_freshdesk_object(obj_type, id):
     """Query the Freshdesk v2 API for a single object.
     """
-    url = FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
-    r = requests.get(url, auth=FRESHDESK_AUTH)
+    url = settings.FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
+    r = requests.get(url, auth=settings.FRESHDESK_AUTH)
     if not r.status_code == 200:
         r.raise_for_status()
     return r.json()
@@ -27,21 +25,24 @@ def update_freshdesk_object(obj_type, data, id=None):
     Ref: https://developer.freshdesk.com/api/#create_contact
     """
     if not id:  # Assume creation of new object.
-        url = FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
-        r = requests.post(url, auth=FRESHDESK_AUTH, data=data)
+        url = settings.FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
+        r = requests.post(url, auth=settings.FRESHDESK_AUTH, data=data)
     else:
-        url = FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
-        r = requests.put(url, auth=FRESHDESK_AUTH, data=data)
+        url = settings.FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
+        r = requests.put(url, auth=settings.FRESHDESK_AUTH, data=data)
     return r  # Return the response, so we can handle non-200 gracefully.
 
 
-def get_freshdesk_objects(obj_type, progress=True, limit=False, page=1, per_page=100):
+def get_freshdesk_objects(obj_type, progress=True, limit=False, params={}):
     """Query the Freshdesk v2 API for all objects of a defined type.
     ``limit`` should be an integer (maximum number of objects to return).
     May take some time, depending on the number of objects.
     """
-    url = FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
-    params = {'page': page, 'per_page': per_page}
+    url = settings.FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
+    if 'page' not in params:
+        params['page'] = 1
+    if 'per_page' not in params:
+        params['per_page'] = 100
     objects = []
     further_results = True
 
@@ -49,7 +50,7 @@ def get_freshdesk_objects(obj_type, progress=True, limit=False, page=1, per_page
         if progress:
             print('Querying page {}'.format(params['page']))
 
-        r = requests.get(url, auth=FRESHDESK_AUTH, params=params)
+        r = requests.get(url, auth=settings.FRESHDESK_AUTH, params=params)
         if not r.status_code == 200:
             r.raise_for_status()
 
@@ -178,7 +179,7 @@ def freshdesk_cache_agents():
         data['contact_id'] = i['id']
         data['created_at'] = parse(data['created_at'])
         data['updated_at'] = parse(data['updated_at'])
-        data.pop('last_login_at')
+        data.pop('last_login_at', None)
         fc, create = FreshdeskContact.objects.update_or_create(contact_id=data['contact_id'], defaults=data)
         if create:
             logger.info('{} created'.format(fc))
@@ -215,9 +216,9 @@ def freshdesk_cache_tickets(tickets=None):
         t['fr_due_by'] = parse(t['fr_due_by'])
         t['updated_at'] = parse(t['updated_at'])
         # Pop unused fields from the dict.
-        t.pop('company_id')
-        t.pop('email_config_id')
-        t.pop('product_id')
+        t.pop('company_id', None)
+        t.pop('email_config_id', None)
+        t.pop('product_id', None)
 
     created, updated = 0, 0
     # Iterate through tickets; determine if a cached FreshdeskTicket should be
@@ -242,9 +243,10 @@ def freshdesk_cache_tickets(tickets=None):
                         c['contact_id'] = c.pop('id')
                         c['created_at'] = parse(c['created_at'])
                         c['updated_at'] = parse(c['updated_at'])
-                        c.pop('avatar')
-                        c.pop('company_id')
-                        c.pop('twitter_id')
+                        c.pop('avatar', None)
+                        c.pop('company_id', None)
+                        c.pop('twitter_id', None)
+                        c.pop('deleted', None)
                         con = FreshdeskContact.objects.create(**c)
                         logger.info('Created {}'.format(con))
                         ft.freshdesk_requester = con
@@ -260,9 +262,10 @@ def freshdesk_cache_tickets(tickets=None):
                         c['contact_id'] = c.pop('id')
                         c['created_at'] = parse(c['created_at'])
                         c['updated_at'] = parse(c['updated_at'])
-                        c.pop('avatar')
-                        c.pop('company_id')
-                        c.pop('twitter_id')
+                        c.pop('avatar', None)
+                        c.pop('company_id', None)
+                        c.pop('twitter_id', None)
+                        c.pop('deleted', None)
                         con = FreshdeskContact.objects.create(**c)
                         logger.info('Created {}'.format(con))
                         ft.freshdesk_responder = con
@@ -281,8 +284,8 @@ def freshdesk_cache_tickets(tickets=None):
                 c['created_at'] = parse(c['created_at'])
                 c['updated_at'] = parse(c['updated_at'])
                 # Pop unused fields from the dict.
-                c.pop('bcc_emails')
-                c.pop('support_email')
+                c.pop('bcc_emails', None)
+                c.pop('support_email', None)
                 fc, create = FreshdeskConversation.objects.update_or_create(conversation_id=c['conversation_id'], defaults=c)
                 if create:
                     logger.info('{} created'.format(fc))
@@ -298,9 +301,10 @@ def freshdesk_cache_tickets(tickets=None):
                         f_con['contact_id'] = f_con.pop('id')
                         f_con['created_at'] = parse(f_con['created_at'])
                         f_con['updated_at'] = parse(f_con['updated_at'])
-                        f_con.pop('avatar')
-                        f_con.pop('company_id')
-                        f_con.pop('twitter_id')
+                        f_con.pop('avatar', None)
+                        f_con.pop('company_id', None)
+                        f_con.pop('twitter_id', None)
+                        f_con.pop('deleted', None)
                         contact = FreshdeskContact.objects.create(**f_con)
                         logger.info('Created {}'.format(contact))
                         fc.freshdesk_contact = contact
