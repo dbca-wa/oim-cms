@@ -23,7 +23,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        logger = logger_setup('freshdesk_cache_all_tickets')
+        logger = logger_setup('cache_freshdesk_tickets')
         logger_headers = logger_setup('freshdesk_api_response_headers')
         # Begin by caching Agents as Contacts.
         print('Caching Freshdesk Agents as Contacts')
