@@ -243,11 +243,15 @@ class LocationAdmin(LeafletGeoAdmin, VersionAdmin):
 
 @register(ITSystemHardware)
 class ITSystemHardwareAdmin(VersionAdmin):
-    list_display = ('hostname', 'role')
+    list_display = ('hostname', 'role', 'affected_itsystems')
     list_filter = ('role',)
     raw_id_fields = ('host',)
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystemhardware/change_list.html'
+
+    def affected_itsystems(self, obj):
+        return obj.itsystem_set.all().exclude(status=3).count()
+    affected_itsystems.short_description = 'IT Systems'
 
     def get_urls(self):
         urls = super(ITSystemHardwareAdmin, self).get_urls()
