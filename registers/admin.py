@@ -243,9 +243,41 @@ class LocationAdmin(LeafletGeoAdmin, VersionAdmin):
 
 @register(ITSystemHardware)
 class ITSystemHardwareAdmin(VersionAdmin):
-    list_display = ('host', 'role')
+    list_display = ('hostname', 'role')
     list_filter = ('role',)
     raw_id_fields = ('host',)
+    # Override the default reversion/change_list.html template:
+    change_list_template = 'admin/registers/itsystemhardware/change_list.html'
+
+    def get_urls(self):
+        urls = super(ITSystemHardwareAdmin, self).get_urls()
+        urls = [
+            url(r'^export/$', self.admin_site.admin_view(self.export), name='itsystemhardware_export'),
+        ] + urls
+        return urls
+
+    def export(self, request):
+        """Exports ITSystemHardware data to a CSV.
+        """
+        # Define fields to output.
+        fields = [
+            'hostname', 'role', 'it_system_system_id', 'it_system_name',
+            'itsystem_availability']
+
+        # Write data for ITSystemHardware objects to the CSV.
+        stream = StringIO()
+        wr = unicodecsv.writer(stream, encoding='utf-8')
+        wr.writerow(fields)  # CSV header row.
+        for i in ITSystemHardware.objects.all():
+            # Write a row for each linked ITSystem (non-decommissioned).
+            for it in i.itsystem_set.all().exclude(status=3):
+                wr.writerow([
+                    i.hostname, i.get_role_display(), it.system_id, it.name,
+                    it.get_availability_display()])
+
+        response = HttpResponse(stream.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
+        return response
 
 
 @register(BusinessService)

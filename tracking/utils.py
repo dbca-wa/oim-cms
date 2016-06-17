@@ -141,6 +141,7 @@ def alesco_data_import(filepath):
                 d = d[0]
                 d.alesco_data = record
                 d.save()
+                logger.info('Alesco data updated for {}'.format(d.email.lower()))
                 updates += 1
             else:
                 non_matched += 0
