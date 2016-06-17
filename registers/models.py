@@ -272,9 +272,14 @@ class ITSystemHardware(models.Model):
     class Meta:
         verbose_name_plural = 'IT system hardware'
         unique_together = ('host', 'role')
+        ordering = ('host__name',)
 
     def __str__(self):
         return '{} ({})'.format(self.host.name, self.role)
+
+    @property
+    def hostname(self):
+        return self.host.name.lower()
 
 
 class ITSystem(tracking.CommonFields):
