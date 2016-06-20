@@ -1,4 +1,4 @@
-from django.conf.urls import include, url, handler404
+from django.conf.urls import include, url
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -41,7 +41,6 @@ urlpatterns = [
     url(r'^documents/', include(wagtaildocs_urls)),
 
     url(r'^api/', include(api_patterns)),
-    url(r'^api/{}/'.format(settings.API_SECRET), include(api_patterns)),
 
     url(r'', include('social.apps.django_app.urls', namespace='social')),
     url(r'', include('django.contrib.auth.urls', namespace='auth')),
