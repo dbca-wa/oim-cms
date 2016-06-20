@@ -125,18 +125,19 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
                 data['company_id'] = companies[department]['id']
                 changes.append('company_id')
             # Custom fields in Freshdesk: Cost Centre no.
-            if fd['custom_field']['cf_cost_centre'] != cost_centre:
-                user_sync = True
-                data['custom_field'] = {'cf_cost_centre': cost_centre}
-                changes.append('cost_centre')
-            # Custom fields in Freshdesk: Physical location
-            if fd['custom_field']['cf_location'] != physical_location:
-                user_sync = True
-                if 'custom_field' in data:
-                    data['custom_field']['cf_location'] = physical_location
-                else:
-                    data['custom_field'] = {'cf_location': physical_location}
-                changes.append('physical_location')
+            if 'custom_field' in fd:  # Field may not exist in the API obj.
+                if fd['custom_field']['cf_cost_centre'] != cost_centre:
+                    user_sync = True
+                    data['custom_field'] = {'cf_cost_centre': cost_centre}
+                    changes.append('cost_centre')
+                # Custom fields in Freshdesk: Physical location
+                if fd['custom_field']['cf_location'] != physical_location:
+                    user_sync = True
+                    if 'custom_field' in data:
+                        data['custom_field']['cf_location'] = physical_location
+                    else:
+                        data['custom_field'] = {'cf_location': physical_location}
+                    changes.append('physical_location')
             if user_sync:  # Sync user details to their Freshdesk contact.
                 r = update_freshdesk_object(data, obj_type='contacts', id=fd['id'])
                 if r.status_code == 403:  # Forbidden
