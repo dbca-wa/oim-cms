@@ -131,6 +131,7 @@ class ITSystemAdmin(VersionAdmin):
         # Define fields to output.
         fields = [
             'system_id', 'name', 'acronym', 'status_display', 'description',
+            'criticality_display', 'availability_display', 'system_type_display',
             'cost_centre', 'owner', 'custodian', 'data_custodian', 'preferred_contact',
             'link', 'documentation', 'technical_documentation', 'authentication_display',
             'access_display', 'request_access', 'status_html', 'schema_url',

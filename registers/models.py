@@ -270,7 +270,7 @@ class ITSystemHardware(models.Model):
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
 
     class Meta:
-        verbose_name_plural = 'IT system hardware'
+        verbose_name_plural = 'IT System hardware'
         unique_together = ('host', 'role')
         ordering = ('host__name',)
 
@@ -333,7 +333,9 @@ class ITSystem(tracking.CommonFields):
     access_display = models.CharField(max_length=128, null=True, editable=False)
     request_access = models.TextField(blank=True)
     criticality = models.PositiveIntegerField(choices=CRITICALITY_CHOICES, null=True, blank=True)
+    criticality_display = models.CharField(max_length=128, null=True, editable=False)
     availability = models.PositiveIntegerField(choices=AVAILABILITY_CHOICES, null=True, blank=True, help_text='Expected availability for this IT System')
+    availability_display = models.CharField(max_length=128, null=True, editable=False)
     schema_url = models.URLField(max_length=2048, null=True, blank=True, help_text='URL to schema diagram')
     user_groups = models.ManyToManyField(UserGroup, blank=True, help_text='User group(s) that use this IT System')
     softwares = models.ManyToManyField(Software, blank=True, help_text='Software that is used to provide this IT System')
@@ -346,6 +348,7 @@ class ITSystem(tracking.CommonFields):
         verbose_name='after hours support', help_text='After-hours support contact')
     system_reqs = models.TextField(blank=True, help_text='A written description of the requirements to use the system (e.g. web browser version)')
     system_type = models.PositiveSmallIntegerField(choices=SYSTEM_TYPE_CHOICES, null=True, blank=True)
+    system_type_display = models.CharField(max_length=128, null=True, editable=False)
     vulnerability_docs = models.URLField(max_length=2048, null=True, blank=True, help_text='URL to documentation related to known vulnerability reports')
     workaround = models.TextField(blank=True, help_text='Written procedure for users to work around an outage of this system')
     recovery_docs = models.URLField(max_length=2048, null=True, blank=True, help_text='URL to recovery procedure(s) in the event of system failure')
@@ -384,6 +387,9 @@ class ITSystem(tracking.CommonFields):
         if not self.link:  # systems with no link default to device
             self.access = 4
         self.access_display = self.get_access_display()
+        self.criticality_display = self.get_criticality_display()
+        self.availability_display = self.get_availability_display()
+        self.system_type_display = self.get_system_type_display()
         super(ITSystem, self).save(*args, **kwargs)
 
 
