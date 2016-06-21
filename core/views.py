@@ -7,9 +7,8 @@ from wagtail.wagtailcore.models import PageRevision
 from wagtail.wagtailsearch.models import Query
 
 from django.contrib.auth import login, logout
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
+from django.http import HttpResponseRedirect, HttpResponse
 from django.core.cache import cache
-from django.core.exceptions import PermissionDenied
 
 from oim_cms.api import whoamiResource
 from core.models import UserSession
@@ -20,31 +19,37 @@ from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
 def auth_ip(request):
-    # get the IP of the current user, try and match it up to a session
+    # Get the IP of the current user, try and match it up to a session.
     current_ip = get_ip(request)
-    
-    # if there's a basic auth header, perform a check
+
+    # If there's a basic auth header, perform a check.
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
     if basic_auth:
+        # Check basic auth against LDAP as an alternative to SSO.
         username, password = request.META["HTTP_AUTHORIZATION"].split(
             " ", 1)[1].strip().decode('base64').split(":", 1)
         ldapauth = LDAPBackend()
         if username.find("@") > -1:
-            username = DepartmentUser.objects.get(email__iexact=username).username
+            username = DepartmentUser.objects.get(
+                email__iexact=username).username
         user = ldapauth.authenticate(username=username,
                                      password=password)
         if user:
-            response = HttpResponse(json.dumps({'email': user.email, 'client_logon_ip': current_ip}))
+            response = HttpResponse(json.dumps(
+                {'email': user.email, 'client_logon_ip': current_ip}))
             response["X-email"] = user.email
             response["X-client-logon-ip"] = current_ip
             return response
 
-    # if user is using SSO, do a normal auth check
+    # If user is using SSO, do a normal auth check.
     if request.user.is_authenticated():
         return auth(request)
 
-    # we can assume that the Session and UserSession tables only contain current sessions
-    qs = UserSession.objects.filter(session__isnull=False, ip=current_ip).order_by("-session__expire_date")
+    # We can assume that the Session and UserSession tables only contain
+    # current sessions.
+    qs = UserSession.objects.filter(
+        session__isnull=False,
+        ip=current_ip).order_by("-session__expire_date")
 
     headers = {'client_logon_ip': current_ip}
 
@@ -52,29 +57,30 @@ def auth_ip(request):
         user = qs[0].user
         headers["email"] = user.email
         try:
-            headers["kmi_roles"] = DepartmentUser.objects.get(email__iexact=user.email).extra_data.get("KMIRoles", '')
-        except Exception as e:
+            headers["kmi_roles"] = DepartmentUser.objects.get(
+                email__iexact=user.email).extra_data.get("KMIRoles", '')
+        except:
             headers["kmi_roles"] = ''
-
 
     response = HttpResponse(json.dumps(headers))
     for key, val in headers.iteritems():
         key = "X-" + key.replace("_", "-")
         response[key] = val
 
-    return response  
+    return response
 
 
 @csrf_exempt
 def auth(request):
-    #print(repr(request.META))
     if request.user.is_authenticated():
-        usersession = UserSession.objects.get(session_id=request.session.session_key)
+        usersession = UserSession.objects.get(
+            session_id=request.session.session_key)
         current_ip = get_ip(request)
         if usersession.ip != current_ip:
             usersession.ip = current_ip
             usersession.save()
-    cachekey = "auth_cache_{}".format(request.META.get("HTTP_AUTHORIZATION") or request.session.session_key)
+    cachekey = "auth_cache_{}".format(request.META.get(
+        "HTTP_AUTHORIZATION") or request.session.session_key)
     content = cache.get(cachekey)
     if content:
         response = HttpResponse(content[0])
@@ -83,13 +89,15 @@ def auth(request):
         response["X-auth-cache-hit"] = "success"
         return response
     if not request.user.is_authenticated():
+        # Check basic auth against LDAP as an alternative to SSO.
         try:
             assert request.META.get("HTTP_AUTHORIZATION") is not None
             username, password = request.META["HTTP_AUTHORIZATION"].split(
                 " ", 1)[1].strip().decode('base64').split(":", 1)
             ldapauth = LDAPBackend()
             if username.find("@") > -1:
-                username = DepartmentUser.objects.get(email__iexact=username).username
+                username = DepartmentUser.objects.get(
+                    email__iexact=username).username
             user = ldapauth.authenticate(username=username,
                                          password=password)
             if not user:
@@ -100,15 +108,22 @@ def auth(request):
             login(request, user)
         except Exception as e:
             response = HttpResponse(status=401)
-            response["WWW-Authenticate"] = 'Basic realm="Please login with your username or email address"'
+            response[
+                "WWW-Authenticate"] = 'Basic realm="Please login with your username or email address"'
             response.content = repr(e)
             return response
     response = HttpResponse(whoamiResource.as_detail()(request).content)
     headers, cache_headers = json.loads(response.content), dict()
-    headers["full_name"] = u"{}, {}".format(headers.get("last_name", ""), headers.get("first_name", ""))
-    headers["logout_url"] = "https://oim.dpaw.wa.gov.au/logout" # TODO: use url reverse on logout alias
+    headers["full_name"] = u"{}, {}".format(
+        headers.get(
+            "last_name", ""), headers.get(
+            "first_name", ""))
+    # TODO: use url reverse on logout alias
+    headers["logout_url"] = "https://oim.dpaw.wa.gov.au/logout"
     try:
-        headers["kmi_roles"] = DepartmentUser.objects.get(email__iexact=headers["email"]).extra_data.get("KMIRoles", '')
+        headers["kmi_roles"] = DepartmentUser.objects.get(
+            email__iexact=headers["email"]).extra_data.get(
+            "KMIRoles", '')
     except Exception as e:
         headers["kmi_roles"] = ''
     for key, val in headers.iteritems():
@@ -120,7 +135,8 @@ def auth(request):
 
 def logout_view(request):
     logout(request)
-    return HttpResponseRedirect("https://login.windows.net/common/oauth2/logout")
+    return HttpResponseRedirect(
+        "https://login.windows.net/common/oauth2/logout")
 
 
 def draft(request, path):
@@ -130,11 +146,15 @@ def draft(request, path):
         path = "/" + path + "/"
     else:
         path = "/"
-    revisions = PageRevision.objects.filter(content_json__icontains='"url_path": "/home{}"'.format(path)).order_by("-created_at")
-    if revisions.exists() and revisions[0].page.get_latest_revision().pk == revisions[0].pk:
-        return HttpResponseRedirect("/admin/pages/{}/view_draft/{}".format(revisions[0].page.pk, request.META.get("QUERY_STRING")))
+    revisions = PageRevision.objects.filter(
+        content_json__icontains='"url_path": "/home{}"'.format(path)).order_by("-created_at")
+    if revisions.exists() and revisions[
+            0].page.get_latest_revision().pk == revisions[0].pk:
+        return HttpResponseRedirect("/admin/pages/{}/view_draft/{}".format(
+            revisions[0].page.pk, request.META.get("QUERY_STRING")))
     elif revisions.exists():
-        return HttpResponse("No current draft ({} old) exists for url: {}".format(revisions.count(), path))
+        return HttpResponse(
+            "No current draft ({} old) exists for url: {}".format(revisions.count(), path))
     else:
         return HttpResponse("No draft exists for url: {}".format(path))
 
@@ -146,7 +166,8 @@ def redirect(request):
 
 def search_content(search_query):
     # Search
-    search_results = Content.objects.live().exclude(url_path__startswith="/home/snippets/").search(search_query)
+    search_results = Content.objects.live().exclude(
+        url_path__startswith="/home/snippets/").search(search_query)
     query = Query.get(search_query)
     # Record hit
     query.add_hit()
@@ -173,12 +194,10 @@ def error404(request):
     else:
         response = HttpResponse(
             content=render(request, 'core/search_results.html', {
-                    'search_results': search_results,
-                    'http_error_code': 404
-                }).content,
+                'search_results': search_results,
+                'http_error_code': 404
+            }).content,
             content_type='text/html; charset=utf-8',
             status=404
         )
         return response
-
-

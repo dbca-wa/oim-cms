@@ -62,13 +62,13 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'social.backends.azuread.AzureADOAuth2',
 )
+# LDAP settings (required to check auth as an alternative to SSO).
+import ldap
+from django_auth_ldap.config import LDAPSearch, LDAPSearchUnion, GroupOfNamesType
 LDAP_SERVER_URI = env('LDAP_SERVER_URI', 'ldap://')
 LDAP_ACCESS_DN = env('LDAP_ACCESS_DN', 'dn')
 LDAP_ACCESS_PASSWORD = env('LDAP_ACCESS_PASSWORD', 'pass')
 LDAP_SEARCH_SCOPE = env('LDAP_SEARCH_SCOPE', 'scope')
-import ldap
-from django_auth_ldap.config import LDAPSearch, LDAPSearchUnion, GroupOfNamesType
-# LDAP settings.
 AUTH_LDAP_SERVER_URI = LDAP_SERVER_URI
 AUTH_LDAP_BIND_DN = LDAP_ACCESS_DN
 AUTH_LDAP_BIND_PASSWORD = LDAP_ACCESS_PASSWORD
@@ -178,7 +178,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'social.apps.django_app.context_processors.backends',
                 'social.apps.django_app.context_processors.login_redirect',
-                # Insert your TEMPLATE_CONTEXT_PROCESSORS above here
                 'django.contrib.auth.context_processors.auth',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.i18n',
