@@ -90,6 +90,7 @@ class ITSystemAdmin(VersionAdmin):
         ('softwares', 'hardwares'),
         ('user_groups'),
         ('system_reqs', 'system_type'),
+        ('request_access'),
         ('vulnerability_docs', 'recovery_docs'),
         ('workaround'),
         ('mtd', 'rto', 'rpo'),

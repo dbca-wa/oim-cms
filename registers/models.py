@@ -331,7 +331,7 @@ class ITSystem(tracking.CommonFields):
     authentication_display = models.CharField(max_length=128, null=True, editable=False)
     access = models.PositiveSmallIntegerField(choices=ACCESS_CHOICES, default=3)
     access_display = models.CharField(max_length=128, null=True, editable=False)
-    request_access = models.TextField(blank=True)
+    request_access = models.TextField(blank=True, help_text='Procedure to request access to this application')
     criticality = models.PositiveIntegerField(choices=CRITICALITY_CHOICES, null=True, blank=True)
     criticality_display = models.CharField(max_length=128, null=True, editable=False)
     availability = models.PositiveIntegerField(choices=AVAILABILITY_CHOICES, null=True, blank=True, help_text='Expected availability for this IT System')
