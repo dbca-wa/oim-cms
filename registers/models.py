@@ -63,6 +63,9 @@ class Location(models.Model):
     url = models.CharField(max_length=2000, help_text="URL to webpage with more information", null=True, blank=True)
     bandwidth_url = models.CharField(max_length=2000, help_text="URL to prtg graph of bw utilisation", null=True, blank=True)
 
+    class Meta:
+        ordering = ('name',)
+
     def __str__(self):
         return "{} ({})".format(self.name, self.address)
 
@@ -74,9 +77,6 @@ class Location(models.Model):
             orgunit.save()
         super(Location, self).save(*args, **kwargs)
 
-    class Meta:
-        ordering = ('name',)
-
 
 class SecondaryLocation(models.Model):
     location = models.ForeignKey(Location)
@@ -85,6 +85,9 @@ class SecondaryLocation(models.Model):
     phone = models.CharField(max_length=128, null=True, blank=True)
     fax = models.CharField(max_length=128, null=True, blank=True)
     email = models.CharField(max_length=128, null=True, blank=True)
+
+    class Meta:
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
@@ -121,6 +124,12 @@ class OrgUnit(MPTTModel):
     location = models.ForeignKey(Location, on_delete=models.PROTECT, null=True, blank=True)
     secondary_location = models.ForeignKey(SecondaryLocation, on_delete=models.PROTECT, null=True, blank=True)
 
+    class MPTTMeta:
+        order_insertion_by = ['name']
+
+    class Meta:
+        ordering = ('name',)
+
     def cc(self):
         try:
             return self.costcentre
@@ -151,12 +160,6 @@ class OrgUnit(MPTTModel):
                 user.save()
         super(OrgUnit, self).save(*args, **kwargs)
 
-    class MPTTMeta:
-        order_insertion_by = ['name']
-
-    class Meta:
-        ordering = ('name',)
-
 
 class CostCentre(models.Model):
     name = models.CharField(max_length=25, unique=True, editable=False)
@@ -167,6 +170,9 @@ class CostCentre(models.Model):
     business_manager = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, related_name="bmanage_ccs", help_text="Business Manager", null=True, blank=True)
     admin = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, related_name="admin_ccs", help_text="Admin", null=True, blank=True)
     tech_contact = models.ForeignKey(tracking.DepartmentUser, on_delete=models.PROTECT, related_name="tech_ccs", help_text="Technical Contact", null=True, blank=True)
+
+    class Meta:
+        ordering = ('code',)
 
     def save(self, *args, **kwargs):
         self.name = str(self)
@@ -184,9 +190,6 @@ class CostCentre(models.Model):
             name += " ({})".format(dept.first().acronym)
         return name
 
-    class Meta:
-        ordering = ('code',)
-
 
 class Software(models.Model):
     """A model to represent a discrete unit of software (OS, runtime, etc.)
@@ -198,6 +201,7 @@ class Software(models.Model):
 
     class Meta:
         verbose_name_plural = 'software'
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
@@ -241,6 +245,9 @@ class Device(tracking.CommonFields):
     guid = models.CharField(max_length=48, unique=True, help_text="AD GUID (ad:...) or PRTG object id (prtg:...)")
     device_type = models.PositiveSmallIntegerField(choices=TYPE_CHOICES, default=0)
 
+    class Meta:
+        ordering = ('name',)
+
     def __str__(self):
         return self.name
 
@@ -251,6 +258,9 @@ class UserGroup(models.Model):
     """
     name = models.CharField(max_length=2048, unique=True)
     user_count = models.PositiveIntegerField(blank=True, null=True)
+
+    class Meta:
+        ordering = ('name',)
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.user_count)
@@ -373,8 +383,8 @@ class ITSystem(tracking.CommonFields):
         return self.name
 
     class Meta:
-        verbose_name = "IT System"
-        ordering = ['name']
+        verbose_name = 'IT System'
+        ordering = ('name',)
 
     def description_html(self):
         return mark_safe(self.description)
@@ -465,6 +475,9 @@ class Vendor(models.Model):
     details = models.TextField(blank=True)
     extra_data = JSONField(default=dict(), null=True, blank=True)
 
+    class Meta:
+        ordering = ('name',)
+
     def __str__(self):
         return self.name
 
@@ -485,6 +498,9 @@ class SoftwareLicense(tracking.CommonFields):
     available_licenses = models.PositiveSmallIntegerField(default=0, null=True, blank=True)
     license_details = models.TextField(blank=True, help_text="Direct license keys or details")
 
+    class Meta:
+        ordering = ('name',)
+
     def __str__(self):
         return self.name
 
@@ -495,6 +511,9 @@ class BusinessService(models.Model):
     number = models.PositiveIntegerField(unique=True, help_text='Service number')
     name = models.CharField(max_length=256, unique=True)
     description = models.TextField(null=True, blank=True)
+
+    class Meta:
+        ordering = ('number',)
 
     def __str__(self):
         return 'Service {}: {}'.format(self.number, self.name)
@@ -508,6 +527,9 @@ class BusinessFunction(models.Model):
     name = models.CharField(max_length=256, unique=True)
     description = models.TextField(null=True, blank=True)
     services = models.ManyToManyField(BusinessService)
+
+    class Meta:
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
@@ -525,6 +547,7 @@ class BusinessProcess(models.Model):
 
     class Meta:
         verbose_name_plural = 'business processes'
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
@@ -562,6 +585,7 @@ class ITSystemDependency(models.Model):
         verbose_name = 'IT System dependency'
         verbose_name_plural = 'IT System dependencies'
         unique_together = ('itsystem', 'dependency')
+        ordering = ('itsystem__name', 'criticality')
 
     def __str__(self):
         return '{} - {} ({})'.format(self.itsystem.name, self.dependency.name, self.get_criticality_display())
