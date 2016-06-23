@@ -64,7 +64,11 @@ class ITSystemAdmin(VersionAdmin):
     list_display = (
         'system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian',
         'preferred_contact', 'access', 'authentication')
-    list_filter = ('access', 'authentication', 'status', 'contingency_plan_status')
+    list_filter = (
+        'access',
+        'authentication',
+        'status',
+        'contingency_plan_status')
     search_fields = (
         'system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description',
         'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
@@ -133,7 +137,7 @@ class ITSystemAdmin(VersionAdmin):
         fields = [
             'system_id', 'name', 'acronym', 'status_display', 'description',
             'criticality_display', 'availability_display', 'system_type_display',
-            'cost_centre', 'owner', 'custodian', 'data_custodian', 'preferred_contact',
+            'cost_centre', 'division_name', 'owner', 'custodian', 'data_custodian', 'preferred_contact',
             'link', 'documentation', 'technical_documentation', 'authentication_display',
             'access_display', 'request_access', 'status_html', 'schema_url',
             'bh_support', 'ah_support', 'system_reqs', 'vulnerability_docs',
@@ -143,7 +147,8 @@ class ITSystemAdmin(VersionAdmin):
         stream = StringIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)
-        for i in ITSystem.objects.all().order_by('system_id').exclude(status=3):  # Exclude decommissioned
+        for i in ITSystem.objects.all().order_by(
+                'system_id').exclude(status=3):  # Exclude decommissioned
             wr.writerow([getattr(i, f) for f in fields])
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
@@ -153,25 +158,25 @@ class ITSystemAdmin(VersionAdmin):
 
 @register(Backup)
 class BackupAdmin(VersionAdmin):
-    raw_id_fields = ("system", "parent_host")
+    raw_id_fields = ('system', 'parent_host')
     list_display = (
-        "name", "host", "operating_system", "role", "status", "last_tested", "backup_documentation")
-    list_editable = ("operating_system", "role", "status", "last_tested")
-    search_fields = ("system__name", "parent_host__name")
-    list_filter = ("role", "status", "operating_system")
+        'name', 'host', 'operating_system', 'role', 'status', 'last_tested', 'backup_documentation')
+    list_editable = ('operating_system', 'role', 'status', 'last_tested')
+    search_fields = ('system__name', 'parent_host__name')
+    list_filter = ('role', 'status', 'operating_system')
     date_hierarchy = 'last_tested'
 
     def name(self, obj):
-        return obj.system.name.split(".")[0]
+        return obj.system.name.split('.')[0]
 
     def host(self, obj):
         if not obj.parent_host:
             return None
-        return obj.parent_host.name.split(".")[0]
+        return obj.parent_host.name.split('.')[0]
 
     def backup_documentation(self, obj):
-        return render_to_string("registers/backup_snippet.html", {
-            "obj": obj, "settings": settings, "name": self.name(obj)}
+        return render_to_string('registers/backup_snippet.html', {
+            'obj': obj, 'settings': settings, 'name': self.name(obj)}
         )
 
 
@@ -197,22 +202,23 @@ class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
 
     def users(self, obj):
         return format_html(
-            '<a href="{}?org_unit={}">{}</a>',
-            reverse("admin:tracking_departmentuser_changelist"),
+            '<a href='{}?org_unit={}'>{}</a>',
+            reverse('admin:tracking_departmentuser_changelist'),
             obj.pk, obj.departmentuser_set.count())
 
     def members(self, obj):
         return format_html(
-            '<a href="{}?org_unit__in={}">{}</a>',
-            reverse("admin:tracking_departmentuser_changelist"),
-            ",".join([str(o.pk) for o in obj.get_descendants(include_self=True)]),
+            '<a href='{}?org_unit__in={}'>{}</a>',
+            reverse('admin:tracking_departmentuser_changelist'),
+            ','.join([str(o.pk)
+                      for o in obj.get_descendants(include_self=True)]),
             obj.members().count()
         )
 
     def it_systems(self, obj):
         return format_html(
-            '<a href="{}?org_unit={}">{}</a>',
-            reverse("admin:registers_itsystem_changelist"),
+            '<a href='{}?org_unit={}'>{}</a>',
+            reverse('admin:registers_itsystem_changelist'),
             obj.pk, obj.itsystem_set.count())
 
 
@@ -224,12 +230,17 @@ class CostCentreAdmin(VersionAdmin):
     search_fields = (
         'code', 'name', 'org_position__name', 'division__name', 'org_position__acronym',
         'division__acronym')
-    raw_id_fields = ('org_position', 'manager', 'business_manager', 'admin', 'tech_contact')
+    raw_id_fields = (
+        'org_position',
+        'manager',
+        'business_manager',
+        'admin',
+        'tech_contact')
 
     def users(self, obj):
         return format_html(
-            '<a href="{}?cost_centre={}">{}</a>',
-            reverse("admin:tracking_departmentuser_changelist"),
+            '<a href='{}?cost_centre={}'>{}</a>',
+            reverse('admin:tracking_departmentuser_changelist'),
             obj.pk, obj.departmentuser_set.count())
 
 
@@ -258,7 +269,9 @@ class ITSystemHardwareAdmin(VersionAdmin):
     def get_urls(self):
         urls = super(ITSystemHardwareAdmin, self).get_urls()
         urls = [
-            url(r'^export/$', self.admin_site.admin_view(self.export), name='itsystemhardware_export'),
+            url(r'^export/$',
+                self.admin_site.admin_view(self.export),
+                name='itsystemhardware_export'),
         ] + urls
         return urls
 
@@ -282,7 +295,8 @@ class ITSystemHardwareAdmin(VersionAdmin):
                     it.get_availability_display()])
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
+        response[
+            'Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
         return response
 
 
