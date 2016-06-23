@@ -202,13 +202,13 @@ class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
 
     def users(self, obj):
         return format_html(
-            '<a href='{}?org_unit={}'>{}</a>',
+            '<a href="{}?org_unit={}">{}</a>',
             reverse('admin:tracking_departmentuser_changelist'),
             obj.pk, obj.departmentuser_set.count())
 
     def members(self, obj):
         return format_html(
-            '<a href='{}?org_unit__in={}'>{}</a>',
+            '<a href="{}?org_unit__in={}">{}</a>',
             reverse('admin:tracking_departmentuser_changelist'),
             ','.join([str(o.pk)
                       for o in obj.get_descendants(include_self=True)]),
@@ -217,7 +217,7 @@ class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
 
     def it_systems(self, obj):
         return format_html(
-            '<a href='{}?org_unit={}'>{}</a>',
+            '<a href="{}?org_unit={}">{}</a>',
             reverse('admin:registers_itsystem_changelist'),
             obj.pk, obj.itsystem_set.count())
 
@@ -239,7 +239,7 @@ class CostCentreAdmin(VersionAdmin):
 
     def users(self, obj):
         return format_html(
-            '<a href='{}?cost_centre={}'>{}</a>',
+            '<a href="{}?cost_centre={}">{}</a>',
             reverse('admin:tracking_departmentuser_changelist'),
             obj.pk, obj.departmentuser_set.count())
 
