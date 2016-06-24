@@ -295,8 +295,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
                     it.get_availability_display()])
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
-        response[
-            'Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
+        response['Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
         return response
 
 
