@@ -6,7 +6,7 @@
     {% if child.show_dropdown %}
         <li>
             <a href="{% pageurl child %}">{{ child.title }}</a>
-            {% top_menu_children parent=child %}
+            {% f6_top_menu_children parent=child vertical=false %}
         </li>
     {% else %}
         <li><a href="{% pageurl child %}">{{ child.title }}</a></li>
