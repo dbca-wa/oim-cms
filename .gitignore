@@ -1,9 +1,9 @@
-.env*
-.hg*
+.env
+.coverage
 media/
 logs/
 static/
 venv/
 *.pyc
-*.swp
+*.sw[po]
 gmon.out
