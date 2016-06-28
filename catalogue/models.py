@@ -392,7 +392,7 @@ class Record(models.Model):
                 shrinked_bbox = [shrinked_min(bbox[0],bbox[2]),shrinked_min(bbox[1],bbox[3]),shrinked_max(bbox[0],bbox[2]),shrinked_max(bbox[1],bbox[3])]
         else:
             shrinked_bbox = None
-            target_crs = self.crs.upper()
+            target_crs = self.crs.upper() if self.crs else None
 
         bbox2str = lambda bbox,service,version: ','.join(str(c) for c in bbox) if service != "WFS" or version == "1.0.0" else ",".join([str(c) for c in [bbox[1],bbox[0],bbox[3],bbox[2]]])
 
@@ -401,11 +401,14 @@ class Record(models.Model):
                 "SERVICE":"WFS",
                 "REQUEST":"GetFeature",
                 "VERSION":service_version,
-                "SRSNAME":self.crs,
             }
-            parameters = {
-                "crs":target_crs
-            }
+            parameters = {}
+            if self.crs:
+                kvp["SRSNAME"] = self.crs.upper()
+
+            if target_crs:
+                parameters["crs"] = target_crs
+
             is_geoserver = endpoint.find("geoserver") >= 0
 
             if service_version == "1.1.0":
@@ -421,7 +424,8 @@ class Record(models.Model):
                     kvp["BBOX"] = bbox2str(shrinked_bbox,service_type,service_version)
                 kvp["TYPENAMES"] = self.identifier
             else:
-                kvp["BBOX"] = bbox2str(shrinked_bbox,service_type,service_version)
+                if shrinked_bbox:
+                    kvp["BBOX"] = bbox2str(shrinked_bbox,service_type,service_version)
                 kvp["TYPENAME"] = self.identifier
         elif service_type == "WMS":
             kvp = {
@@ -429,11 +433,12 @@ class Record(models.Model):
                 "REQUEST":"GetMap",
                 "VERSION":service_version,
                 "LAYERS":self.identifier,
-                ("SRS","CRS"):self.crs,
+                ("SRS","CRS"):self.crs.upper(),
                 "WIDTH":self.width,
                 "HEIGHT":self.height,
                 "FORMAT":"image/png"
             }
+
             parameters = {
                 "crs":target_crs,
                 "format":endpoint_parameters["FORMAT"][1] if "FORMAT" in endpoint_parameters else kvp["FORMAT"],
