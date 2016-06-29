@@ -1,5 +1,5 @@
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.conf import settings
 import logging
 from openpyxl import load_workbook
@@ -9,6 +9,15 @@ import subprocess
 import unicodecsv
 
 from tracking.models import DepartmentUser
+
+
+def convert_ad_timestamp(timestamp):
+    """Converts an Active Directory timestamp to a Python datetime object.
+    Ref: http://timestamp.ooz.ie/p/time-in-python.html
+    """
+    epoch_start = datetime(year=1601, month=1, day=1)
+    seconds_since_epoch = timestamp / 10**7
+    return epoch_start + timedelta(seconds=seconds_since_epoch)
 
 
 def logger_setup(name):

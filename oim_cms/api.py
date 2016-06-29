@@ -630,7 +630,13 @@ class UserResource(DjangoResource):
                     row["email"], row["members"][0].split("@", 1)[1])
         return structure
 
-    @skip_prepare
+    def prepare(self, data):
+        """Add password_age_days property to the UserResource API response.
+        """
+        prepped = super(UserResource, self).prepare(data)
+        prepped['password_age_days'] = DepartmentUser.objects.get(pk=data['pk']).password_age_days
+        return prepped
+
     def list(self):
         FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
         if "org_structure" in self.request.GET:
@@ -645,6 +651,7 @@ class UserResource(DjangoResource):
             FILTERS["ad_guid__endswith"] = self.request.GET["ad_guid"]
         if "compact" in self.request.GET:
             self.VALUES_ARGS = self.COMPACT_ARGS
+        # Add the password_age_days property to self.
         return self.formatters.format(self.request, list(DepartmentUser.objects.filter(
             **FILTERS).order_by("name").values(*self.VALUES_ARGS)))
 
@@ -696,7 +703,6 @@ class UserResource(DjangoResource):
                     user.surname = self.data["Surname"]
                 user.date_ad_updated = self.data["Modified"]
                 user.ad_updated = True
-                print("{}{}".format(user, user.date_updated))
                 user.save()
             data = list(
                 DepartmentUser.objects.filter(
