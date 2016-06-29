@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, absolute_import
+from datetime import datetime
 from django.db import models
 from django.contrib.postgres.fields import JSONField
 from django.utils.html import format_html
@@ -131,6 +132,12 @@ class DepartmentUser(MPTTModel):
     alesco_data = JSONField(
         null=True, blank=True, help_text='Readonly data from Alesco')
 
+    class MPTTMeta:
+        order_insertion_by = ['name']
+
+    class Meta:
+        ordering = ('name',)
+
     def __init__(self, *args, **kwargs):
         super(DepartmentUser, self).__init__(*args, **kwargs)
         # Store the pre-save values of some fields on object init.
@@ -140,6 +147,9 @@ class DepartmentUser(MPTTModel):
         self.__original_cost_centre = self.cost_centre
         self.__original_name = self.name
         self.__original_org_unit = self.org_unit
+
+    def __str__(self):
+        return self.email
 
     def save(self, *args, **kwargs):
         if self.employee_id and self.employee_id.lower() == "n/a":
@@ -172,9 +182,6 @@ class DepartmentUser(MPTTModel):
             }
         self.update_photo_ad()
         super(DepartmentUser, self).save(*args, **kwargs)
-
-    def __str__(self):
-        return self.email
 
     def update_photo_ad(self):
         # update self.photo_ad to contain a thumbnail less than 240x240 and
@@ -263,11 +270,16 @@ class DepartmentUser(MPTTModel):
         t = t.format(**self.alesco_data)
         return mark_safe(t)
 
-    class MPTTMeta:
-        order_insertion_by = ['name']
-
-    class Meta:
-        ordering = ('name',)
+    @property
+    def password_age_days(self):
+        from tracking.utils import convert_ad_timestamp  # Prevent circular import.
+        if self.ad_data and 'pwdLastSet' in self.ad_data:
+            try:
+                td = datetime.now() - convert_ad_timestamp(self.ad_data['pwdLastSet'])
+                return td.days
+            except:
+                pass
+        return None
 
 
 class Computer(CommonFields):
