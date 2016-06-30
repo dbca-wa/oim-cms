@@ -100,7 +100,7 @@ class RecordSerializer(serializers.ModelSerializer):
     identifier = serializers.CharField(max_length=255, read_only=True)
     url = serializers.SerializerMethodField(read_only=True)
     publication_date = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
-    modified = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
+    modified = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f',allow_null=True,default=None)
     metadata_link = serializers.SerializerMethodField(read_only=True)
 
     def get_ows_resource(self,obj):
