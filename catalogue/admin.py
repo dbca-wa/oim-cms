@@ -75,7 +75,7 @@ class StyleAdmin(admin.ModelAdmin):
     
 @admin.register(models.Record)
 class RecordAdmin(admin.ModelAdmin):
-    list_display = ("identifier","service_type","crs","title", "auto_update","active","modified","publication_date")
+    list_display = ("identifier","service_type","crs","title", "auto_update","active","_publish_required","modified","publication_date")
     inlines = [StyleInline,]
     readonly_fields = ('service_type','service_type_version','crs','_bounding_box',"_ows_resources",'active','publication_date','modified','insert_date')
     search_fields = ["identifier",'service_type']
@@ -101,6 +101,11 @@ class RecordAdmin(admin.ModelAdmin):
 </tr>
 </table>
 """
+    def _publish_required(self,instance):
+        return instance.modified > instance.publication_date if instance.modified and instance.publication_date else False
+    _publish_required.short_description = "publish ?"
+    _publish_required.boolean = True
+
     def _bounding_box(self,instance):
         bounding_box = ["-","-","-","-"]
         if instance.bounding_box:
@@ -172,9 +177,7 @@ class RecordAdmin(admin.ModelAdmin):
     def publish(self,request,queryset):
         result = None
         failed_objects = []
-        data = {"layers":[]}
-        for record in queryset:
-            data["layers"].append(record.identifier)
+        data = {"layers":[record.identifier for record in queryset]}
 
         res = None
         try:

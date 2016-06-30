@@ -41,6 +41,7 @@ from django.db.models.signals import post_save, pre_save, post_delete,pre_delete
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.utils import timezone
 
 slug_re = re.compile(r'^[a-z0-9_]+$')
 validate_slug = RegexValidator(slug_re, "Slug can only contain lowercase letters, numbers and underscores", "invalid")
@@ -573,6 +574,9 @@ class Record(models.Model):
             origin = Record.objects.get(pk = self.pk)
             if any([(getattr(origin,k) or "") != (getattr(self,k) or "") for k in ["title","abstract"]]):
                 self.auto_update = False
+
+            if any([getattr(origin,field) != getattr(self,field) for field in ["title","abstract","keywords"]]):
+                self.modified = timezone.now()
                     
     """
     Used to check the default style
@@ -677,9 +681,14 @@ class Style(models.Model):
                         if self.record.auto_update:
                             #auto update is enabled
                             if getattr(self,"access_channel","django-admin") == "django-admin":
-                                #changed from django admin portal, disable auto_update
+                                #changed from django admin portal, disable auto_update, access_channel is set in reset api
                                 self.record.auto_update = False
-                                self.record.save(update_fields=["auto_update"])
+                                if self.format == "SLD":
+                                    #sld style is changed, need to republish.
+                                    self.record.modified = timezone.now()
+                                    self.record.save(update_fields=["auto_update","modified"])
+                                else:
+                                    self.record.save(update_fields=["auto_update"])
                     else:
                         #content is not changed, no need to update content and checksum
                         update_fields = [field for field in update_fields if field not in ["content","checksum"]]
