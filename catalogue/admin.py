@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.utils.safestring import mark_safe
 from django.conf import settings
 from django.template import Context, Template
+from reversion.admin import VersionAdmin
 
 from dpaw_utils import requests
 
@@ -74,12 +75,13 @@ class StyleAdmin(admin.ModelAdmin):
 
     
 @admin.register(models.Record)
-class RecordAdmin(admin.ModelAdmin):
+class RecordAdmin(VersionAdmin):
     list_display = ("identifier","service_type","crs","title", "auto_update","active","_publish_required","modified","publication_date")
     inlines = [StyleInline,]
     readonly_fields = ('service_type','service_type_version','crs','_bounding_box',"_ows_resources",'active','publication_date','modified','insert_date')
     search_fields = ["identifier",'service_type']
     form = RecordForm
+    filter_horizontal = ["tags"]
     """
     def get_readonly_fields(self, request, obj=None):
         if obj:
@@ -273,9 +275,14 @@ class ApplicationLayerInline(admin.TabularInline):
     extra = 3
     
 @admin.register(models.Application)
-class ApplicationAdmin(admin.ModelAdmin):
+class ApplicationAdmin(VersionAdmin):
     list_display = ("name","description","last_modify_time","create_time")
     inlines = [ApplicationLayerInline,]
     readonly_fields = ('last_modify_time','create_time')
     form = ApplicationForm
     search_fields = ["name"]
+    filter_horizontal = ["records"]
+
+@admin.register(models.Tag)
+class TagAdmin(VersionAdmin):
+    pass

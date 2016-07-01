@@ -25,3 +25,4 @@ pyproj==1.9.5.1
 openpyxl==2.3.5
 redis==2.10.5
 unicodecsv==0.14.1
+django-filter==0.13.0

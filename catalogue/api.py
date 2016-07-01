@@ -1,5 +1,5 @@
 import traceback
-from rest_framework import serializers, viewsets, status, generics
+from rest_framework import serializers, viewsets, status, generics, filters
 from models import Record, Style
 from rest_framework.response import Response
 import base64
@@ -102,6 +102,10 @@ class RecordSerializer(serializers.ModelSerializer):
     publication_date = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
     modified = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f',allow_null=True,default=None)
     metadata_link = serializers.SerializerMethodField(read_only=True)
+    tags = serializers.SerializerMethodField(read_only=True)
+
+    def get_tags(self, obj):
+        return obj.tags.values("name", "description")
 
     def get_ows_resource(self,obj):
         return obj.ows_resource
@@ -151,6 +155,7 @@ class RecordSerializer(serializers.ModelSerializer):
             'workspace',
             'name',
             'auto_update',
+            'tags'
         )
 
 class RecordViewSet(viewsets.ModelViewSet):
@@ -158,6 +163,8 @@ class RecordViewSet(viewsets.ModelViewSet):
     serializer_class = RecordSerializer
     authentication_classes =[]
     lookup_field = "identifier"
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ("tags__name", "application__name")
     
     def createStyle(self,content):
         uploaded_style = ContentFile(content)

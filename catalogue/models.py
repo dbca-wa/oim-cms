@@ -182,6 +182,13 @@ class Collaborator(models.Model):
     def __unicode__(self):
         return "{}({})".format(self.name, self.organization.short_name)
 
+class Tag(models.Model):
+    name = models.SlugField(max_length=255, unique=True)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.name
+
 class Record(models.Model):
     identifier = models.CharField(
         max_length=255, db_index=True, help_text="Maps to pycsw:Identifier")
@@ -213,6 +220,7 @@ class Record(models.Model):
                                 help_text='Maps to pycsw:Abstract')
     keywords = models.CharField(max_length=255, blank=True, null=True,
                                 help_text='Maps to pycsw:Keywords')
+    tags = models.ManyToManyField(Tag)
     publication_date = models.DateTimeField(
         null=True, blank=True,
         help_text='Maps to pycsw:PublicationDate'
@@ -796,6 +804,7 @@ class Application(models.Model):
     description = models.TextField(blank=True)
     last_modify_time = models.DateTimeField(auto_now=True,null=False)
     create_time = models.DateTimeField(auto_now_add=True,null=False)
+    records = models.ManyToManyField(Record)
 
     @staticmethod
     def get_view_name(app):
