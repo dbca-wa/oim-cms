@@ -747,6 +747,8 @@ def profile(request):
             user.mobile_phone = request.POST['mobile_phone']
         if 'other_phone' in request.POST:
             user.other_phone = request.POST['other_phone']
+        if 'preferred_name' in request.POST:
+            user.preferred_name = request.POST['preferred_name']
         user.save()
         data = DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS)[0]
     return HttpResponse(json.dumps(
