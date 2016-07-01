@@ -56,17 +56,24 @@ class DepartmentUser(MPTTModel):
     """
     ACTIVE_FILTER = {"active": True, "email__isnull": False,
                      "cost_centre__isnull": False, "contractor": False}
+    # The following choices are intended to match options in Alesco.
     ACCOUNT_TYPE_CHOICES = (
-        (9, 'Casual'),  # Added later :/
-        (0, 'Dept fixed-term contract'),
-        (1, 'N/A'),
-        (2, 'Permanent fulltime'),
-        (8, 'Permanent part time'),  # Added later :/
-        (3, 'Recruitment agency contract'),
+        (3, 'Agency contract'),
+        (0, 'Department fixed-term contract'),
+        (1, 'Other'),
+        (2, 'Permanent'),
         (4, 'Resigned'),
+        (9, 'Role-based account'),
+        (8, 'Seasonal'),
         (5, 'Shared account'),
         (6, 'Vendor'),
         (7, 'Volunteer'),
+    )
+    POSITION_TYPE_CHOICES = (
+        (0, 'Full time'),
+        (1, 'Part time'),
+        (2, 'Casual'),
+        (3, 'Other'),
     )
     # These fields are populated from Active Directory.
     date_created = models.DateTimeField(auto_now_add=True)
@@ -86,7 +93,7 @@ class DepartmentUser(MPTTModel):
     ad_data = JSONField(null=True, editable=False)
     org_data = JSONField(null=True, editable=False)
     employee_id = models.CharField(
-        max_length=128, null=True, unique=True, blank=True,
+        max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
         help_text="HR Employee ID, use 'n/a' if a contractor")
     name = models.CharField(max_length=128)
     username = models.CharField(max_length=128, editable=False, unique=True)
@@ -95,11 +102,17 @@ class DepartmentUser(MPTTModel):
     name_update_reference = models.CharField(
         max_length=512, null=True, blank=True, verbose_name='update reference',
         help_text='Reference for name/CC change request')
-    title = models.CharField(max_length=128, null=True,
-                             help_text='Staff position')
+    preferred_name = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Employee-editable preferred name.')
+    title = models.CharField(
+        max_length=128, null=True, help_text='Staff position')
+    position_type = models.PositiveSmallIntegerField(
+        choices=POSITION_TYPE_CHOICES, null=True, blank=True, default=0,
+        help_text='Employee current position working arrangements.')
     email = models.EmailField(unique=True, editable=False)
-    parent = TreeForeignKey('self', on_delete=models.PROTECT,
-                            null=True, related_name='children', editable=True, blank=True)
+    parent = TreeForeignKey(
+        'self', on_delete=models.PROTECT, null=True, blank=True, related_name='children',
+        editable=True, verbose_name='Reports to', help_text='Person that this employee reports to')
     expiry_date = models.DateTimeField(null=True, editable=False)
     date_ad_updated = models.DateTimeField(null=True, editable=False)
     telephone = models.CharField(max_length=128, null=True, blank=True)
@@ -123,12 +136,13 @@ class DepartmentUser(MPTTModel):
     notes = models.TextField(null=True, blank=True,
                              help_text="Officer secondary roles, etc.")
     working_hours = models.TextField(
-        default="9:00-17:00, Mon-Fri", null=True, blank=True, help_text="Officer normal work/contact hours")
+        default="9:00-17:00, Mon-Fri", null=True, blank=True, help_text="Employee normal work/contact hours")
     secondary_locations = models.ManyToManyField("registers.Location", blank=True)
     populate_primary_group = models.BooleanField(
         default=True, help_text="If unchecked, user will not be added to primary group email")
     account_type = models.PositiveSmallIntegerField(
-        choices=ACCOUNT_TYPE_CHOICES, null=True, blank=True)
+        choices=ACCOUNT_TYPE_CHOICES, null=True, blank=True,
+        help_text='Employee account status (should match Alesco status).')
     alesco_data = JSONField(
         null=True, blank=True, help_text='Readonly data from Alesco')
 
@@ -175,7 +189,7 @@ class DepartmentUser(MPTTModel):
             self.org_data["cost_centre"] = {
                 "name": self.org_unit.name,
                 "code": self.cost_centre.code,
-                "manager": str(self.cost_centre.manager),
+                "cost_centre_manager": str(self.cost_centre.manager),
                 "business_manager": str(self.cost_centre.business_manager),
                 "admin": str(self.cost_centre.admin),
                 "tech_contact": str(self.cost_centre.tech_contact),
@@ -311,10 +325,14 @@ class Computer(CommonFields):
     cpu_count = models.PositiveSmallIntegerField(default=0)
     cpu_cores = models.PositiveSmallIntegerField(default=0)
     memory = models.BigIntegerField(default=0)
-    probable_owner = models.ForeignKey(DepartmentUser, on_delete=models.PROTECT, blank=True, null=True, related_name='computers_probably_owned',
-                                       help_text='Automatically-generated "most probable" device owner.')
-    managed_by = models.ForeignKey(DepartmentUser, on_delete=models.PROTECT, blank=True, null=True, related_name='computers_managed',
-                                   help_text='"Official" device owner/manager (set in AD).')
+    probable_owner = models.ForeignKey(
+        DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
+        related_name='computers_probably_owned',
+        help_text='Automatically-generated "most probable" device owner.')
+    managed_by = models.ForeignKey(
+        DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
+        related_name='computers_managed',
+        help_text='"Official" device owner/manager (set in AD).')
     date_pdq_updated = models.DateTimeField(null=True, blank=True)
     date_nmap_updated = models.DateTimeField(null=True, blank=True)
     date_sophos_updated = models.DateTimeField(null=True, blank=True)
