@@ -1,25 +1,26 @@
 from babel.dates import format_timedelta
-import itertools
-import json
-import requests
-from registers.models import CostCentre, ITSystem, Hardware, OrgUnit, Location, SecondaryLocation
-from core.models import UserSession
-from tracking.models import DepartmentUser, EC2Instance
-from mudmap.models import MudMap
+from django.conf import settings
+from django.db.models import F
+from django.http import (
+    HttpResponseRedirect, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest)
 from django.utils.text import slugify
 from django.utils.timezone import make_aware
-from django.conf import settings
-
+from django.views.decorators.csrf import csrf_exempt
+from djqscsv import render_to_csv_response
+import itertools
+import json
+from mptt.templatetags.mptt_tags import cache_tree_children
+import requests
 from restless.utils import MoreTypesJSONEncoder
 from restless.dj import DjangoResource
 from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
-from django.db.models import F
-from mptt.templatetags.mptt_tags import cache_tree_children
 
-from django.views.decorators.csrf import csrf_exempt
-from djqscsv import render_to_csv_response
+from core.models import UserSession
+from mudmap.models import MudMap
+from registers.models import (
+    CostCentre, ITSystem, Hardware, OrgUnit, Location, SecondaryLocation)
+from tracking.models import DepartmentUser, EC2Instance
 
 
 def format_fileField(request, value):
@@ -36,7 +37,8 @@ class FieldsFormatter(object):
 
     This takes a
         ``request`` parameter , a http request object
-        ``formatters`` parameter: a dictionary of keys (a dotted lookup path to the desired attribute/key on the object) and values(a formatter object).
+        ``formatters`` parameter: a dictionary of keys (a dotted lookup path to
+        the desired attribute/key on the object) and values(a formatter object).
 
     for propertis without a configed formatter method, return the raw value directly.
 
@@ -631,9 +633,8 @@ class UserResource(DjangoResource):
         return structure
 
     def prepare(self, data):
-        """Add password_age_days property to the UserResource API response.
-        """
         prepped = super(UserResource, self).prepare(data)
+        # Add the password_age_days property to the UserResource API response.
         prepped['password_age_days'] = DepartmentUser.objects.get(pk=data['pk']).password_age_days
         return prepped
 
@@ -651,7 +652,6 @@ class UserResource(DjangoResource):
             FILTERS["ad_guid__endswith"] = self.request.GET["ad_guid"]
         if "compact" in self.request.GET:
             self.VALUES_ARGS = self.COMPACT_ARGS
-        # Add the password_age_days property to self.
         return self.formatters.format(self.request, list(DepartmentUser.objects.filter(
             **FILTERS).order_by("name").values(*self.VALUES_ARGS)))
 
@@ -719,14 +719,21 @@ def profile(request):
     if not request.user.is_authenticated():
         return HttpResponseForbidden()
 
+    # Profile API view should return one object only.
     self = UserResource()
-    if request.method == "GET":
-        data = DepartmentUser.objects.filter(
-            email__iexact=request.user.email).order_by("name").values(
-            *self.VALUES_ARGS)[0]
-    elif request.method == "POST":
-        user = DepartmentUser.objects.get(email__iexact=request.user.email)
+    if not hasattr(request, 'user') or not request.user.email:
+        return HttpResponseBadRequest('No user email in request')
+    qs = DepartmentUser.objects.filter(email__iexact=request.user.email)
+    if qs.count() > 1 or qs.count() < 1:
+        return HttpResponseBadRequest('API request for {} should return one profile; it returned {}!'.format(
+            request.user.email, qs.count()))
+    user = qs.get(email__iexact=request.user.email)
 
+    if request.method == "GET":
+        data = qs.values(*self.VALUES_ARGS)[0]
+        # Add the password_age_days property to the API response.
+        data['password_age_days'] = user.password_age_days
+    elif request.method == "POST":
         if 'photo' in request.POST and request.POST['photo'] == 'delete':
             user.photo.delete()
         elif 'photo' in request.FILES:
@@ -740,9 +747,9 @@ def profile(request):
             user.mobile_phone = request.POST['mobile_phone']
         if 'other_phone' in request.POST:
             user.other_phone = request.POST['other_phone']
+        if 'preferred_name' in request.POST:
+            user.preferred_name = request.POST['preferred_name']
         user.save()
-        data = DepartmentUser.objects.filter(
-            pk=user.pk).values(
-            *self.VALUES_ARGS)[0]
+        data = DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS)[0]
     return HttpResponse(json.dumps(
         {'objects': [self.formatters.format(request, data)]}, cls=MoreTypesJSONEncoder))
