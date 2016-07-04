@@ -594,6 +594,10 @@ class UserResource(DjangoResource):
         "ad_dn", "ad_data", "date_updated", "date_ad_updated", "active", "ad_deleted",
         "in_sync", "given_name", "surname", "home_phone", "other_phone")
 
+    PROPERTY_ARGS = (
+        "password_age_days",
+    )
+
     formatters = FieldsFormatter(formatters={
         "photo": format_fileField,
         "photo_ad": format_fileField
@@ -632,12 +636,6 @@ class UserResource(DjangoResource):
                     row["email"], row["members"][0].split("@", 1)[1])
         return structure
 
-    def prepare(self, data):
-        prepped = super(UserResource, self).prepare(data)
-        # Add the password_age_days property to the UserResource API response.
-        prepped['password_age_days'] = DepartmentUser.objects.get(pk=data['pk']).password_age_days
-        return prepped
-
     def list(self):
         FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
         if "org_structure" in self.request.GET:
@@ -652,8 +650,12 @@ class UserResource(DjangoResource):
             FILTERS["ad_guid__endswith"] = self.request.GET["ad_guid"]
         if "compact" in self.request.GET:
             self.VALUES_ARGS = self.COMPACT_ARGS
-        return self.formatters.format(self.request, list(DepartmentUser.objects.filter(
-            **FILTERS).order_by("name").values(*self.VALUES_ARGS)))
+        users = DepartmentUser.objects.filter(**FILTERS).order_by("name")
+        user_values = list(users.values(*self.VALUES_ARGS))
+        for i, user in enumerate(user_values):
+            user.update({key: getattr(users[i], key) for key in self.PROPERTY_ARGS})
+        
+        return self.formatters.format(self.request, user_values)
 
     @skip_prepare
     def create(self):
