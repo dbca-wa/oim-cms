@@ -152,6 +152,7 @@ class RecordSerializer(serializers.ModelSerializer):
             'metadata_link',
             'styles',
             'workspace',
+            'legend',
             'name',
             'tags'
         )
