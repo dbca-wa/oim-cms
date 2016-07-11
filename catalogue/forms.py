@@ -1,21 +1,21 @@
 from django import forms
 from django.utils.safestring import mark_safe
 
-from catalogue.models import Record,Style,Application
+from catalogue.models import Record, Style, Application
 
 class Select(forms.Select):
     def __init__(self, attrs=None, choices=()):
         super(Select, self).__init__(attrs)
 
     def render(self, name, value, attrs=None, choices=()):
-        if self.attrs.get('readonly',False):
+        if self.attrs.get('readonly', False):
             self.attrs["disabled"] = True
             del self.attrs['readonly']
-            return mark_safe('\n'.join(["<input type='hidden' name='{}' value='{}'>".format(name,value or ''),super(Select,self).render(name,value,attrs,choices)]))
+            return mark_safe('\n'.join(["<input type='hidden' name='{}' value='{}'>".format(name, value or ''), super(Select, self).render(name, value, attrs, choices)]))
         else:
             if 'readonly' in self.attrs: del self.attrs['readonly']
             if 'disabled' in self.attrs: del self.attrs['disabled']
-            return super(Select,self).render(name,value,attrs,choices)
+            return super(Select, self).render(name, value, attrs, choices)
     
 class RecordForm(forms.ModelForm):
     """
@@ -28,7 +28,7 @@ class RecordForm(forms.ModelForm):
 
     class Meta:
         model = Record
-        fields = ("identifier","title","abstract","keywords","any_text","tags")
+        fields = ("identifier", "title", "abstract", "keywords", "legend", "any_text", "tags")
         #fields = "__all__"
         widgets = {
                 'keywords': forms.TextInput(attrs={"style":"width:70%"})
@@ -49,10 +49,10 @@ class StyleForm(forms.ModelForm):
 
     class Meta:
         model = Style
-        fields = ("name","record","format","content","default")
+        fields = ("name", "record", "format", "content", "default")
         widgets = {
-                'record': Select(),
-                'format': Select(),
+                'record': Select(), 
+                'format': Select(), 
         }
 
 class ApplicationForm(forms.ModelForm):
