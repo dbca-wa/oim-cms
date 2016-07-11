@@ -241,7 +241,7 @@ def departmentuser_csv_report():
                 record.append(u.org_data['location'][i])
             except:
                 record.append('')
-        if 'secondary_location' in u.org_data:
+        if u.org_data and 'secondary_location' in u.org_data:
             record.append(u.org_data['secondary_location'])
         else:
             record.append('')
