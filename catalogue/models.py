@@ -220,7 +220,7 @@ class Record(models.Model):
                                 help_text='Maps to pycsw:Abstract')
     keywords = models.CharField(max_length=255, blank=True, null=True,
                                 help_text='Maps to pycsw:Keywords')
-    tags = models.ManyToManyField(Tag)
+    tags = models.ManyToManyField(Tag, null=True, blank=True)
     publication_date = models.DateTimeField(
         null=True, blank=True,
         help_text='Maps to pycsw:PublicationDate'
