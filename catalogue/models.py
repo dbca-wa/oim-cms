@@ -220,7 +220,7 @@ class Record(models.Model):
                                 help_text='Maps to pycsw:Abstract')
     keywords = models.CharField(max_length=255, blank=True, null=True,
                                 help_text='Maps to pycsw:Keywords')
-    tags = models.ManyToManyField(Tag, null=True, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     publication_date = models.DateTimeField(
         null=True, blank=True,
         help_text='Maps to pycsw:PublicationDate'
@@ -235,7 +235,6 @@ class Record(models.Model):
                              help_text='Maps to pycsw:Links')
     crs = models.CharField(max_length=255, null=True, blank=True,help_text='Maps to pycsw:CRS')
     # Custom fields
-    auto_update = models.BooleanField(default=True)
     active = models.BooleanField(default=True, editable=False)
 
     bbox_re = re.compile('POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\,\s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\,\s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\,\s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\,\s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)')
@@ -576,16 +575,6 @@ class Record(models.Model):
         """
         return self.default_style("QML")
     
-    def clean(self):
-        #set auto update to false if some columns are changed
-        if self.pk and self.auto_update:
-            origin = Record.objects.get(pk = self.pk)
-            if any([(getattr(origin,k) or "") != (getattr(self,k) or "") for k in ["title","abstract"]]):
-                self.auto_update = False
-
-            if any([getattr(origin,field) != getattr(self,field) for field in ["title","abstract","keywords"]]):
-                self.modified = timezone.now()
-                    
     """
     Used to check the default style
     for a particular format. If it does

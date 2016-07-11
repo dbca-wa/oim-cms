@@ -153,7 +153,6 @@ class RecordSerializer(serializers.ModelSerializer):
             'styles',
             'workspace',
             'name',
-            'auto_update',
             'tags'
         )
 
@@ -219,7 +218,7 @@ class RecordViewSet(viewsets.ModelViewSet):
             try:
                 serializer.instance = Record.objects.get(identifier=identifier)
                 serializer.instance.active = True
-                for key in ["title", "abstract", "auto_update", "modified", "insert_date"]:
+                for key in ["title", "abstract", "modified", "insert_date"]:
                     if key in serializer.validated_data:
                         serializer.validated_data.pop(key)
 

@@ -28,7 +28,7 @@ class RecordForm(forms.ModelForm):
 
     class Meta:
         model = Record
-        fields = ("identifier","title","abstract","keywords","any_text","auto_update", "tags")
+        fields = ("identifier","title","abstract","keywords","any_text","tags")
         #fields = "__all__"
         widgets = {
                 'keywords': forms.TextInput(attrs={"style":"width:70%"})
