@@ -223,8 +223,21 @@ class RecordViewSet(viewsets.ModelViewSet):
                     if key in serializer.validated_data:
                         serializer.validated_data.pop(key)
 
+                # remove fake fields
+                if "workspace" in serializer.validated_data:
+                    serializer.validated_data.pop("workspace")
+                if "name" in serializer.validated_data:
+                    serializer.validated_data.pop("name")
+
+                record = serializer.save()
             except Record.DoesNotExist:
+                #record does not exist, create it
                 serializer.validated_data['identifier'] = identifier
+                # remove fake fields
+                if "workspace" in serializer.validated_data:
+                    serializer.validated_data.pop("workspace")
+                if "name" in serializer.validated_data:
+                    serializer.validated_data.pop("name")
                 record = serializer.save()
                 http_status = status.HTTP_201_CREATED
                 # set the missing data and transform the content
@@ -258,10 +271,10 @@ class RecordViewSet(viewsets.ModelViewSet):
                 for uploaded_style in default_style.itervalues():
                     uploaded_style["default"] = True
 
-            # remove fake fields
-            serializer.validated_data.pop("workspace")
-            serializer.validated_data.pop("name")
-            record = serializer.save()
+                #save  style
+                for style_serializer in style_serializers:
+                    style_serializer.save()
+
             ows_serializer.save(record)
 
             record.styles = list(Style.objects.filter(record=record))
