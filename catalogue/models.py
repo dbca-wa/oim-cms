@@ -615,19 +615,19 @@ class Record(models.Model):
 
 @receiver(pre_save, sender=Record)
 def update_modify_date(sender, instance, **kwargs):
-    db_instance = None
     if instance.pk:
-        db_instance = Record.objects.get(pk = instance.pk)
-    if any([getattr(db_instance,f) != getattr(instance,f) for f in ("title","abstract","keywords","links")]):
-        #geoserver related columns are changed, set the modified to now
-        instance.modified = timezone.now()
         update_fields=kwargs.get("update_fields", None)
-        #add field "modified" into the update field list.
-        if update_fields and "modified" not in update_fields:
-            if not isinstance(update_fields,list):
-                update_fields = [f for f in update_fields]
-                kwargs["update_fields"] = update_fields
-            update_fields.append("modified")
+        if not update_fields or any([f in ("title","abstract","keywords","links") for f in update_fields]):
+            db_instance = Record.objects.get(pk = instance.pk)
+            if any([getattr(db_instance,f) != getattr(instance,f) for f in ("title","abstract","keywords","links")]):
+                #geoserver related columns are changed, set the modified to now
+                instance.modified = timezone.now()
+                #add field "modified" into the update field list.
+                if update_fields and "modified" not in update_fields:
+                    if not isinstance(update_fields,list):
+                        update_fields = [f for f in update_fields]
+                        kwargs["update_fields"] = update_fields
+                    update_fields.append("modified")
     
 
 
