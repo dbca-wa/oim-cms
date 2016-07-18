@@ -249,7 +249,7 @@ class Record(models.Model):
                 return None
         else:
             return None
-    
+
     def __unicode__(self):
         return self.identifier
 
@@ -597,6 +597,7 @@ class Record(models.Model):
                 style = self.styles.filter(format=format).order_by("name").first()
             if style:
                 style.default = True
+                setattr(style,"triggered_default_style_setting",True)
                 style.save(update_fields=["default"])
                 return style
             else:
@@ -611,6 +612,24 @@ class Record(models.Model):
 
     class Meta:
         ordering = ['identifier']
+
+@receiver(pre_save, sender=Record)
+def update_modify_date(sender, instance, **kwargs):
+    db_instance = None
+    if instance.pk:
+        db_instance = Record.objects.get(pk = instance.pk)
+    if any([getattr(db_instance,f) != getattr(instance,f) for f in ("title","abstract","keywords","links")]):
+        #geoserver related columns are changed, set the modified to now
+        instance.modified = timezone.now()
+        update_fields=kwargs.get("update_fields", None)
+        #add field "modified" into the update field list.
+        if update_fields and "modified" not in update_fields:
+            if not isinstance(update_fields,list):
+                update_fields = [f for f in update_fields]
+                kwargs["update_fields"] = update_fields
+            update_fields.append("modified")
+    
+
 
 class Style(models.Model):
     BUILTIN = "builtin"
@@ -748,6 +767,8 @@ def remove_style_links(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=Style)
 def set_default_style (sender, instance, **kwargs):
+    if getattr(instance,"triggered_default_style_setting",False):
+        return
     update_fields=kwargs.get("update_fields", None)
     if not instance.pk or not update_fields or "default" in update_fields:
         if instance.default:
@@ -756,13 +777,20 @@ def set_default_style (sender, instance, **kwargs):
             if cur_default_style and cur_default_style.pk != instance.pk:
                 #The current default style is not the saving style, reset the current default style's default to false
                 cur_default_style.default=False
+                setattr(cur_default_style,"triggered_default_style_setting",True)
                 cur_default_style.save(update_fields=["default"])
+                #if default style is changed, set the latiest modifyed date
+                instance.record.modified = timezone.now()
+                instance.record.save(update_fields=["modified"])
         else:
             #The saving style is not the default style, try to set a default style if it does not exist
             default_style = instance.record.setup_default_styles(instance.format)
             if not default_style or default_style.pk == instance.pk:
                 #no default style is configured, set the current one as default style
                 instance.default = True
+                #if default style is changed, set the latiest modifyed date
+                instance.record.modified = timezone.now()
+                instance.record.save(update_fields=["modified"])
 
 @receiver(pre_save, sender=Style)
 def set_checksum (sender, instance, **kwargs):
