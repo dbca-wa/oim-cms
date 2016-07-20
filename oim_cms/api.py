@@ -23,6 +23,16 @@ from registers.models import (
 from tracking.models import DepartmentUser, EC2Instance
 
 
+POSITION_TYPE_DICT = dict(DepartmentUser.POSITION_TYPE_CHOICES)
+
+
+def format_position_type(request, value):
+    if value is not None:
+        return POSITION_TYPE_DICT[value]
+    else:
+        return value
+
+
 def format_fileField(request, value):
     if value:
         return request.build_absolute_uri(
@@ -592,7 +602,8 @@ class UserResource(DjangoResource):
     )
     VALUES_ARGS = COMPACT_ARGS + (
         "ad_dn", "ad_data", "date_updated", "date_ad_updated", "active", "ad_deleted",
-        "in_sync", "given_name", "surname", "home_phone", "other_phone")
+        "in_sync", "given_name", "surname", "home_phone", "other_phone", "preferred_name",
+        "position_type")
 
     PROPERTY_ARGS = (
         "password_age_days",
@@ -600,7 +611,8 @@ class UserResource(DjangoResource):
 
     formatters = FieldsFormatter(formatters={
         "photo": format_fileField,
-        "photo_ad": format_fileField
+        "photo_ad": format_fileField,
+        'position_type': format_position_type,
     })
 
     def is_authenticated(self):
@@ -608,6 +620,8 @@ class UserResource(DjangoResource):
 
     def org_structure(self):
         qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
+        # Exclude shared and role-based account types.
+        qs = qs.exclude(account_type__in=[5, 9])
         structure = []
         orgunits = OrgUnit.objects.all()
         costcentres = CostCentre.objects.all()
@@ -651,10 +665,12 @@ class UserResource(DjangoResource):
         if "compact" in self.request.GET:
             self.VALUES_ARGS = self.COMPACT_ARGS
         users = DepartmentUser.objects.filter(**FILTERS).order_by("name")
+        # Exclude shared and role-based account types.
+        users = users.exclude(account_type__in=[5, 9])
         user_values = list(users.values(*self.VALUES_ARGS))
         for i, user in enumerate(user_values):
             user.update({key: getattr(users[i], key) for key in self.PROPERTY_ARGS})
-        
+
         return self.formatters.format(self.request, user_values)
 
     @skip_prepare
