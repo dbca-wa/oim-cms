@@ -23,6 +23,16 @@ from registers.models import (
 from tracking.models import DepartmentUser, EC2Instance
 
 
+POSITION_TYPE_DICT = dict(DepartmentUser.POSITION_TYPE_CHOICES)
+
+
+def format_position_type(request, value):
+    if value is not None:
+        return POSITION_TYPE_DICT[value]
+    else:
+        return value
+
+
 def format_fileField(request, value):
     if value:
         return request.build_absolute_uri(
@@ -592,7 +602,8 @@ class UserResource(DjangoResource):
     )
     VALUES_ARGS = COMPACT_ARGS + (
         "ad_dn", "ad_data", "date_updated", "date_ad_updated", "active", "ad_deleted",
-        "in_sync", "given_name", "surname", "home_phone", "other_phone")
+        "in_sync", "given_name", "surname", "home_phone", "other_phone", "preferred_name",
+        "position_type")
 
     PROPERTY_ARGS = (
         "password_age_days",
@@ -600,7 +611,8 @@ class UserResource(DjangoResource):
 
     formatters = FieldsFormatter(formatters={
         "photo": format_fileField,
-        "photo_ad": format_fileField
+        "photo_ad": format_fileField,
+        'position_type': format_position_type,
     })
 
     def is_authenticated(self):
@@ -654,7 +666,7 @@ class UserResource(DjangoResource):
         user_values = list(users.values(*self.VALUES_ARGS))
         for i, user in enumerate(user_values):
             user.update({key: getattr(users[i], key) for key in self.PROPERTY_ARGS})
-        
+
         return self.formatters.format(self.request, user_values)
 
     @skip_prepare
