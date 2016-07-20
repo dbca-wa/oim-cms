@@ -214,6 +214,12 @@ class OrgUnit(MPTTModel):
                 user.save()
         super(OrgUnit, self).save(*args, **kwargs)
 
+    def get_descendants_active(self, *args, **kwargs):
+        """Exclude 'inactive' OrgUnit objects from get_descendants() queryset.
+        """
+        descendants = self.get_descendants(*args, **kwargs)
+        return descendants.exclude(name__icontains='inactive')
+
 
 class CostCentre(models.Model):
     """Models the details of a Department cost centre.
