@@ -620,6 +620,8 @@ class UserResource(DjangoResource):
 
     def org_structure(self):
         qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
+        # Exclude shared and role-based account types.
+        qs = qs.exclude(account_type__in=[5, 9])
         structure = []
         orgunits = OrgUnit.objects.all()
         costcentres = CostCentre.objects.all()
@@ -663,6 +665,8 @@ class UserResource(DjangoResource):
         if "compact" in self.request.GET:
             self.VALUES_ARGS = self.COMPACT_ARGS
         users = DepartmentUser.objects.filter(**FILTERS).order_by("name")
+        # Exclude shared and role-based account types.
+        users = users.exclude(account_type__in=[5, 9])
         user_values = list(users.values(*self.VALUES_ARGS))
         for i, user in enumerate(user_values):
             user.update({key: getattr(users[i], key) for key in self.PROPERTY_ARGS})
