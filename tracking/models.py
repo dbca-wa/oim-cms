@@ -176,7 +176,7 @@ class DepartmentUser(MPTTModel):
         if self.cost_centre:
             self.org_data = self.org_data or {}
             self.org_data["units"] = list(self.org_unit.get_ancestors(include_self=True).values(
-                "name", "acronym", "unit_type", "costcentre__code", "costcentre__name", "location__name"))
+                "id", "name", "acronym", "unit_type", "costcentre__code", "costcentre__name", "location__name"))
             self.org_data["unit"] = self.org_data["units"][-1]
             if self.org_unit.location:
                 self.org_data["location"] = self.org_unit.location.as_dict()
