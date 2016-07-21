@@ -235,12 +235,11 @@ class OptionResource(DjangoResource):
         return getattr(self, "data_" + self.request.GET["list"])()
 
     def data_org_structure(self):
-        return [recursive_node_to_dict(cache_tree_children(dept.get_descendants(include_self=True))[0])
+        return [recursive_node_to_dict(cache_tree_children(dept.get_descendants_active(include_self=True))[0])
                 for dept in OrgUnit.objects.filter(unit_type=0).order_by('name')]
 
     def data_cost_centre(self):
-        return ["CC{} / {}".format(
-            *c) for c in CostCentre.objects.all().values_list("code", "org_position__name")]
+        return ["CC{} / {}".format(*c) for c in CostCentre.objects.all().exclude(org_position__name__icontains='inactive').values_list("code", "org_position__name")]
 
     def data_dept_user(self):
         return [u[0] for u in DepartmentUser.objects.filter(
@@ -598,12 +597,12 @@ class UserResource(DjangoResource):
         "pk", "name", "title", "employee_id", "email", "telephone", "mobile_phone", "photo", "photo_ad",
         "org_data", "parent__email", "parent__name", "username", "org_unit__location__id", "org_unit__location__name",
         "org_unit__location__address", "org_unit__location__pobox", "org_unit__location__phone",
-        "org_unit__location__fax", "ad_guid", "notes", "working_hours", "org_unit__secondary_location__name"
+        "org_unit__location__fax", "ad_guid", "org_unit__secondary_location__name"
     )
     VALUES_ARGS = COMPACT_ARGS + (
         "ad_dn", "ad_data", "date_updated", "date_ad_updated", "active", "ad_deleted",
         "in_sync", "given_name", "surname", "home_phone", "other_phone", "preferred_name",
-        "position_type")
+        "notes", "working_hours", "position_type")
 
     PROPERTY_ARGS = (
         "password_age_days",

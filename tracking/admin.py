@@ -24,38 +24,29 @@ class DepartmentUserAdmin(admin.ModelAdmin):
         ('Email/username', {
             'fields': ('email', 'username'),
         }),
-        ('Name fields', {
+        ('Name and organisational fields', {
             'description': '''<p class="errornote">Do not edit information in this section
             without written permission from People Services or the cost centre manager
             (forms are required).</p>''',
             'fields': (
-                ('given_name', 'surname'),
-                ('employee_id', 'cost_centre'),
-                ('name', 'org_unit'),
-                ('name_update_reference'),
-            ),
+                'given_name', 'surname', 'name', 'employee_id',
+                'cost_centre', 'org_unit', 'security_clearance',
+                'name_update_reference'),
         }),
         ('Other details', {
             'fields': (
-                'preferred_name',
-                'photo',
-                ('account_type', 'position_type'),
-                ('cost_centres_secondary', 'org_units_secondary'),
-                ('telephone', 'mobile_phone', 'other_phone'),
-                ('populate_primary_group', 'vip', 'executive', 'contractor'),
-                ('title', 'parent'),
-                'secondary_locations',
-                'notes',
-                'working_hours',
-                'extra_data',
+                'preferred_name', 'photo', 'title', 'parent',
+                'account_type', 'position_type',
+                'cost_centres_secondary', 'org_units_secondary',
+                'telephone', 'mobile_phone', 'other_phone',
+                'populate_primary_group', 'vip', 'executive', 'contractor',
+                'secondary_locations', 'notes', 'working_hours', 'extra_data',
             )
         }),
-        ('Organisation data (read-only)', {
+        ('AD sync and HR data (read-only)', {
             'fields': (
-                ('active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date'),
-                'org_data_pretty',
-                'ad_data_pretty',
-                'alesco_data_pretty',
+                'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
+                'org_data_pretty', 'ad_data_pretty', 'alesco_data_pretty',
             )
         })
     )
