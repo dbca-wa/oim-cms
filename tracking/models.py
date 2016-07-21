@@ -84,7 +84,8 @@ class DepartmentUser(MPTTModel):
         "registers.CostCentre", related_name="cost_centres_secondary",
         blank=True)
     org_unit = models.ForeignKey(
-        "registers.OrgUnit", on_delete=models.PROTECT, null=True, blank=True)
+        "registers.OrgUnit", on_delete=models.PROTECT, null=True, blank=True,
+        verbose_name='organisational unit')
     org_units_secondary = models.ManyToManyField(
         "registers.OrgUnit", related_name="org_units_secondary", blank=True)
     extra_data = JSONField(null=True, blank=True)
@@ -95,20 +96,22 @@ class DepartmentUser(MPTTModel):
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
         help_text="HR Employee ID, use 'n/a' if a contractor")
-    name = models.CharField(max_length=128)
     username = models.CharField(max_length=128, editable=False, unique=True)
-    given_name = models.CharField(max_length=128, null=True)
-    surname = models.CharField(max_length=128, null=True)
+    name = models.CharField(max_length=128, help_text='Format: Surname, Given name')
+    given_name = models.CharField(
+        max_length=128, null=True, help_text='Legal first name (matches birth certificate/password/etc.)')
+    surname = models.CharField(
+        max_length=128, null=True, help_text='Legal surname (matches birth certificate/password/etc.)')
     name_update_reference = models.CharField(
         max_length=512, null=True, blank=True, verbose_name='update reference',
         help_text='Reference for name/CC change request')
     preferred_name = models.CharField(
         max_length=256, null=True, blank=True, help_text='Employee-editable preferred name.')
     title = models.CharField(
-        max_length=128, null=True, help_text='Staff position')
+        max_length=128, null=True, help_text='Occupation position title (should match Alesco)')
     position_type = models.PositiveSmallIntegerField(
         choices=POSITION_TYPE_CHOICES, null=True, blank=True, default=0,
-        help_text='Employee current position working arrangements.')
+        help_text='Employee position working arrangement (should match Alesco status)')
     email = models.EmailField(unique=True, editable=False)
     parent = TreeForeignKey(
         'self', on_delete=models.PROTECT, null=True, blank=True, related_name='children',
@@ -133,8 +136,8 @@ class DepartmentUser(MPTTModel):
         blank=True, editable=False, upload_to=get_photo_ad_path)
     sso_roles = models.TextField(
         null=True, editable=False, help_text="Groups/roles separated by semicolon")
-    notes = models.TextField(null=True, blank=True,
-                             help_text="Officer secondary roles, etc.")
+    notes = models.TextField(
+        null=True, blank=True, help_text="Officer secondary roles, etc.")
     working_hours = models.TextField(
         default="9:00-17:00, Mon-Fri", null=True, blank=True, help_text="Employee normal work/contact hours")
     secondary_locations = models.ManyToManyField("registers.Location", blank=True)
@@ -142,9 +145,13 @@ class DepartmentUser(MPTTModel):
         default=True, help_text="If unchecked, user will not be added to primary group email")
     account_type = models.PositiveSmallIntegerField(
         choices=ACCOUNT_TYPE_CHOICES, null=True, blank=True,
-        help_text='Employee account status (should match Alesco status).')
+        help_text='Employee account status (should match Alesco status)')
     alesco_data = JSONField(
         null=True, blank=True, help_text='Readonly data from Alesco')
+    security_clearance = models.BooleanField(
+        default=False, verbose_name='security clearance granted',
+        help_text='''Security clearance approved by CC Manager (confidentiality
+        agreement, referee check, police clearance, etc.''')
 
     class MPTTMeta:
         order_insertion_by = ['name']
@@ -170,7 +177,7 @@ class DepartmentUser(MPTTModel):
             self.employee_id = None
         if self.employee_id:
             self.employee_id = "{0:06d}".format(int(self.employee_id))
-        self.in_sync = getattr(self, "ad_updated", False)
+        self.in_sync = True if self.date_ad_updated else False
         if self.cost_centre and not self.org_unit:
             self.org_unit = self.cost_centre.org_position
         if self.cost_centre:
@@ -198,8 +205,7 @@ class DepartmentUser(MPTTModel):
         super(DepartmentUser, self).save(*args, **kwargs)
 
     def update_photo_ad(self):
-        # update self.photo_ad to contain a thumbnail less than 240x240 and
-        # 10kb
+        # Update self.photo_ad to a 240x240 thumbnail >10 kb in size.
         if not self.photo:
             if self.photo_ad:
                 self.photo_ad.delete()
