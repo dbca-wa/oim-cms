@@ -74,6 +74,9 @@
                     <style type="text/css">.row {min-width:100% !important;}</style>
                 {% else %}
                     {% block footer %}{% include_content "f6-footer" %}{% endblock %}
+                    <div class="row">
+                        <div class="columns end text-right"><small>v{{ application_version }}</small></div>
+                    </div>
                 {% endif %}
             </div>
         </div>
