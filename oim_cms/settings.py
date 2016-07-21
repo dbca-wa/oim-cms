@@ -135,16 +135,17 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
     'wagtail.wagtailcore.middleware.SiteMiddleware',
     'wagtail.wagtailredirects.middleware.RedirectMiddleware',
-
     'dpaw_utils.middleware.SSOLoginMiddleware',
 )
 
 ROOT_URLCONF = 'oim_cms.urls'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
 DATABASES = {'default': database.config()}
+APPLICATION_VERSION = '1.0.12'
+# This is required to add context variables to all templates:
+STATIC_CONTEXT_VARS = {}
 
 # Internationalization
 LANGUAGE_CODE = 'en-gb'
@@ -185,6 +186,7 @@ TEMPLATES = [
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
                 'django.contrib.messages.context_processors.messages',
+                'oim_cms.context_processors.template_context',
             ],
         },
     },
