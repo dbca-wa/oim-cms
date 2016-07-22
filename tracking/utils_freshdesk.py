@@ -95,7 +95,9 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
         return False
 
     # Filter DepartmentUsers: valid email (contains @), not -admin, DN contains 'OU=Users'
-    for user in DepartmentUser.objects.filter(email__contains='@', ad_dn__contains='OU=Users').exclude(email__contains='-admin'):
+    d_users = DepartmentUser.objects.filter(email__contains='@', ad_dn__contains='OU=Users').exclude(email__contains='-admin')
+    logger.info('Syncing details for {} DepartmentUsers to Freshdesk'.format(d_users.count()))
+    for user in d_users:
         if user.email.lower() in contacts:
             # The DepartmentUser exists in Freshdesk; verify and update details.
             fd = contacts[user.email.lower()]
@@ -139,7 +141,7 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
                         data['custom_field'] = {'cf_location': physical_location}
                     changes.append('physical_location')
             if user_sync:  # Sync user details to their Freshdesk contact.
-                r = update_freshdesk_object(data, obj_type='contacts', id=fd['id'])
+                r = update_freshdesk_object('contacts', data, fd['id'])
                 if r.status_code == 403:  # Forbidden
                     # A 403 response probably means that we hit the API throttle limit.
                     # Abort the synchronisation.
@@ -159,7 +161,7 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
                     'phone': user.telephone, 'job_title': user.title}
             if department and department in companies:
                 data['company_id'] = companies[department]['id']
-            r = update_freshdesk_object(data, obj_type='contacts')
+            r = update_freshdesk_object('contacts', data)
             if not r.status_code == 200:  # Error, unable to process request.
                 logger.warn('{} not created in Freshdesk (status {})'.format(user.email.lower(), r.status_code))
             else:
@@ -211,7 +213,7 @@ def freshdesk_cache_tickets(tickets=None):
     for t in tickets:
         # Rename key 'id'.
         t['ticket_id'] = t.pop('id')
-        # Date ISO8601-formatted date strings into datetimes.
+        # Parse ISO8601-formatted date strings into datetime objs.
         t['created_at'] = parse(t['created_at'])
         t['due_by'] = parse(t['due_by'])
         t['fr_due_by'] = parse(t['fr_due_by'])
