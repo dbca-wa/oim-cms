@@ -11,9 +11,10 @@ from tracking.utils import logger_setup, alesco_data_import, departmentuser_csv_
 
 
 class DepartmentUserAdmin(admin.ModelAdmin):
-    list_display = ['email', 'employee_id', 'username', 'active', 'vip', 'executive',
-                    'cost_centre', 'date_updated', 'date_ad_updated', 'org_unit', 'parent']
-    list_filter = ['active', 'vip', 'executive', 'date_ad_updated']
+    list_display = [
+        'email', 'employee_id', 'username', 'active', 'vip', 'executive',
+        'cost_centre', 'account_type', 'date_ad_updated']
+    list_filter = ['account_type', 'active', 'vip', 'executive']
     search_fields = ['name', 'email', 'username', 'employee_id', 'preferred_name']
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
     readonly_fields = [

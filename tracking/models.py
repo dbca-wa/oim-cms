@@ -117,7 +117,7 @@ class DepartmentUser(MPTTModel):
         'self', on_delete=models.PROTECT, null=True, blank=True, related_name='children',
         editable=True, verbose_name='Reports to', help_text='Person that this employee reports to')
     expiry_date = models.DateTimeField(null=True, editable=False)
-    date_ad_updated = models.DateTimeField(null=True, editable=False)
+    date_ad_updated = models.DateTimeField(null=True, editable=False, verbose_name='Date AD updated')
     telephone = models.CharField(max_length=128, null=True, blank=True)
     mobile_phone = models.CharField(max_length=128, null=True, blank=True)
     home_phone = models.CharField(max_length=128, null=True, blank=True)
