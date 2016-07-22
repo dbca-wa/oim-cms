@@ -170,16 +170,16 @@ def departmentuser_csv_report():
     Returns a StringIO object that can be written to a response or file.
     """
     FIELDS = [
-        'name', 'title', 'telephone', 'mobile_phone', 'home_phone',
-        'other_phone', 'email', 'employee_id', 'name_update_reference',
-        'username']
+        'email', 'username', 'given_name', 'surname', 'name', 'employee_id',
+        'cost_centre', 'org_unit', 'name_update_reference',
+        'telephone', 'mobile_phone', 'other_phone', 'title']
     TYPE_CHOICES = {x[0]: x[1] for x in DepartmentUser.ACCOUNT_TYPE_CHOICES}
 
-    # Get a DepartmentUser with non-null alesco_data field
+    # Get any DepartmentUser with non-null alesco_data field.
+    # alesco_data structure should be consistent to all (or null).
     du = DepartmentUser.objects.filter(alesco_data__isnull=False)[0]
     alesco_fields = du.alesco_data.keys()
     alesco_fields.sort()
-
     org_fields = {
         'department': ('units', 0, 'name'),
         'division': ('units', 1, 'name'),
@@ -187,7 +187,10 @@ def departmentuser_csv_report():
     }
 
     header = [f for f in FIELDS]
+    # These fields appended manually:
     header.append('account_type')
+    header.append('position_type')
+    header.append('reports_to')
     header += org_fields.keys()
     header += alesco_fields
 
@@ -213,10 +216,15 @@ def departmentuser_csv_report():
         record = []
         for f in FIELDS:
             record.append(getattr(u, f))
-        try:
+        try:  # Append account_type display value.
             record.append(TYPE_CHOICES[u.account_type])
         except:
             record.append('')
+        try:  # Append position_type display value.
+            record.append(TYPE_CHOICES[u.position_type])
+        except:
+            record.append('')
+        record.append(u.parent)  # Append parent field.
         for o in org_fields:
             try:
                 src = u.org_data

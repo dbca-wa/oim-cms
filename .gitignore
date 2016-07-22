@@ -2,8 +2,9 @@
 .coverage
 media/
 logs/
-static/
+staticfiles/
 venv/
 *.pyc
 *.sw[po]
 gmon.out
+.sass-cache/

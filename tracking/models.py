@@ -139,7 +139,7 @@ class DepartmentUser(MPTTModel):
     notes = models.TextField(
         null=True, blank=True, help_text="Officer secondary roles, etc.")
     working_hours = models.TextField(
-        default="9:00-17:00, Mon-Fri", null=True, blank=True, help_text="Employee normal work/contact hours")
+        default="N/A", null=True, blank=True, help_text="Description of normal working hours")
     secondary_locations = models.ManyToManyField("registers.Location", blank=True)
     populate_primary_group = models.BooleanField(
         default=True, help_text="If unchecked, user will not be added to primary group email")
