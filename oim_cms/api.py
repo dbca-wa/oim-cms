@@ -617,12 +617,15 @@ class UserResource(DjangoResource):
     def is_authenticated(self):
         return True
 
-    def org_structure(self):
+    def org_structure(self, sync_o365=False):
         qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
         # Exclude shared and role-based account types.
         qs = qs.exclude(account_type__in=[5, 9])
         structure = []
-        orgunits = OrgUnit.objects.all()
+        if sync_o365:
+            orgunits = OrgUnit.objects.filter(sync_o365=True)
+        else:
+            orgunits = OrgUnit.objects.all()
         costcentres = CostCentre.objects.all()
         locations = Location.objects.all()
         slocations = SecondaryLocation.objects.all()
@@ -650,9 +653,15 @@ class UserResource(DjangoResource):
         return structure
 
     def list(self):
+        """Pass query params to modify the API output.
+        Include `org_structure` and `sync_o365` to output only OrgUnits with sync_o365 == True
+        """
         FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
         if "org_structure" in self.request.GET:
-            return self.org_structure()
+            if "sync_o365" in self.request.GET:
+                return self.org_structure(sync_o365=True)
+            else:
+                return self.org_structure()
         if "all" in self.request.GET:
             FILTERS = {}
         if "cost_centre" in self.request.GET:
