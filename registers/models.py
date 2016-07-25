@@ -227,46 +227,36 @@ class CostCentre(models.Model):
     name = models.CharField(max_length=25, unique=True, editable=False)
     code = models.CharField(max_length=5, unique=True)
     division = models.ForeignKey(
-        OrgUnit,
-        null=True,
-        editable=False,
+        OrgUnit, null=True, editable=False,
         related_name='costcentres_in_division')
-    org_position = models.OneToOneField(OrgUnit, unique=True)
+    org_position = models.OneToOneField(
+        OrgUnit, unique=True, blank=True, null=True)
     manager = models.ForeignKey(
-        tracking.DepartmentUser,
-        on_delete=models.PROTECT,
-        related_name='manage_ccs',
-        null=True,
-        blank=True)
+        tracking.DepartmentUser, on_delete=models.PROTECT,
+        related_name='manage_ccs', null=True, blank=True)
     business_manager = models.ForeignKey(
-        tracking.DepartmentUser,
-        on_delete=models.PROTECT,
-        related_name='bmanage_ccs',
-        help_text='Business Manager',
-        null=True,
-        blank=True)
+        tracking.DepartmentUser, on_delete=models.PROTECT,
+        related_name='bmanage_ccs', help_text='Business Manager',
+        null=True, blank=True)
     admin = models.ForeignKey(
-        tracking.DepartmentUser,
-        on_delete=models.PROTECT,
-        related_name='admin_ccs',
-        help_text='Admin',
-        null=True,
+        tracking.DepartmentUser, on_delete=models.PROTECT,
+        related_name='admin_ccs', help_text='Admin', null=True,
         blank=True)
     tech_contact = models.ForeignKey(
-        tracking.DepartmentUser,
-        on_delete=models.PROTECT,
-        related_name='tech_ccs',
-        help_text='Technical Contact',
-        null=True,
-        blank=True)
+        tracking.DepartmentUser, on_delete=models.PROTECT,
+        related_name='tech_ccs', help_text='Technical Contact',
+        null=True, blank=True)
 
     class Meta:
         ordering = ('code',)
 
     def save(self, *args, **kwargs):
         self.name = str(self)
-        division = self.org_position.get_ancestors(
-            include_self=True).filter(unit_type=1)
+        if self.org_position:
+            division = self.org_position.get_ancestors(
+                include_self=True).filter(unit_type=1)
+        else:
+            division = None
         if division:
             self.division = division.first()
         for user in self.departmentuser_set.all():
@@ -275,10 +265,11 @@ class CostCentre(models.Model):
 
     def __str__(self):
         name = '{}'.format(self.code)
-        dept = self.org_position.get_ancestors(
-            include_self=True).filter(unit_type=0)
-        if dept:
-            name += ' ({})'.format(dept.first().acronym)
+        if self.org_position:
+            dept = self.org_position.get_ancestors(
+                include_self=True).filter(unit_type=0)
+            if dept:
+                name += ' ({})'.format(dept.first().acronym)
         return name
 
 
