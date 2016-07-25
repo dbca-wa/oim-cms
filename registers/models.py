@@ -142,40 +142,24 @@ class OrgUnit(MPTTModel):
     unit_type = models.PositiveSmallIntegerField(
         choices=TYPE_CHOICES, default=4)
     ad_guid = models.CharField(
-        max_length=48,
-        unique=True,
-        null=True,
-        editable=False)
+        max_length=48, unique=True, null=True, editable=False)
     ad_dn = models.CharField(
-        max_length=512,
-        unique=True,
-        null=True,
-        editable=False)
+        max_length=512, unique=True, null=True, editable=False)
     name = models.CharField(max_length=256, unique=True)
     acronym = models.CharField(max_length=16, null=True, blank=True)
     manager = models.ForeignKey(
-        tracking.DepartmentUser,
-        on_delete=models.PROTECT,
-        null=True,
+        tracking.DepartmentUser, on_delete=models.PROTECT, null=True,
         blank=True)
     parent = TreeForeignKey(
-        'self',
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name='children',
-        db_index=True)
+        'self', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='children', db_index=True)
     details = JSONField(null=True, blank=True)
     location = models.ForeignKey(
-        Location,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True)
+        Location, on_delete=models.PROTECT, null=True, blank=True)
     secondary_location = models.ForeignKey(
-        SecondaryLocation,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True)
+        SecondaryLocation, on_delete=models.PROTECT, null=True, blank=True)
+    sync_o365 = models.BooleanField(
+        default=True, help_text='Sync this to O365 (creates a security group).')
 
     class MPTTMeta:
         order_insertion_by = ['name']
