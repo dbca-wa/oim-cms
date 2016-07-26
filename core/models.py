@@ -41,6 +41,7 @@ from wagtail.wagtailimages.formats import Format, register_image_format
 
 register_image_format(Format('600x600', '600x600', 'richtext-image 600x600', 'max-600x600'))
 register_image_format(Format('logo_icon', 'Logo_Icon', 'richtext-image logo_icon', 'max-30x30'))
+register_image_format(Format('original', 'Original', 'richtext-image original', 'original'))
 
 
 class UserSession(models.Model):
