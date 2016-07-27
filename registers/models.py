@@ -83,7 +83,10 @@ class Location(models.Model):
         ordering = ('name',)
 
     def __str__(self):
-        return '{} ({})'.format(self.name, self.address)
+        if self.address:
+            return '{} ({})'.format(self.name, self.address)
+        else:
+            return self.name
 
     def as_dict(self):
         return {k: getattr(self, k) for k in (
