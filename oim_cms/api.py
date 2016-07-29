@@ -603,7 +603,10 @@ class UserResource(DjangoResource):
         "ad_dn", "ad_data", "date_updated", "date_ad_updated", "active", "ad_deleted",
         "in_sync", "given_name", "surname", "home_phone", "other_phone",
         "notes", "working_hours", "position_type")
-
+    MINIMAL_ARGS = (
+        "pk", "name", "preferred_name", "title", "email", "telephone",
+        "mobile_phone", "photo", "org_unit__location__name"
+    )
     PROPERTY_ARGS = (
         "password_age_days",
     )
@@ -656,12 +659,17 @@ class UserResource(DjangoResource):
         """Pass query params to modify the API output.
         Include `org_structure` and `sync_o365` to output only OrgUnits with sync_o365 == True
         """
-        FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
         if "org_structure" in self.request.GET:
             if "sync_o365" in self.request.GET:
                 return self.org_structure(sync_o365=True)
             else:
                 return self.org_structure()
+
+        FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
+        minimal = False
+        users = DepartmentUser.objects.filter(**FILTERS).order_by("name")
+        # Exclude shared and role-based account types.
+        users = users.exclude(account_type__in=[5, 9])
         if "all" in self.request.GET:
             FILTERS = {}
         if "cost_centre" in self.request.GET:
@@ -672,12 +680,13 @@ class UserResource(DjangoResource):
             FILTERS["ad_guid__endswith"] = self.request.GET["ad_guid"]
         if "compact" in self.request.GET:
             self.VALUES_ARGS = self.COMPACT_ARGS
-        users = DepartmentUser.objects.filter(**FILTERS).order_by("name")
-        # Exclude shared and role-based account types.
-        users = users.exclude(account_type__in=[5, 9])
+        if "minimal" in self.request.GET:
+            self.VALUES_ARGS = self.MINIMAL_ARGS
+            minimal = True
         user_values = list(users.values(*self.VALUES_ARGS))
-        for i, user in enumerate(user_values):
-            user.update({key: getattr(users[i], key) for key in self.PROPERTY_ARGS})
+        if not minimal:  # Optional prep step.
+            for i, user in enumerate(user_values):
+                user.update({key: getattr(users[i], key) for key in self.PROPERTY_ARGS})
 
         return self.formatters.format(self.request, user_values)
 
