@@ -666,27 +666,25 @@ class UserResource(DjangoResource):
                 return self.org_structure()
 
         FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
-        minimal = False
-        users = DepartmentUser.objects.filter(**FILTERS).order_by("name")
-        # Exclude shared and role-based account types.
-        users = users.exclude(account_type__in=[5, 9])
+        # Filter below are exclusive.
         if "all" in self.request.GET:
             FILTERS = {}
-        if "cost_centre" in self.request.GET:
-            FILTERS["cost_centre__code"] = self.request.GET["cost_centre"]
-        if "email" in self.request.GET:
+        elif "email" in self.request.GET:
             FILTERS["email__iexact"] = self.request.GET["email"]
-        if "ad_guid" in self.request.GET:
+        elif "ad_guid" in self.request.GET:
             FILTERS["ad_guid__endswith"] = self.request.GET["ad_guid"]
+        elif "cost_centre" in self.request.GET:
+            FILTERS["cost_centre__code"] = self.request.GET["cost_centre"]
+        # Exclude shared and role-based account types.
+        users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[5, 9]).order_by('name')
+
+        # Parameters to modify the API output.
         if "compact" in self.request.GET:
             self.VALUES_ARGS = self.COMPACT_ARGS
-        if "minimal" in self.request.GET:
+        elif "minimal" in self.request.GET:
             self.VALUES_ARGS = self.MINIMAL_ARGS
-            minimal = True
+
         user_values = list(users.values(*self.VALUES_ARGS))
-        if not minimal:  # Optional prep step.
-            for i, user in enumerate(user_values):
-                user.update({key: getattr(users[i], key) for key in self.PROPERTY_ARGS})
 
         return self.formatters.format(self.request, user_values)
 
