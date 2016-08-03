@@ -32,7 +32,7 @@ class CommonFields(models.Model):
     def save(self, *args, **kwargs):
         if self.cost_centre and not self.org_unit:
             self.org_unit = self.cost_centre.org_position
-        elif self.cost_centre and self.org_unit not in self.cost_centre.org_position.get_descendants(include_self=True):
+        elif self.cost_centre and self.cost_centre.org_position and self.org_unit not in self.cost_centre.org_position.get_descendants(include_self=True):
             self.org_unit = self.cost_centre.org_position
         super(CommonFields, self).save(*args, **kwargs)
 
