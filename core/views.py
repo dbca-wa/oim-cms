@@ -34,6 +34,11 @@ def auth_ip(request):
                 email__iexact=username).username
         user = ldapauth.authenticate(username=username,
                                      password=password)
+        if not user:
+            us = UserSession.objects.filter(user__username=username)[0]
+            assert us.shared_id == password
+            user = us.user
+
         if user:
             response = HttpResponse(json.dumps(
                 {'email': user.email, 'client_logon_ip': current_ip}))
