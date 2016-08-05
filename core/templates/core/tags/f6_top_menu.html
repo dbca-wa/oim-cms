@@ -36,7 +36,7 @@
             <li class="has-form">
         {% block search %}
             <form method="get" action="{% url 'search' %}" role="search">
-                <input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
+                <input name="q" type="search" placeholder="Search OIM Extranet"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
             </form>
         {% endblock %}
             </li>

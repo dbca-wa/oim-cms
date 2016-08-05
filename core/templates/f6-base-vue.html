@@ -21,6 +21,13 @@
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation/6.2.3/foundation-flex.css">
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.3/css/foundation-datepicker.min.css" />
         <link rel="stylesheet" type="text/css" media="all" href="{% static 'css/f6_oim_cms.css' %}" />
+        <style type="text/css">
+        /* Unbreak the top-bar-right styling */
+        .top-bar .top-bar-right {
+            flex-basis: auto;
+            flex-grow: 0;
+        }
+        </style>
         {% block extra_css %}{% endblock %}
     </head>
 
