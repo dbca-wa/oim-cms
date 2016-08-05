@@ -24,11 +24,19 @@ from tracking.models import DepartmentUser, EC2Instance
 
 
 POSITION_TYPE_DICT = dict(DepartmentUser.POSITION_TYPE_CHOICES)
+ACCOUNT_TYPE_DICT = dict(DepartmentUser.ACCOUNT_TYPE_CHOICES)
 
 
 def format_position_type(request, value):
     if value is not None:
         return POSITION_TYPE_DICT[value]
+    else:
+        return value
+
+
+def format_account_type(request, value):
+    if value is not None:
+        return ACCOUNT_TYPE_DICT[value]
     else:
         return value
 
@@ -602,7 +610,7 @@ class UserResource(DjangoResource):
     VALUES_ARGS = COMPACT_ARGS + (
         "ad_dn", "ad_data", "date_updated", "date_ad_updated", "active", "ad_deleted",
         "in_sync", "given_name", "surname", "home_phone", "other_phone",
-        "notes", "working_hours", "position_type")
+        "notes", "working_hours", "position_type", "account_type")
     MINIMAL_ARGS = (
         "pk", "name", "preferred_name", "title", "email", "telephone",
         "mobile_phone", "photo", "org_unit__location__name"
@@ -615,6 +623,7 @@ class UserResource(DjangoResource):
         "photo": format_fileField,
         "photo_ad": format_fileField,
         'position_type': format_position_type,
+        'account_type': format_account_type,
     })
 
     def is_authenticated(self):
