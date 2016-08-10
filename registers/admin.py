@@ -201,10 +201,12 @@ class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
     list_filter = ('unit_type',)
 
     def users(self, obj):
+        from tracking.models import DepartmentUser
+        dusers = obj.departmentuser_set.filter(**DepartmentUser.ACTIVE_FILTER)
         return format_html(
             '<a href="{}?org_unit={}">{}</a>',
             reverse('admin:tracking_departmentuser_changelist'),
-            obj.pk, obj.departmentuser_set.count())
+            obj.pk, dusers.count())
 
     def members(self, obj):
         return format_html(
