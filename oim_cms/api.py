@@ -237,6 +237,11 @@ def recursive_node_to_dict(node):
 
 
 class OptionResource(DjangoResource):
+    """Returns serialised lists of object data. Request parameter must include
+    ``list`` value of a defined function (below), minus the ``data_`` prefix.
+    Example:
+    /api/options?list=org_structure
+    """
 
     @skip_prepare
     def list(self):
@@ -248,6 +253,9 @@ class OptionResource(DjangoResource):
 
     def data_cost_centre(self):
         return ["CC{} / {}".format(*c) for c in CostCentre.objects.all().exclude(org_position__name__icontains='inactive').values_list("code", "org_position__name")]
+
+    def data_org_unit(self):
+        return [{'name': i.name, 'id': i.pk} for i in OrgUnit.objects.all()]
 
     def data_dept_user(self):
         return [u[0] for u in DepartmentUser.objects.filter(
