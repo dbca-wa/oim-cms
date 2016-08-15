@@ -682,18 +682,19 @@ class UserResource(DjangoResource):
             else:
                 return self.org_structure()
 
-        FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
-        # Filter below are exclusive.
         if "all" in self.request.GET:
-            FILTERS = {}
-        elif "email" in self.request.GET:
-            FILTERS["email__iexact"] = self.request.GET["email"]
-        elif "ad_guid" in self.request.GET:
-            FILTERS["ad_guid__endswith"] = self.request.GET["ad_guid"]
-        elif "cost_centre" in self.request.GET:
-            FILTERS["cost_centre__code"] = self.request.GET["cost_centre"]
-        # Exclude shared and role-based account types.
-        users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[5, 9]).order_by('name')
+            users = DepartmentUser.objects.all().order_by('name')
+        else:
+            FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
+            # Filters below are exclusive.
+            if "email" in self.request.GET:
+                FILTERS["email__iexact"] = self.request.GET["email"]
+            elif "ad_guid" in self.request.GET:
+                FILTERS["ad_guid__endswith"] = self.request.GET["ad_guid"]
+            elif "cost_centre" in self.request.GET:
+                FILTERS["cost_centre__code"] = self.request.GET["cost_centre"]
+            # Exclude shared and role-based account types.
+            users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[5, 9]).order_by('name')
 
         # Parameters to modify the API output.
         if "compact" in self.request.GET:
