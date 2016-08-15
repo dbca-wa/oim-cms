@@ -8,3 +8,9 @@ venv/
 *.sw[po]
 gmon.out
 .sass-cache/
+
+# Database/fixture dumps
+*.pgdump
+*.dump
+*.db
+*.sqlite3
