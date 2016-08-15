@@ -639,8 +639,6 @@ class UserResource(DjangoResource):
 
     def org_structure(self, sync_o365=False):
         qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
-        # Exclude shared and role-based account types.
-        qs = qs.exclude(account_type__in=[5, 9])
         structure = []
         if sync_o365:
             orgunits = OrgUnit.objects.filter(sync_o365=True)
