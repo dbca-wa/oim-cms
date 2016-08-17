@@ -637,8 +637,10 @@ class UserResource(DjangoResource):
     def is_authenticated(self):
         return True
 
-    def org_structure(self, sync_o365=False):
+    def org_structure(self, sync_o365=False, exclude_populate_groups=False):
         qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
+        if exclude_populate_groups:  # Exclude objects where populate_primary_group == False
+            qs = qs.exclude(populate_primary_group=False)
         structure = []
         if sync_o365:
             orgunits = OrgUnit.objects.filter(sync_o365=True)
@@ -672,13 +674,22 @@ class UserResource(DjangoResource):
 
     def list(self):
         """Pass query params to modify the API output.
-        Include `org_structure` and `sync_o365` to output only OrgUnits with sync_o365 == True
+        Include `org_structure=true` and `sync_o365=true` to output only
+        OrgUnits with sync_o365 == True.
+        Include `populate_groups=true` to output only DepartmentUsers
+        with populate_primary_group == True.
         """
+        sync_o365 = True
+        if 'sync_o365' in self.request.GET and self.request.GET['sync_o365'] == 'false':
+            sync_o365 = False
+        else:
+            sync_o365 = True
+        if 'populate_groups' in self.request.GET and self.request.GET['populate_groups'] == 'true':
+            exclude_populate_groups = True  # Will exclude populate_primary_group == False
+        else:
+            exclude_populate_groups = False  # Will ignore populate_primary_group
         if "org_structure" in self.request.GET:
-            if "sync_o365" in self.request.GET:
-                return self.org_structure(sync_o365=True)
-            else:
-                return self.org_structure()
+            return self.org_structure(sync_o365=sync_o365, exclude_populate_groups=exclude_populate_groups)
 
         if "all" in self.request.GET:
             users = DepartmentUser.objects.all().order_by('name')
