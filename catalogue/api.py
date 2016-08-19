@@ -96,6 +96,7 @@ class StyleSerializer(serializers.ModelSerializer):
 class RecordSerializer(serializers.ModelSerializer):
     workspace = serializers.CharField(max_length=255, write_only=True)
     name = serializers.CharField(max_length=255, write_only=True)
+    id = serializers.IntegerField(read_only=True)
     identifier = serializers.CharField(max_length=255, read_only=True)
     url = serializers.SerializerMethodField(read_only=True)
     publication_date = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
@@ -135,6 +136,7 @@ class RecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = Record
         fields = (
+            'id',
             'url',
             'identifier',
             'title',
