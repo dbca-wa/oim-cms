@@ -930,6 +930,31 @@ class FreshdeskTicket(models.Model):
     def __str__(self):
         return 'Freshdesk ticket ID {}'.format(self.ticket_id)
 
+    def is_support_category(self, category=None):
+        """Returns True if ``support_category`` in the ``custom_fields`` dict
+        matches the passed-in value, else False.
+        """
+        if 'support_category' in self.custom_fields and self.custom_fields['support_category'] == category:
+            return True
+        return False
+
+    def match_it_system(self):
+        """Attempt to locate a matching IT System object to associate with.
+        Note that this match will probably stop working whenever anyone alters
+        the support_subcategory field values in Freshdesk, so we might need a
+        more robust method in future.
+        """
+        if self.is_support_category('Applications'):
+            if 'support_subcategory' in self.custom_fields and self.custom_fields['support_subcategory']:
+                sub = self.custom_fields['support_subcategory']
+                # Split on the unicode 'long hyphen':
+                if sub.find(u'\u2013') > 0:
+                    name = sub.split(u'\u2013')[0].strip()
+                    it = ITSystem.objects.filter(name__istartswith=name)
+                    if it.count() == 1:  # Matched one IT System by name.
+                        self.it_system = it[0]
+                        self.save()
+
 
 class FreshdeskConversation(models.Model):
     """Cached representation of a Freshdesk conversation, obtained via the API.

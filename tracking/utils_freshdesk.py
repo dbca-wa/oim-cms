@@ -277,6 +277,9 @@ def freshdesk_cache_tickets(tickets=None):
                         pass
             ft.save()
 
+            # Try matching the ticket to an ITSystem object.
+            ft.match_it_system()
+
             # Sync ticket conversation objects.
             obj = 'tickets/{}/conversations'.format(t['ticket_id'])
             convs = get_freshdesk_objects(obj_type=obj, progress=False)
