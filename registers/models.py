@@ -839,6 +839,28 @@ class FreshdeskTicket(models.Model):
     """Cached representation of a Freshdesk ticket, obtained via the
     Freshdesk API.
     """
+    # V2 API values below:
+    TICKET_SOURCE_CHOICES = (
+        (1, 'Email'),
+        (2, 'Portal'),
+        (3, 'Phone'),
+        (7, 'Chat'),
+        (8, 'Mobihelp'),
+        (9, 'Feedback Widget'),
+        (10, 'Outbound Email'),
+    )
+    TICKET_STATUS_CHOICES = (
+        (2, 'Open'),
+        (3, 'Pending'),
+        (4, 'Resolved'),
+        (5, 'Closed'),
+    )
+    TICKET_PRIORITY_CHOICES = (
+        (1, 'Low'),
+        (2, 'Medium'),
+        (3, 'High'),
+        (4, 'Urgent'),
+    )
     attachments = JSONField(
         null=True, blank=True, default=list,
         help_text='Ticket attachments. An array of objects.')
@@ -954,6 +976,30 @@ class FreshdeskTicket(models.Model):
                     if it.count() == 1:  # Matched one IT System by name.
                         self.it_system = it[0]
                         self.save()
+
+    def get_source_display(self):
+        """Return the ticket source value description, or None.
+        """
+        if self.source:
+            return next((i[1] for i in self.TICKET_SOURCE_CHOICES if i[0] == self.source), 'Unknown')
+        else:
+            return None
+
+    def get_status_display(self):
+        """Return the ticket status value description, or None.
+        """
+        if self.status:
+            return next((i[1] for i in self.TICKET_STATUS_CHOICES if i[0] == self.status), 'Unknown')
+        else:
+            return None
+
+    def get_priority_display(self):
+        """Return the ticket priority value description, or None.
+        """
+        if self.priority:
+            return next((i[1] for i in self.TICKET_PRIORITY_CHOICES if i[0] == self.priority), 'Unknown')
+        else:
+            return None
 
 
 class FreshdeskConversation(models.Model):
