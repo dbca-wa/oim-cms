@@ -1092,4 +1092,4 @@ class FreshdeskContact(models.Model):
         help_text='Department User that is represented by this Freshdesk contact.')
 
     def __str__(self):
-        return 'Freshdesk contact {} ({})'.format(self.contact_id, self.email)
+        return '{} ({})'.format(self.name, self.email)

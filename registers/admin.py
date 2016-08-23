@@ -17,7 +17,7 @@ from .models import (
     Backup, ITSystem, OrgUnit, Location, SecondaryLocation,
     Vendor, ITSystemHardware, BusinessService, BusinessFunction,
     BusinessProcess, ProcessITSystemRelationship, ITSystemDependency,
-    DocumentApproval)
+    DocumentApproval, FreshdeskTicket)
 
 
 @register(DocumentApproval)
@@ -348,3 +348,42 @@ class SecondaryLocationAdmin(VersionAdmin):
 @register(Vendor)
 class VendorAdmin(VersionAdmin):
     pass
+
+
+@register(FreshdeskTicket)
+class FreshdeskTicketAdmin(ModelAdmin):
+    date_hierarchy = 'created_at'
+    list_display = (
+        'ticket_id', 'created_at', 'freshdesk_requester', 'subject',
+        'source_display', 'status_display', 'priority_display', 'type',
+        'it_system')
+    fields = (
+        'ticket_id', 'created_at', 'freshdesk_requester', 'subject',
+        'source_display', 'status_display', 'priority_display', 'type',
+        'due_by', 'description_text', 'it_system')
+    readonly_fields = (
+        'attachments', 'cc_emails', 'created_at', 'custom_fields',
+        'deleted', 'description', 'description_text', 'due_by',
+        'email', 'fr_due_by', 'fr_escalated', 'fwd_emails',
+        'group_id', 'is_escalated', 'name', 'phone', 'priority',
+        'reply_cc_emails', 'requester_id', 'responder_id', 'source',
+        'spam', 'status', 'subject', 'tags', 'ticket_id', 'to_emails',
+        'type', 'updated_at', 'freshdesk_requester',
+        'freshdesk_responder', 'du_requester', 'du_responder',
+        # Callables below.
+        'source_display', 'status_display', 'priority_display')
+    search_fields = (
+        'it_system__name', 'subject', 'description_text',
+        'freshdesk_requester__name', 'freshdesk_requester__email',)
+
+    def source_display(self, obj):
+        return obj.get_source_display()
+    source_display.short_description = 'Source'
+
+    def status_display(self, obj):
+        return obj.get_status_display()
+    status_display.short_description = 'Status'
+
+    def priority_display(self, obj):
+        return obj.get_priority_display()
+    priority_display.short_description = 'Priority'
