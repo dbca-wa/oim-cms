@@ -189,9 +189,7 @@ def freshdesk_cache_agents():
         else:
             logger.info('{} updated'.format(fc))
         # Attempt to match with a DepartmentUser.
-        if DepartmentUser.objects.filter(email__iexact=fc.email).exists():
-            fc.du_user = DepartmentUser.objects.get(email__iexact=fc.email)
-            fc.save()
+        fc.match_dept_user()
 
 
 def freshdesk_cache_tickets(tickets=None):
@@ -315,9 +313,7 @@ def freshdesk_cache_tickets(tickets=None):
                         logger.info('Created {}'.format(contact))
                         fc.freshdesk_contact = contact
                         # Attempt to match contact with a DepartmentUser.
-                        if DepartmentUser.objects.filter(email__iexact=contact.email).exists():
-                            contact.du_user = DepartmentUser.objects.get(email__iexact=contact.email)
-                            contact.save()
+                        contact.match_dept_user()
                     except HTTPError:  # The GET might fail if the contact is an agent.
                         logger.error('HTTP 404 Freshdesk contact not found: {}'.format(ft.requester_id))
                         pass
