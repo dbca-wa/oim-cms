@@ -1093,3 +1093,10 @@ class FreshdeskContact(models.Model):
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.email)
+
+    def match_dept_user(self):
+        """Attempt to locate a matching DepartmentUser object by email.
+        """
+        if self.email and tracking.DepartmentUser.objects.filter(email__iexact=self.email).exists():
+            self.du_user = tracking.DepartmentUser.objects.get(email__iexact=self.email)
+            self.save()
