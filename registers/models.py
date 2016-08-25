@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, absolute_import
 from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 from django.contrib.postgres.fields import JSONField
 from django.contrib.gis.db import models
@@ -835,6 +836,7 @@ class ITSystemDependency(models.Model):
                                      self.dependency.name, self.get_criticality_display())
 
 
+@python_2_unicode_compatible
 class FreshdeskTicket(models.Model):
     """Cached representation of a Freshdesk ticket, obtained via the
     Freshdesk API.
@@ -1002,6 +1004,7 @@ class FreshdeskTicket(models.Model):
             return None
 
 
+@python_2_unicode_compatible
 class FreshdeskConversation(models.Model):
     """Cached representation of a Freshdesk conversation, obtained via the API.
     """
@@ -1049,6 +1052,7 @@ class FreshdeskConversation(models.Model):
         return 'Freshdesk conversation ID {}'.format(self.conversation_id)
 
 
+@python_2_unicode_compatible
 class FreshdeskContact(models.Model):
     """Cached representation of a Freshdesk contact, obtained via the API.
     """
