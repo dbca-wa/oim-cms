@@ -206,10 +206,13 @@ class OrgUnit(MPTTModel):
         super(OrgUnit, self).save(*args, **kwargs)
 
     def get_descendants_active(self, *args, **kwargs):
-        """Exclude 'inactive' OrgUnit objects from get_descendants() queryset.
+        """Exclude inactive OrgUnit objects from get_descendants() queryset
+        (those with 'inactive' in the name). Also exclude OrgUnits objects
+        with 0 members.
         """
-        descendants = self.get_descendants(*args, **kwargs)
-        return descendants.exclude(name__icontains='inactive')
+        descendants = self.get_descendants(*args, **kwargs).exclude(name__icontains='inactive')
+        descendants = [o for o in descendants if o.members().count() > 0]
+        return descendants
 
 
 class CostCentre(models.Model):

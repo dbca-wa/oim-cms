@@ -172,7 +172,8 @@ def departmentuser_csv_report():
     FIELDS = [
         'email', 'username', 'given_name', 'surname', 'name', 'employee_id',
         'cost_centre', 'org_unit', 'name_update_reference',
-        'telephone', 'mobile_phone', 'other_phone', 'title']
+        'telephone', 'mobile_phone', 'other_phone', 'title', 'preferred_name',
+        'security_clearance']
     TYPE_CHOICES = {x[0]: x[1] for x in DepartmentUser.ACCOUNT_TYPE_CHOICES}
 
     # Get any DepartmentUser with non-null alesco_data field.
