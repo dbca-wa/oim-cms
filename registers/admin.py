@@ -13,7 +13,7 @@ from StringIO import StringIO
 import unicodecsv
 
 from .models import (
-    UserGroup, Software, Hardware, Device, SoftwareLicense, CostCentre,
+    UserGroup, Software, Hardware, SoftwareLicense, CostCentre,
     Backup, ITSystem, OrgUnit, Location, SecondaryLocation,
     Vendor, ITSystemHardware, BusinessService, BusinessFunction,
     BusinessProcess, ProcessITSystemRelationship, ITSystemDependency,
@@ -46,7 +46,7 @@ class HardwareAdmin(VersionAdmin):
     list_display = (
         'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4',
         'ports', 'serials', 'os')
-    list_filter = ('device_type', 'os', 'ports', 'cost_centre')
+    list_filter = ('device_type', 'os', 'cost_centre')
     search_fields = (
         'name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')
 
@@ -73,7 +73,7 @@ class ITSystemAdmin(VersionAdmin):
         'system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description',
         'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
     raw_id_fields = (
-        'devices', 'owner', 'custodian', 'data_custodian', 'preferred_contact', 'cost_centre',
+        'owner', 'custodian', 'data_custodian', 'preferred_contact', 'cost_centre',
         'bh_support', 'ah_support')
     readonly_fields = ('extra_data_pretty', 'description_html')
     filter_horizontal = ('contingency_plan_approvals',)
@@ -178,17 +178,6 @@ class BackupAdmin(VersionAdmin):
         return render_to_string('registers/backup_snippet.html', {
             'obj': obj, 'settings': settings, 'name': self.name(obj)}
         )
-
-
-@register(Device)
-class DeviceAdmin(VersionAdmin):
-    list_display = ('name', 'owner', 'cost_centre', 'guid')
-    raw_id_fields = ('owner', 'cost_centre')
-
-    def get_readonly_fields(self, request, obj=None):
-        if obj and obj.pk:
-            return self.readonly_fields + ('guid',)
-        return self.readonly_fields
 
 
 @register(OrgUnit)

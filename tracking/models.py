@@ -10,8 +10,7 @@ import os
 
 
 class CommonFields(models.Model):
-    """
-    Fields to be added to all tracking model classes
+    """Fields to be added to all tracking model classes.
     """
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
@@ -40,19 +39,17 @@ class CommonFields(models.Model):
         abstract = True
 
 
-# python 2 can't serialize unbound functions, so here's some dumb glue
+# Python 2 can't serialize unbound functions, so here's some dumb glue
 def get_photo_path(instance, filename='photo.jpg'):
-    return os.path.join("user_photo", '{0}.{1}'.format(instance.id, os.path.splitext(filename)))
+    return os.path.join('user_photo', '{0}.{1}'.format(instance.id, os.path.splitext(filename)))
 
 
 def get_photo_ad_path(instance, filename='photo.jpg'):
-    return os.path.join("user_photo_ad", '{0}.{1}'.format(instance.id, os.path.splitext(filename)))
+    return os.path.join('user_photo_ad', '{0}.{1}'.format(instance.id, os.path.splitext(filename)))
 
 
 class DepartmentUser(MPTTModel):
-    """
-    Represents a Department user.
-    This model maps to an object managed by Active Directory.
+    """Represents a Department user. Maps to an object managed by Active Directory.
     """
     ACTIVE_FILTER = {"active": True, "email__isnull": False,
                      "cost_centre__isnull": False, "contractor": False}
@@ -303,9 +300,7 @@ class DepartmentUser(MPTTModel):
 
 
 class Computer(CommonFields):
-    """
-    Represents a non-mobile computing device.
-    This model maps to an object managed by Active Directory.
+    """Represents a non-mobile computing device. Maps to an object managed by Active Directory.
     """
     sam_account_name = models.CharField(max_length=32, unique=True, null=True)
     hostname = models.CharField(max_length=2048)
@@ -353,8 +348,7 @@ class Computer(CommonFields):
 
 
 class Mobile(CommonFields):
-    """
-    Represents a mobile computing device.
+    """Represents a mobile computing device. Maps to an object managed by Active Directory.
     """
     ad_guid = models.CharField(max_length=48, null=True, unique=True)
     ad_dn = models.CharField(max_length=512, null=True, unique=True)
@@ -377,6 +371,8 @@ class Mobile(CommonFields):
 
 
 class EC2Instance(CommonFields):
+    """Represents an Amazon EC2 instance.
+    """
     name = models.CharField("Instance Name", max_length=200)
     ec2id = models.CharField("EC2 Instance ID", max_length=200, unique=True)
     launch_time = models.DateTimeField(editable=False, null=True, blank=True)

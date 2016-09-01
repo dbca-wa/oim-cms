@@ -267,6 +267,7 @@ class CostCentre(models.Model):
         return name
 
 
+@python_2_unicode_compatible
 class Software(models.Model):
     """A model to represent a discrete unit of software (OS, runtime, etc.)
     """
@@ -289,6 +290,7 @@ class Software(models.Model):
         return self.name
 
 
+@python_2_unicode_compatible
 class Hardware(tracking.CommonFields):
     """Represents additional metadata related to a unit of tracked computing
     hardware.
@@ -326,32 +328,6 @@ class Hardware(tracking.CommonFields):
         unique_together = ('computer', 'mobile')
         ordering = ('name', '-device_type')
         verbose_name_plural = 'hardware'
-
-
-class Device(tracking.CommonFields):
-    TYPE_CHOICES = (
-        (0, 'Computer'),
-        (1, 'Mobile'),
-        (2, 'PRTG'),
-    )
-    name = models.CharField(max_length=2048, unique=True)
-    owner = models.ForeignKey(
-        tracking.DepartmentUser,
-        on_delete=models.PROTECT,
-        null=True,
-        related_name='devices_owned')
-    guid = models.CharField(
-        max_length=48,
-        unique=True,
-        help_text='AD GUID (ad:...) or PRTG object id (prtg:...)')
-    device_type = models.PositiveSmallIntegerField(
-        choices=TYPE_CHOICES, default=0)
-
-    class Meta:
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
 
 
 class UserGroup(models.Model):
@@ -436,7 +412,6 @@ class ITSystem(tracking.CommonFields):
     status_display = models.CharField(
         max_length=128, null=True, editable=False)
     description = models.TextField(blank=True)
-    devices = models.ManyToManyField(Device, blank=True)
     owner = models.ForeignKey(
         tracking.DepartmentUser,
         on_delete=models.PROTECT,
@@ -707,6 +682,8 @@ class Backup(tracking.CommonFields):
 
 
 class Vendor(models.Model):
+    """Represents the vendor for an external product (software or hardware).
+    """
     name = models.CharField(max_length=256, unique=True)
     details = models.TextField(blank=True)
     extra_data = JSONField(default=dict(), null=True, blank=True)
@@ -734,7 +711,6 @@ class SoftwareLicense(tracking.CommonFields):
         on_delete=models.PROTECT,
         null=True,
         blank=True)
-    devices = models.ManyToManyField(Device, blank=True)
     vendor = models.ForeignKey(
         Vendor,
         on_delete=models.PROTECT,
