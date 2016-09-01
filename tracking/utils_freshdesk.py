@@ -2,7 +2,7 @@ from dateutil.parser import parse
 from django.conf import settings
 import requests
 from requests.exceptions import HTTPError
-from tracking.models import DepartmentUser
+from tracking.models import DepartmentUser, FreshdeskTicket, FreshdeskConversation, FreshdeskContact
 from tracking.utils import logger_setup
 
 
@@ -174,7 +174,6 @@ def freshdesk_cache_agents():
     """Cache a list of Freshdesk agents as contacts, as the API treats Agents
     differently to Contacts.
     """
-    from registers.models import FreshdeskContact
     logger = logger_setup('freshdesk_cache_agents')
     agents = get_freshdesk_objects(obj_type='agents', progress=False)
     for i in agents:
@@ -196,7 +195,6 @@ def freshdesk_cache_tickets(tickets=None):
     """Cache passed-in list of Freshdesk tickets in the database. If no tickets
     are passed in, query the API for the newest tickets.
     """
-    from registers.models import FreshdeskTicket, FreshdeskConversation, FreshdeskContact
     logger = logger_setup('freshdesk_cache_tickets')
 
     if not tickets:

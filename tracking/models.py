@@ -2,6 +2,7 @@ from __future__ import unicode_literals, absolute_import
 from datetime import datetime
 from django.db import models
 from django.contrib.postgres.fields import JSONField
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from mptt.models import MPTTModel, TreeForeignKey
@@ -385,3 +386,275 @@ class EC2Instance(CommonFields):
 
     class Meta:
         verbose_name = 'EC2 instance'
+
+
+@python_2_unicode_compatible
+class FreshdeskTicket(models.Model):
+    """Cached representation of a Freshdesk ticket, obtained via the
+    Freshdesk API.
+    """
+    # V2 API values below:
+    TICKET_SOURCE_CHOICES = (
+        (1, 'Email'),
+        (2, 'Portal'),
+        (3, 'Phone'),
+        (7, 'Chat'),
+        (8, 'Mobihelp'),
+        (9, 'Feedback Widget'),
+        (10, 'Outbound Email'),
+    )
+    TICKET_STATUS_CHOICES = (
+        (2, 'Open'),
+        (3, 'Pending'),
+        (4, 'Resolved'),
+        (5, 'Closed'),
+    )
+    TICKET_PRIORITY_CHOICES = (
+        (1, 'Low'),
+        (2, 'Medium'),
+        (3, 'High'),
+        (4, 'Urgent'),
+    )
+    attachments = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Ticket attachments. An array of objects.')
+    cc_emails = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Email address added in the "cc" field of the incoming ticket email. An array of strings.')
+    created_at = models.DateTimeField(null=True, blank=True)
+    custom_fields = JSONField(
+        null=True, blank=True, default=dict,
+        help_text='Key value pairs containing the names and values of custom fields.')
+    deleted = models.BooleanField(
+        default=False, help_text='Set to true if the ticket has been deleted/trashed.')
+    description = models.TextField(
+        null=True, blank=True, help_text='HTML content of the ticket.')
+    description_text = models.TextField(
+        null=True, blank=True, help_text='Content of the ticket in plain text.')
+    due_by = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Timestamp that denotes when the ticket is due to be resolved.')
+    email = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Email address of the requester.')
+    fr_due_by = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Timestamp that denotes when the first response is due.')
+    fr_escalated = models.BooleanField(
+        default=False,
+        help_text='Set to true if the ticket has been escalated as the result of first response time being breached.')
+    fwd_emails = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Email address(e)s added while forwarding a ticket. An array of strings.')
+    group_id = models.BigIntegerField(
+        null=True, blank=True,
+        help_text='ID of the group to which the ticket has been assigned.')
+    is_escalated = models.BooleanField(
+        default=False,
+        help_text='Set to true if the ticket has been escalated for any reason.')
+    name = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Name of the requester.')
+    phone = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Phone number of the requester.')
+    priority = models.IntegerField(
+        null=True, blank=True, help_text='Priority of the ticket.')
+    reply_cc_emails = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Email address added while replying to a ticket. An array of strings.')
+    requester_id = models.BigIntegerField(
+        null=True, blank=True, help_text='User ID of the requester.')
+    responder_id = models.BigIntegerField(
+        null=True, blank=True, help_text='ID of the agent to whom the ticket has been assigned.')
+    source = models.IntegerField(
+        null=True, blank=True, help_text='The channel through which the ticket was created.')
+    spam = models.BooleanField(
+        default=False,
+        help_text='Set to true if the ticket has been marked as spam.')
+    status = models.IntegerField(
+        null=True, blank=True, help_text='Status of the ticket.')
+    subject = models.TextField(
+        null=True, blank=True, help_text='Subject of the ticket.')
+    tags = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Tags that have been associated with the ticket. An array of strings.')
+    ticket_id = models.IntegerField(
+        unique=True, help_text='Unique ID of the ticket in Freshdesk.')
+    to_emails = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Email addresses to which the ticket was originally sent. An array of strings.')
+    type = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Ticket type.')
+    updated_at = models.DateTimeField(
+        null=True, blank=True, help_text='Ticket updated timestamp.')
+    # Non-Freshdesk data below.
+    freshdesk_requester = models.ForeignKey(
+        'FreshdeskContact', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='freshdesk_requester')
+    freshdesk_responder = models.ForeignKey(
+        'FreshdeskContact', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='freshdesk_responder')
+    du_requester = models.ForeignKey(
+        DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
+        related_name='du_requester',
+        help_text='Department User who raised the ticket.')
+    du_responder = models.ForeignKey(
+        DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
+        related_name='du_responder',
+        help_text='Department User to whom the ticket is assigned.')
+    it_system = models.ForeignKey(
+        'registers.ITSystem', blank=True, null=True,
+        help_text='IT System to which this ticket relates.')
+
+    def __str__(self):
+        return 'Freshdesk ticket ID {}'.format(self.ticket_id)
+
+    def is_support_category(self, category=None):
+        """Returns True if ``support_category`` in the ``custom_fields`` dict
+        matches the passed-in value, else False.
+        """
+        if 'support_category' in self.custom_fields and self.custom_fields['support_category'] == category:
+            return True
+        return False
+
+    def match_it_system(self):
+        """Attempt to locate a matching IT System object to associate with.
+        Note that this match will probably stop working whenever anyone alters
+        the support_subcategory field values in Freshdesk, so we might need a
+        more robust method in future.
+        """
+        from registers.models import ITSystem
+        if self.is_support_category('Applications'):
+            if 'support_subcategory' in self.custom_fields and self.custom_fields['support_subcategory']:
+                sub = self.custom_fields['support_subcategory']
+                # Split on the unicode 'long hyphen':
+                if sub.find(u'\u2013') > 0:
+                    name = sub.split(u'\u2013')[0].strip()
+                    it = ITSystem.objects.filter(name__istartswith=name)
+                    if it.count() == 1:  # Matched one IT System by name.
+                        self.it_system = it[0]
+                        self.save()
+
+    def get_source_display(self):
+        """Return the ticket source value description, or None.
+        """
+        if self.source:
+            return next((i[1] for i in self.TICKET_SOURCE_CHOICES if i[0] == self.source), 'Unknown')
+        else:
+            return None
+
+    def get_status_display(self):
+        """Return the ticket status value description, or None.
+        """
+        if self.status:
+            return next((i[1] for i in self.TICKET_STATUS_CHOICES if i[0] == self.status), 'Unknown')
+        else:
+            return None
+
+    def get_priority_display(self):
+        """Return the ticket priority value description, or None.
+        """
+        if self.priority:
+            return next((i[1] for i in self.TICKET_PRIORITY_CHOICES if i[0] == self.priority), 'Unknown')
+        else:
+            return None
+
+
+@python_2_unicode_compatible
+class FreshdeskConversation(models.Model):
+    """Cached representation of a Freshdesk conversation, obtained via the API.
+    """
+    attachments = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Ticket attachments. An array of objects.')
+    body = models.TextField(
+        null=True, blank=True, help_text='HTML content of the conversation.')
+    body_text = models.TextField(
+        null=True, blank=True, help_text='Content of the conversation in plain text.')
+    cc_emails = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Email address added in the "cc" field of the conversation. An array of strings.')
+    created_at = models.DateTimeField(null=True, blank=True)
+    conversation_id = models.BigIntegerField(
+        unique=True, help_text='Unique ID of the conversation in Freshdesk.')
+    from_email = models.CharField(max_length=256, null=True, blank=True)
+    incoming = models.BooleanField(
+        default=False,
+        help_text='Set to true if a particular conversation should appear as being created from outside.')
+    private = models.BooleanField(
+        default=False,
+        help_text='Set to true if the note is private.')
+    source = models.IntegerField(
+        null=True, blank=True, help_text='Denotes the type of the conversation.')
+    ticket_id = models.IntegerField(
+        help_text='ID of the ticket to which this conversation is being added.')
+    to_emails = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Email addresses of agents/users who need to be notified about this conversation. An array of strings.')
+    updated_at = models.DateTimeField(
+        null=True, blank=True, help_text='Ticket updated timestamp.')
+    user_id = models.BigIntegerField(
+        help_text='ID of the agent/user who is adding the conversation.')
+    # Non-Freshdesk data below.
+    freshdesk_ticket = models.ForeignKey(
+        FreshdeskTicket, on_delete=models.PROTECT, null=True, blank=True)
+    freshdesk_contact = models.ForeignKey(
+        'FreshdeskContact', on_delete=models.PROTECT, null=True, blank=True)
+    du_user = models.ForeignKey(
+        DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
+        help_text='Department User who is adding to the conversation.')
+
+    def __str__(self):
+        return 'Freshdesk conversation ID {}'.format(self.conversation_id)
+
+
+@python_2_unicode_compatible
+class FreshdeskContact(models.Model):
+    """Cached representation of a Freshdesk contact, obtained via the API.
+    """
+    active = models.BooleanField(
+        default=False, help_text='Set to true if the contact has been verified.')
+    address = models.CharField(max_length=512, null=True, blank=True)
+    contact_id = models.BigIntegerField(
+        unique=True, help_text='ID of the contact.')
+    created_at = models.DateTimeField(null=True, blank=True)
+    custom_fields = JSONField(
+        null=True, blank=True, default=dict,
+        help_text='Key value pairs containing the names and values of custom fields.')
+    description = models.TextField(
+        null=True, blank=True, help_text='A short description of the contact.')
+    email = models.CharField(
+        max_length=256, null=True, blank=True, unique=True,
+        help_text='Primary email address of the contact.')
+    job_title = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Job title of the contact.')
+    language = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Language of the contact.')
+    mobile = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Mobile number of the contact.')
+    name = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Name of the contact.')
+    other_emails = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Additional emails associated with the contact. An array of strings.')
+    phone = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Phone number of the contact.')
+    tags = JSONField(
+        null=True, blank=True, default=list,
+        help_text='Tags that have been associated with the contact. An array of strings.')
+    time_zone = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Time zone in which the contact resides.')
+    updated_at = models.DateTimeField(
+        null=True, blank=True, help_text='Contact updated timestamp.')
+    # Non-Freshdesk data below.
+    du_user = models.ForeignKey(
+        DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
+        help_text='Department User that is represented by this Freshdesk contact.')
+
+    def __str__(self):
+        return '{} ({})'.format(self.name, self.email)
+
+    def match_dept_user(self):
+        """Attempt to locate a matching DepartmentUser object by email.
+        """
+        if self.email and DepartmentUser.objects.filter(email__iexact=self.email).exists():
+            self.du_user = DepartmentUser.objects.get(email__iexact=self.email)
+            self.save()
