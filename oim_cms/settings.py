@@ -52,6 +52,7 @@ INSTALLED_APPS = (
 
     'tracking',
     'registers',
+    'assets',
     'core',
     'mudmap',
     'postgrest',

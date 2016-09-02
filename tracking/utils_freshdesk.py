@@ -21,15 +21,16 @@ def get_freshdesk_object(obj_type, id):
 
 def update_freshdesk_object(obj_type, data, id=None):
     """Use the Freshdesk v2 API to create or update an object.
-    Accepts a dict of fields.
+    Accepts an object name (string), a dict of fields, and an optional object
+    ID for updates to existing objects.
     Ref: https://developer.freshdesk.com/api/#create_contact
     """
     if not id:  # Assume creation of new object.
         url = settings.FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
-        r = requests.post(url, auth=settings.FRESHDESK_AUTH, data=data)
-    else:
+        r = requests.post(url, auth=settings.FRESHDESK_AUTH, json=data)
+    else:  # Update an existing object.
         url = settings.FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
-        r = requests.put(url, auth=settings.FRESHDESK_AUTH, data=data)
+        r = requests.put(url, auth=settings.FRESHDESK_AUTH, json=data)
     return r  # Return the response, so we can handle non-200 gracefully.
 
 

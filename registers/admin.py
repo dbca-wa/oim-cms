@@ -13,9 +13,9 @@ from StringIO import StringIO
 import unicodecsv
 
 from .models import (
-    UserGroup, Software, Hardware, SoftwareLicense, CostCentre,
+    UserGroup, Software, Hardware, CostCentre,
     Backup, ITSystem, OrgUnit, Location, SecondaryLocation,
-    Vendor, ITSystemHardware, BusinessService, BusinessFunction,
+    ITSystemHardware, BusinessService, BusinessFunction,
     BusinessProcess, ProcessITSystemRelationship, ITSystemDependency,
     DocumentApproval)
 
@@ -34,11 +34,9 @@ class UserGroupAdmin(VersionAdmin):
 
 @register(Software)
 class SoftwareAdmin(VersionAdmin):
-    list_display = ('name', 'url', 'license', 'os')
-    list_filter = ('license', 'os')
-    search_fields = (
-        'name', 'url', 'license__name', 'license__url', 'license__support',
-        'license__vendor__name')
+    list_display = ('name', 'url', 'os')
+    list_filter = ('os',)
+    search_fields = ('name', 'url',)
 
 
 @register(Hardware)
@@ -49,14 +47,6 @@ class HardwareAdmin(VersionAdmin):
     list_filter = ('device_type', 'os', 'cost_centre')
     search_fields = (
         'name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')
-
-
-@register(SoftwareLicense)
-class SoftwareLicenseAdmin(VersionAdmin):
-    list_display = ('name', 'vendor', 'oss')
-    list_filter = ('oss', 'vendor')
-    search_fields = ('name', 'url', 'support', 'support_url', 'vendor')
-    raw_id_fields = ('org_unit', 'primary_user')
 
 
 @register(ITSystem)
@@ -332,10 +322,3 @@ class ITSystemDependencyAdmin(VersionAdmin):
 @register(SecondaryLocation)
 class SecondaryLocationAdmin(VersionAdmin):
     pass
-
-
-@register(Vendor)
-class VendorAdmin(VersionAdmin):
-    pass
-
-

@@ -49,6 +49,7 @@ def get_photo_ad_path(instance, filename='photo.jpg'):
     return os.path.join('user_photo_ad', '{0}.{1}'.format(instance.id, os.path.splitext(filename)))
 
 
+@python_2_unicode_compatible
 class DepartmentUser(MPTTModel):
     """Represents a Department user. Maps to an object managed by Active Directory.
     """
@@ -300,6 +301,7 @@ class DepartmentUser(MPTTModel):
         return None
 
 
+@python_2_unicode_compatible
 class Computer(CommonFields):
     """Represents a non-mobile computing device. Maps to an object managed by Active Directory.
     """
@@ -344,10 +346,11 @@ class Computer(CommonFields):
     # user-uploaded local property register spreadsheets.
     validation_notes = models.TextField(null=True, blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.sam_account_name
 
 
+@python_2_unicode_compatible
 class Mobile(CommonFields):
     """Represents a mobile computing device. Maps to an object managed by Active Directory.
     """
@@ -367,10 +370,11 @@ class Mobile(CommonFields):
     imei = models.CharField(max_length=64, null=True)
     last_sync = models.DateTimeField(null=True)
 
-    def __unicode__(self):
-        return unicode(self.identity)
+    def __str__(self):
+        return self.identity
 
 
+@python_2_unicode_compatible
 class EC2Instance(CommonFields):
     """Represents an Amazon EC2 instance.
     """
@@ -504,6 +508,10 @@ class FreshdeskTicket(models.Model):
         'registers.ITSystem', blank=True, null=True,
         help_text='IT System to which this ticket relates.')
 
+    class Meta:
+        # This line is required because we moved this model between apps.
+        db_table = 'tracking_freshdeskticket'
+
     def __str__(self):
         return 'Freshdesk ticket ID {}'.format(self.ticket_id)
 
@@ -602,6 +610,10 @@ class FreshdeskConversation(models.Model):
         DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
         help_text='Department User who is adding to the conversation.')
 
+    class Meta:
+        # This line is required because we moved this model between apps.
+        db_table = 'tracking_freshdeskconversation'
+
     def __str__(self):
         return 'Freshdesk conversation ID {}'.format(self.conversation_id)
 
@@ -648,6 +660,10 @@ class FreshdeskContact(models.Model):
     du_user = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
         help_text='Department User that is represented by this Freshdesk contact.')
+
+    class Meta:
+        # This line is required because we moved this model between apps.
+        db_table = 'tracking_freshdeskcontact'
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.email)
