@@ -309,12 +309,12 @@ class Hardware(tracking_models.CommonFields):
         Software, on_delete=models.PROTECT, null=True, blank=True, limit_choices_to={
             'os': True},
         verbose_name='operating system')
-    location = models.ForeignKey(
-        Location,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        help_text='Physical location')
+    #location = models.ForeignKey(
+    #    Location,
+    #    on_delete=models.PROTECT,
+    #    null=True,
+    #    blank=True,
+    #    help_text='Physical location')
 
     def __str__(self):
         return '{}:{} ({})'.format(
