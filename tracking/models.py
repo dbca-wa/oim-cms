@@ -90,8 +90,8 @@ class DepartmentUser(MPTTModel):
     extra_data = JSONField(null=True, blank=True)
     ad_guid = models.CharField(max_length=48, unique=True, editable=False)
     ad_dn = models.CharField(max_length=512, unique=True, editable=False)
-    ad_data = JSONField(null=True, editable=False)
-    org_data = JSONField(null=True, editable=False)
+    ad_data = JSONField(null=True, blank=True, editable=False)
+    org_data = JSONField(null=True, blank=True, editable=False)
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
         help_text="HR Employee ID, use 'n/a' if a contractor")
@@ -179,7 +179,7 @@ class DepartmentUser(MPTTModel):
         self.in_sync = True if self.date_ad_updated else False
         if self.cost_centre and not self.org_unit:
             self.org_unit = self.cost_centre.org_position
-        if self.cost_centre:
+        if self.cost_centre and self.org_unit:
             self.org_data = self.org_data or {}
             self.org_data["units"] = list(self.org_unit.get_ancestors(include_self=True).values(
                 "id", "name", "acronym", "unit_type", "costcentre__code", "costcentre__name", "location__name"))
