@@ -552,7 +552,7 @@ class ITSystemResource(CSVDjangoResource):
             'hardwares': [{
                 'host': i.host.name,
                 'role': i.get_role_display(),
-                #'host__location': i.host.location.name if i.host.location else '',
+                'host__location': i.host.location.name if i.host.location else '',
                 'operating_system': i.host.os.name if i.host.os else '',
                 'operating_system__url': i.host.os.url if i.host.os else '',
                 'operating_system__license': i.host.os.license.name if (i.host.os and i.host.os.license) else '',

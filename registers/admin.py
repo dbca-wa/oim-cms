@@ -261,8 +261,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
         """
         # Define fields to output.
         fields = [
-            #'hostname', 'location', 'role', 'it_system_system_id',
-            'hostname', 'role', 'it_system_system_id',
+            'hostname', 'location', 'role', 'it_system_system_id',
             'it_system_name', 'itsystem_availability', 'itsystem_criticality']
 
         # Write data for ITSystemHardware objects to the CSV.
@@ -273,8 +272,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
             # Write a row for each linked ITSystem (non-decommissioned).
             for it in i.itsystem_set.all().exclude(status=3):
                 wr.writerow([
-                    #i.hostname, i.host.location, i.get_role_display(),
-                    i.hostname, i.get_role_display(),
+                    i.hostname, i.host.location, i.get_role_display(),
                     it.system_id, it.name, it.get_availability_display(),
                     it.get_criticality_display()])
 
