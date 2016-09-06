@@ -2,7 +2,7 @@ from dateutil.parser import parse
 from django.conf import settings
 import requests
 from requests.exceptions import HTTPError
-from tracking.models import DepartmentUser
+from tracking.models import DepartmentUser, FreshdeskTicket, FreshdeskConversation, FreshdeskContact
 from tracking.utils import logger_setup
 
 
@@ -21,15 +21,16 @@ def get_freshdesk_object(obj_type, id):
 
 def update_freshdesk_object(obj_type, data, id=None):
     """Use the Freshdesk v2 API to create or update an object.
-    Accepts a dict of fields.
+    Accepts an object name (string), a dict of fields, and an optional object
+    ID for updates to existing objects.
     Ref: https://developer.freshdesk.com/api/#create_contact
     """
     if not id:  # Assume creation of new object.
         url = settings.FRESHDESK_ENDPOINT + '/{}'.format(obj_type)
-        r = requests.post(url, auth=settings.FRESHDESK_AUTH, data=data)
-    else:
+        r = requests.post(url, auth=settings.FRESHDESK_AUTH, json=data)
+    else:  # Update an existing object.
         url = settings.FRESHDESK_ENDPOINT + '/{}/{}'.format(obj_type, id)
-        r = requests.put(url, auth=settings.FRESHDESK_AUTH, data=data)
+        r = requests.put(url, auth=settings.FRESHDESK_AUTH, json=data)
     return r  # Return the response, so we can handle non-200 gracefully.
 
 
@@ -174,7 +175,6 @@ def freshdesk_cache_agents():
     """Cache a list of Freshdesk agents as contacts, as the API treats Agents
     differently to Contacts.
     """
-    from registers.models import FreshdeskContact
     logger = logger_setup('freshdesk_cache_agents')
     agents = get_freshdesk_objects(obj_type='agents', progress=False)
     for i in agents:
@@ -196,7 +196,6 @@ def freshdesk_cache_tickets(tickets=None):
     """Cache passed-in list of Freshdesk tickets in the database. If no tickets
     are passed in, query the API for the newest tickets.
     """
-    from registers.models import FreshdeskTicket, FreshdeskConversation, FreshdeskContact
     logger = logger_setup('freshdesk_cache_tickets')
 
     if not tickets:

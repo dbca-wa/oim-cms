@@ -27,3 +27,4 @@ redis==2.10.5
 unicodecsv==0.14.1
 django-filter==0.13.0
 Unidecode==0.04.19
+mixer==5.5.7
