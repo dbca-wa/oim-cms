@@ -69,27 +69,57 @@ class OptionResourceTestCase(ApiTestCase):
         self.assertTrue(isinstance(r, dict))
         # Deserialised response contains a list.
         self.assertTrue(isinstance(r['objects'], list))
-
-    def test_data_org_structure_inactive(self):
-        """Test the data_org_structure API endpoint only returns units with members
-        """
+        # Remove members from an org unit to test exclusion.
         self.user1.org_unit = None
         self.user1.cost_centre = None
         self.user1.save()
-        url = '/api/options?list=org_structure'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Division 1 won't be present in the response.
         self.assertIs(response.content.find(self.div1.name), -1)
 
+    def test_data_cost_centre(self):
+        """Test the data_cost_centre API endpoint
+        """
+        url = '/api/options?list=cost_centre'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # 001 will be present in the response.
+        self.assertContains(response, self.cc1.code)
+        # Add 'inactive' to Division 1 name to inactivate the CC.
+        self.div1.name = 'Division 1 (inactive)'
+        self.div1.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # 001 won't be present in the response.
+        self.assertIs(response.content.find(self.cc1.code), -1)
+
+    def test_data_org_unit(self):
+        """Test the data_org_unit API endpoint
+        """
+        url = '/api/options?list=org_unit'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # Org unit names will be present in the response.
+        self.assertContains(response, self.dept.name)
+        self.assertContains(response, self.div1.name)
+        self.assertContains(response, self.div2.name)
+
     def test_data_dept_user(self):
-        """Test the data_dept_user API endpoint returns a serialised list
+        """Test the data_dept_user API endpoint
         """
         url = '/api/options?list=dept_user'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        r = json.loads(response.content)
-        self.assertTrue(isinstance(r['objects'], list))
+        # User 1 will be present in the response.
+        self.assertContains(response, self.user1.email)
+        # Make a user inactive to test excludion
+        self.user1.active = False
+        self.user1.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # User 1 won't be present in the response.
+        self.assertIs(response.content.find(self.user1.email), -1)
 
 
 class UserResourceTestCase(ApiTestCase):
