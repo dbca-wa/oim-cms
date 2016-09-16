@@ -171,7 +171,7 @@ class BackupAdmin(VersionAdmin):
 
 
 @register(OrgUnit)
-class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
+class OrgUnitAdmin(VersionAdmin):
     list_display = (
         'name', 'unit_type', 'users', 'members', 'it_systems', 'cc', 'acronym',
         'manager')
