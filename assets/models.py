@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 from django.contrib.postgres.fields import JSONField
 from django.db import models
-from tracking import models as tracking_models
+
+from organisation.models import DepartmentUser
+from tracking.models import CommonFields
 
 
 class Vendor(models.Model):
@@ -20,7 +22,7 @@ class Vendor(models.Model):
         return self.name
 
 
-class SoftwareLicense(tracking_models.CommonFields):
+class SoftwareLicense(CommonFields):
     """Represents a software licensing arrangement.
     """
     name = models.CharField(max_length=256, unique=True)
@@ -32,7 +34,7 @@ class SoftwareLicense(tracking_models.CommonFields):
         default=None,
         help_text='Open-source/free software license?')
     primary_user = models.ForeignKey(
-        tracking_models.DepartmentUser,
+        DepartmentUser,
         on_delete=models.PROTECT,
         null=True,
         blank=True)

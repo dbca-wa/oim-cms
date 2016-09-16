@@ -50,12 +50,12 @@ INSTALLED_APPS = (
 
     'social.apps.django_app.default',
 
+    'organisation',
     'tracking',
     'registers',
     'assets',
     'core',
     'mudmap',
-    'postgrest',
     'catalogue'
 )
 

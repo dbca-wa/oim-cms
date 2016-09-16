@@ -2,34 +2,16 @@ from __future__ import unicode_literals, absolute_import
 from django.conf import settings
 from django.conf.urls import url
 from django.contrib.admin import register, ModelAdmin
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.utils.html import format_html
-from mptt.admin import MPTTModelAdmin
-from leaflet.admin import LeafletGeoAdmin
 from reversion.admin import VersionAdmin
 from StringIO import StringIO
 import unicodecsv
 
 from .models import (
-    UserGroup, Software, Hardware, CostCentre,
-    Backup, ITSystem, OrgUnit, Location, SecondaryLocation,
-    ITSystemHardware, BusinessService, BusinessFunction,
-    BusinessProcess, ProcessITSystemRelationship, ITSystemDependency,
-    DocumentApproval)
-
-
-@register(DocumentApproval)
-class DocumentApprovalAdmin(ModelAdmin):
-    list_diplay = ('department_user', 'approval_role', 'date_created')
-    raw_id_fields = ('department_user',)
-
-
-@register(UserGroup)
-class UserGroupAdmin(VersionAdmin):
-    list_display = ('name', 'user_count')
-    search_fields = ('name',)
+    Software, Hardware, UserGroup, DocumentApproval, ITSystemHardware,
+    ITSystem, ITSystemDependency, Backup, BusinessService, BusinessFunction,
+    BusinessProcess, ProcessITSystemRelationship)
 
 
 @register(Software)
@@ -47,6 +29,64 @@ class HardwareAdmin(VersionAdmin):
     list_filter = ('device_type', 'os', 'cost_centre')
     search_fields = (
         'name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')
+
+
+@register(UserGroup)
+class UserGroupAdmin(VersionAdmin):
+    list_display = ('name', 'user_count')
+    search_fields = ('name',)
+
+
+@register(DocumentApproval)
+class DocumentApprovalAdmin(ModelAdmin):
+    list_diplay = ('department_user', 'approval_role', 'date_created')
+    raw_id_fields = ('department_user',)
+
+
+@register(ITSystemHardware)
+class ITSystemHardwareAdmin(VersionAdmin):
+    list_display = ('hostname', 'role', 'affected_itsystems')
+    list_filter = ('role',)
+    raw_id_fields = ('host',)
+    # Override the default reversion/change_list.html template:
+    change_list_template = 'admin/registers/itsystemhardware/change_list.html'
+
+    def affected_itsystems(self, obj):
+        return obj.itsystem_set.all().exclude(status=3).count()
+    affected_itsystems.short_description = 'IT Systems'
+
+    def get_urls(self):
+        urls = super(ITSystemHardwareAdmin, self).get_urls()
+        urls = [
+            url(r'^export/$',
+                self.admin_site.admin_view(self.export),
+                name='itsystemhardware_export'),
+        ] + urls
+        return urls
+
+    def export(self, request):
+        """Exports ITSystemHardware data to a CSV.
+        """
+        # Define fields to output.
+        fields = [
+            'hostname', 'location', 'role', 'it_system_system_id',
+            'it_system_name', 'itsystem_availability', 'itsystem_criticality']
+
+        # Write data for ITSystemHardware objects to the CSV.
+        stream = StringIO()
+        wr = unicodecsv.writer(stream, encoding='utf-8')
+        wr.writerow(fields)  # CSV header row.
+        for i in ITSystemHardware.objects.all():
+            # Write a row for each linked ITSystem (non-decommissioned).
+            for it in i.itsystem_set.all().exclude(status=3):
+                wr.writerow([
+                    i.hostname, i.host.location, i.get_role_display(),
+                    it.system_id, it.name, it.get_availability_display(),
+                    it.get_criticality_display()])
+
+        response = HttpResponse(stream.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
+        return response
 
 
 @register(ITSystem)
@@ -146,6 +186,13 @@ class ITSystemAdmin(VersionAdmin):
         return response
 
 
+@register(ITSystemDependency)
+class ITSystemDependencyAdmin(VersionAdmin):
+    list_display = ('itsystem', 'dependency', 'criticality')
+    list_filter = ('criticality',)
+    search_fields = ('itsystem__name', 'dependency__name')
+
+
 @register(Backup)
 class BackupAdmin(VersionAdmin):
     raw_id_fields = ('system', 'parent_host')
@@ -168,117 +215,6 @@ class BackupAdmin(VersionAdmin):
         return render_to_string('registers/backup_snippet.html', {
             'obj': obj, 'settings': settings, 'name': self.name(obj)}
         )
-
-
-@register(OrgUnit)
-class OrgUnitAdmin(MPTTModelAdmin, VersionAdmin):
-    list_display = (
-        'name', 'unit_type', 'users', 'members', 'it_systems', 'cc', 'acronym',
-        'manager')
-    search_fields = ('name', 'acronym', 'manager__name', 'location__name')
-    raw_id_fields = ('manager', 'parent', 'location')
-    list_filter = ('unit_type',)
-
-    def users(self, obj):
-        from tracking.models import DepartmentUser
-        dusers = obj.departmentuser_set.filter(**DepartmentUser.ACTIVE_FILTER)
-        return format_html(
-            '<a href="{}?org_unit={}">{}</a>',
-            reverse('admin:tracking_departmentuser_changelist'),
-            obj.pk, dusers.count())
-
-    def members(self, obj):
-        return format_html(
-            '<a href="{}?org_unit__in={}">{}</a>',
-            reverse('admin:tracking_departmentuser_changelist'),
-            ','.join([str(o.pk)
-                      for o in obj.get_descendants(include_self=True)]),
-            obj.members().count()
-        )
-
-    def it_systems(self, obj):
-        return format_html(
-            '<a href="{}?org_unit={}">{}</a>',
-            reverse('admin:registers_itsystem_changelist'),
-            obj.pk, obj.itsystem_set.count())
-
-
-@register(CostCentre)
-class CostCentreAdmin(VersionAdmin):
-    list_display = (
-        'code', 'name', 'org_position', 'division', 'users', 'manager', 'business_manager',
-        'admin', 'tech_contact')
-    search_fields = (
-        'code', 'name', 'org_position__name', 'division__name', 'org_position__acronym',
-        'division__acronym')
-    raw_id_fields = (
-        'org_position',
-        'manager',
-        'business_manager',
-        'admin',
-        'tech_contact')
-
-    def users(self, obj):
-        return format_html(
-            '<a href="{}?cost_centre={}">{}</a>',
-            reverse('admin:tracking_departmentuser_changelist'),
-            obj.pk, obj.departmentuser_set.count())
-
-
-@register(Location)
-class LocationAdmin(LeafletGeoAdmin, VersionAdmin):
-    list_display = ('name', 'address', 'phone', 'fax', 'email', 'point')
-    search_fields = ('name', 'address', 'phone', 'fax', 'email')
-    settings_overrides = {
-        'DEFAULT_CENTER': (-31.0, 115.0),
-        'DEFAULT_ZOOM': 5
-    }
-
-
-@register(ITSystemHardware)
-class ITSystemHardwareAdmin(VersionAdmin):
-    list_display = ('hostname', 'role', 'affected_itsystems')
-    list_filter = ('role',)
-    raw_id_fields = ('host',)
-    # Override the default reversion/change_list.html template:
-    change_list_template = 'admin/registers/itsystemhardware/change_list.html'
-
-    def affected_itsystems(self, obj):
-        return obj.itsystem_set.all().exclude(status=3).count()
-    affected_itsystems.short_description = 'IT Systems'
-
-    def get_urls(self):
-        urls = super(ITSystemHardwareAdmin, self).get_urls()
-        urls = [
-            url(r'^export/$',
-                self.admin_site.admin_view(self.export),
-                name='itsystemhardware_export'),
-        ] + urls
-        return urls
-
-    def export(self, request):
-        """Exports ITSystemHardware data to a CSV.
-        """
-        # Define fields to output.
-        fields = [
-            'hostname', 'location', 'role', 'it_system_system_id',
-            'it_system_name', 'itsystem_availability', 'itsystem_criticality']
-
-        # Write data for ITSystemHardware objects to the CSV.
-        stream = StringIO()
-        wr = unicodecsv.writer(stream, encoding='utf-8')
-        wr.writerow(fields)  # CSV header row.
-        for i in ITSystemHardware.objects.all():
-            # Write a row for each linked ITSystem (non-decommissioned).
-            for it in i.itsystem_set.all().exclude(status=3):
-                wr.writerow([
-                    i.hostname, i.host.location, i.get_role_display(),
-                    it.system_id, it.name, it.get_availability_display(),
-                    it.get_criticality_display()])
-
-        response = HttpResponse(stream.getvalue(), content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
-        return response
 
 
 @register(BusinessService)
@@ -310,15 +246,3 @@ class ProcessITSystemRelationshipAdmin(VersionAdmin):
     list_display = ('process', 'itsystem', 'importance')
     list_filter = ('importance', 'process', 'itsystem')
     search_fields = ('process__name', 'itsystem__name')
-
-
-@register(ITSystemDependency)
-class ITSystemDependencyAdmin(VersionAdmin):
-    list_display = ('itsystem', 'dependency', 'criticality')
-    list_filter = ('criticality',)
-    search_fields = ('itsystem__name', 'dependency__name')
-
-
-@register(SecondaryLocation)
-class SecondaryLocationAdmin(VersionAdmin):
-    pass

@@ -18,9 +18,9 @@ from restless.resources import skip_prepare
 
 from core.models import UserSession
 from mudmap.models import MudMap
-from registers.models import (
-    CostCentre, ITSystem, Hardware, OrgUnit, Location, SecondaryLocation)
-from tracking.models import DepartmentUser, EC2Instance
+from organisation.models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
+from registers.models import Hardware, ITSystem
+from tracking.models import EC2Instance
 
 
 POSITION_TYPE_DICT = dict(DepartmentUser.POSITION_TYPE_CHOICES)
