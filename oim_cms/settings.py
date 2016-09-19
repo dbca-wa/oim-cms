@@ -144,7 +144,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'oim_cms.urls'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
 DATABASES = {'default': database.config()}
-APPLICATION_VERSION = '1.0.21'
+APPLICATION_VERSION = '1.1'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 
