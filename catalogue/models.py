@@ -695,17 +695,6 @@ class Style(models.Model):
                             #the style file exists in the file system, remove it
                             os.remove(self.content.path)
 
-                        if self.record.auto_update:
-                            #auto update is enabled
-                            if getattr(self, "access_channel", "django-admin") == "django-admin":
-                                #changed from django admin portal, disable auto_update, access_channel is set in reset api
-                                self.record.auto_update = False
-                                if self.format == "SLD":
-                                    #sld style is changed, need to republish.
-                                    self.record.modified = timezone.now()
-                                    self.record.save(update_fields=["auto_update", "modified"])
-                                else:
-                                    self.record.save(update_fields=["auto_update"])
                     else:
                         #content is not changed, no need to update content and checksum
                         update_fields = [field for field in update_fields if field not in ["content", "checksum"]]

@@ -1,15 +1,13 @@
 from __future__ import unicode_literals, absolute_import
+from datetime import timedelta, datetime
+from dateutil.relativedelta import relativedelta
+from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
-from django.contrib.postgres.fields import JSONField
-from django.contrib.gis.db import models
 
-from mptt.models import MPTTModel, TreeForeignKey
-from dateutil.relativedelta import relativedelta
-from datetime import timedelta, datetime
-
-from tracking import models as tracking_models
+from organisation.models import DepartmentUser, Location
+from tracking.models import CommonFields, Computer, Mobile
 
 
 CRITICALITY_CHOICES = (
@@ -27,244 +25,6 @@ DOC_STATUS_CHOICES = (
     (2, 'Released'),
     (3, 'Superseded'),
 )
-
-
-class DocumentApproval(models.Model):
-    """A model to represent an approval/endorsement by a DepartmentUser for an
-    uploaded file.
-    """
-    department_user = models.ForeignKey(
-        tracking_models.DepartmentUser,
-        on_delete=models.PROTECT)
-    approval_role = models.CharField(
-        max_length=256, blank=True, null=True,
-        help_text='The role in which the user is approving the document.')
-    evidence = models.FileField(
-        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d',
-        help_text='Optional evidence to support the document approval (email, etc.)')
-    date_created = models.DateTimeField(auto_now_add=True, editable=False)
-
-    def __str__(self):
-        if self.approval_role:
-            return '{}, {} ({})'.format(
-                self.department_user, self.approval_role,
-                datetime.strftime(self.date_created, '%d-%b-%Y'))
-        else:
-            return '{} ({})'.format(
-                self.department_user, datetime.strftime(self.date_created, '%d-%b-%Y'))
-
-
-class Location(models.Model):
-    """A model to represent a physical location used by Department org units.
-    """
-    name = models.CharField(max_length=256, unique=True)
-    manager = models.ForeignKey(
-        tracking_models.DepartmentUser,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True)
-    address = models.TextField(unique=True, blank=True)
-    pobox = models.TextField(blank=True, verbose_name='PO Box')
-    phone = models.CharField(max_length=128, null=True, blank=True)
-    fax = models.CharField(max_length=128, null=True, blank=True)
-    email = models.CharField(max_length=128, null=True, blank=True)
-    point = models.PointField(null=True, blank=True)
-    url = models.CharField(
-        max_length=2000,
-        help_text='URL to webpage with more information',
-        null=True,
-        blank=True)
-    bandwidth_url = models.CharField(
-        max_length=2000,
-        help_text='URL to prtg graph of bw utilisation',
-        null=True,
-        blank=True)
-
-    class Meta:
-        ordering = ('name',)
-
-    def __str__(self):
-        if self.address:
-            return '{} ({})'.format(self.name, self.address)
-        else:
-            return self.name
-
-    def as_dict(self):
-        return {k: getattr(self, k) for k in (
-            'name', 'address', 'pobox', 'phone', 'fax', 'email') if getattr(self, k)}
-
-    def save(self, *args, **kwargs):
-        for orgunit in self.orgunit_set.all():
-            orgunit.save()
-        super(Location, self).save(*args, **kwargs)
-
-
-class SecondaryLocation(models.Model):
-    """Represents a sub-location or place without physical infrastructure.
-    """
-    location = models.ForeignKey(Location)
-    name = models.CharField(max_length=256, unique=True)
-    manager = models.ForeignKey(
-        tracking_models.DepartmentUser,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True)
-    phone = models.CharField(max_length=128, null=True, blank=True)
-    fax = models.CharField(max_length=128, null=True, blank=True)
-    email = models.CharField(max_length=128, null=True, blank=True)
-
-    class Meta:
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
-
-    def save(self, *args, **kwargs):
-        for orgunit in self.orgunit_set.all():
-            orgunit.save()
-        super(SecondaryLocation, self).save(*args, **kwargs)
-
-    def as_dict(self):
-        return {k: getattr(self, k) for k in (
-            'name', 'phone', 'fax', 'email') if getattr(self, k)}
-
-
-class OrgUnit(MPTTModel):
-    """Represents an element within the Department organisational hierarchy.
-    """
-    TYPE_CHOICES = (
-        (0, 'Department'),
-        (1, 'Division'),
-        (2, 'Branch'),
-        (3, 'Region'),
-        (4, 'Cost Centre'),
-        (5, 'Office'),
-        (6, 'District'),
-        (7, 'Section'),
-        (8, 'Unit'),
-        (9, 'Group'),
-        (10, 'Work centre'),
-    )
-    TYPE_CHOICES_DICT = dict(TYPE_CHOICES)
-    unit_type = models.PositiveSmallIntegerField(
-        choices=TYPE_CHOICES, default=4)
-    ad_guid = models.CharField(
-        max_length=48, unique=True, null=True, editable=False)
-    ad_dn = models.CharField(
-        max_length=512, unique=True, null=True, editable=False)
-    name = models.CharField(max_length=256, unique=True)
-    acronym = models.CharField(max_length=16, null=True, blank=True)
-    manager = models.ForeignKey(
-        tracking_models.DepartmentUser, on_delete=models.PROTECT, null=True,
-        blank=True)
-    parent = TreeForeignKey(
-        'self', on_delete=models.PROTECT, null=True, blank=True,
-        related_name='children', db_index=True)
-    details = JSONField(null=True, blank=True)
-    location = models.ForeignKey(
-        Location, on_delete=models.PROTECT, null=True, blank=True)
-    secondary_location = models.ForeignKey(
-        SecondaryLocation, on_delete=models.PROTECT, null=True, blank=True)
-    sync_o365 = models.BooleanField(
-        default=True, help_text='Sync this to O365 (creates a security group).')
-
-    class MPTTMeta:
-        order_insertion_by = ['name']
-
-    class Meta:
-        ordering = ('name',)
-
-    def cc(self):
-        try:
-            return self.costcentre
-        except:
-            return None
-
-    def __str__(self):
-        name = self.name
-        if self.acronym:
-            name = '{} - {}'.format(self.acronym, name)
-        if self.cc():
-            return '{} - CC{}'.format(name, self.cc())
-        return name
-
-    def members(self):
-        from tracking.models import DepartmentUser
-        return DepartmentUser.objects.filter(org_unit__in=self.get_descendants(
-            include_self=True), **DepartmentUser.ACTIVE_FILTER)
-
-    def save(self, *args, **kwargs):
-        self.details = self.details or {}
-        self.details.update({
-            'type': self.get_unit_type_display(),
-        })
-        if self.secondary_location:
-            self.location = self.secondary_location.location
-        if not getattr(self, 'cheap_save', False):
-            for user in self.departmentuser_set.all():
-                user.save()
-        super(OrgUnit, self).save(*args, **kwargs)
-
-    def get_descendants_active(self, *args, **kwargs):
-        """Exclude inactive OrgUnit objects from get_descendants() queryset
-        (those with 'inactive' in the name). Also exclude OrgUnit objects
-        with 0 members.
-        """
-        descendants = self.get_descendants(*args, **kwargs).exclude(name__icontains='inactive')
-        descendants = [o for o in descendants if o.members().count() > 0]
-        return descendants
-
-
-class CostCentre(models.Model):
-    """Models the details of a Department cost centre.
-    """
-    name = models.CharField(max_length=25, unique=True, editable=False)
-    code = models.CharField(max_length=5, unique=True)
-    division = models.ForeignKey(
-        OrgUnit, null=True, editable=False,
-        related_name='costcentres_in_division')
-    org_position = models.OneToOneField(
-        OrgUnit, unique=True, blank=True, null=True)
-    manager = models.ForeignKey(
-        tracking_models.DepartmentUser, on_delete=models.PROTECT,
-        related_name='manage_ccs', null=True, blank=True)
-    business_manager = models.ForeignKey(
-        tracking_models.DepartmentUser, on_delete=models.PROTECT,
-        related_name='bmanage_ccs', help_text='Business Manager',
-        null=True, blank=True)
-    admin = models.ForeignKey(
-        tracking_models.DepartmentUser, on_delete=models.PROTECT,
-        related_name='admin_ccs', help_text='Admin', null=True,
-        blank=True)
-    tech_contact = models.ForeignKey(
-        tracking_models.DepartmentUser, on_delete=models.PROTECT,
-        related_name='tech_ccs', help_text='Technical Contact',
-        null=True, blank=True)
-
-    class Meta:
-        ordering = ('code',)
-
-    def save(self, *args, **kwargs):
-        self.name = str(self)
-        if self.org_position:
-            division = self.org_position.get_ancestors(
-                include_self=True).filter(unit_type=1)
-        else:
-            division = None
-        if division:
-            self.division = division.first()
-        for user in self.departmentuser_set.all():
-            user.save()
-        super(CostCentre, self).save(*args, **kwargs)
-
-    def __str__(self):
-        name = '{}'.format(self.code)
-        if self.org_position:
-            dept = self.org_position.get_ancestors(
-                include_self=True).filter(unit_type=0)
-            if dept:
-                name += ' ({})'.format(dept.first().acronym)
-        return name
 
 
 @python_2_unicode_compatible
@@ -287,15 +47,15 @@ class Software(models.Model):
 
 
 @python_2_unicode_compatible
-class Hardware(tracking_models.CommonFields):
+class Hardware(CommonFields):
     """Represents additional metadata related to a unit of tracked computing
     hardware.
     """
     device_type = models.PositiveSmallIntegerField(choices=(
         (1, 'Network'), (2, 'Mobile'), (3, 'Domain PC'), (4, 'Hostname')))
     computer = models.OneToOneField(
-        tracking_models.Computer, null=True, editable=False)
-    mobile = models.OneToOneField(tracking_models.Mobile, null=True, editable=False)
+        Computer, null=True, editable=False)
+    mobile = models.OneToOneField(Mobile, null=True, editable=False)
     username = models.CharField(max_length=128, null=True, editable=False)
     email = models.CharField(max_length=512, null=True, editable=False)
     ipv4 = models.TextField(default='', editable=False)
@@ -310,10 +70,7 @@ class Hardware(tracking_models.CommonFields):
             'os': True},
         verbose_name='operating system')
     location = models.ForeignKey(
-        Location,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
+        Location, on_delete=models.PROTECT, null=True, blank=True,
         help_text='Physical location')
 
     def __str__(self):
@@ -338,6 +95,31 @@ class UserGroup(models.Model):
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.user_count)
+
+
+class DocumentApproval(models.Model):
+    """A model to represent an approval/endorsement by a DepartmentUser for an
+    uploaded file.
+    """
+    department_user = models.ForeignKey(
+        DepartmentUser,
+        on_delete=models.PROTECT)
+    approval_role = models.CharField(
+        max_length=256, blank=True, null=True,
+        help_text='The role in which the user is approving the document.')
+    evidence = models.FileField(
+        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d',
+        help_text='Optional evidence to support the document approval (email, etc.)')
+    date_created = models.DateTimeField(auto_now_add=True, editable=False)
+
+    def __str__(self):
+        if self.approval_role:
+            return '{}, {} ({})'.format(
+                self.department_user, self.approval_role,
+                datetime.strftime(self.date_created, '%d-%b-%Y'))
+        else:
+            return '{} ({})'.format(
+                self.department_user, datetime.strftime(self.date_created, '%d-%b-%Y'))
 
 
 class ITSystemHardware(models.Model):
@@ -366,7 +148,7 @@ class ITSystemHardware(models.Model):
         return self.host.name.lower()
 
 
-class ITSystem(tracking_models.CommonFields):
+class ITSystem(CommonFields):
     """Represents a named system providing a package of functionality to
     Department staff (normally vendor or bespoke software), which is supported
     by OIM.
@@ -409,48 +191,28 @@ class ITSystem(tracking_models.CommonFields):
         max_length=128, null=True, editable=False)
     description = models.TextField(blank=True)
     owner = models.ForeignKey(
-        tracking_models.DepartmentUser,
-        on_delete=models.PROTECT,
-        null=True,
-        related_name='systems_owned',
-        help_text='Application owner')
+        DepartmentUser, on_delete=models.PROTECT, null=True,
+        related_name='systems_owned', help_text='Application owner')
     custodian = models.ForeignKey(
-        tracking_models.DepartmentUser,
-        on_delete=models.PROTECT,
-        null=True,
-        related_name='systems_custodianed',
-        help_text='Appication custodian')
+        DepartmentUser, on_delete=models.PROTECT, null=True,
+        related_name='systems_custodianed', help_text='Appication custodian')
     data_custodian = models.ForeignKey(
-        tracking_models.DepartmentUser,
-        on_delete=models.PROTECT,
-        related_name='systems_data_custodianed',
-        null=True,
-        blank=True)
+        DepartmentUser, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='systems_data_custodianed')
     preferred_contact = models.ForeignKey(
-        tracking_models.DepartmentUser,
-        on_delete=models.PROTECT,
-        related_name='systems_preferred_contact',
-        null=True,
-        blank=True)
+        DepartmentUser, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='systems_preferred_contact')
     link = models.CharField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to web application')
     documentation = models.URLField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to end-user documentation')
     technical_documentation = models.URLField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to technical documentation')
     status_html = models.URLField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to status/uptime info')
     authentication = models.PositiveSmallIntegerField(
         choices=AUTHENTICATION_CHOICES, default=1)
@@ -467,32 +229,26 @@ class ITSystem(tracking_models.CommonFields):
     criticality_display = models.CharField(
         max_length=128, null=True, editable=False)
     availability = models.PositiveIntegerField(
-        choices=AVAILABILITY_CHOICES,
-        null=True,
-        blank=True,
+        choices=AVAILABILITY_CHOICES, null=True, blank=True,
         help_text='Expected availability for this IT System')
     availability_display = models.CharField(
         max_length=128, null=True, editable=False)
     schema_url = models.URLField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to schema diagram')
     user_groups = models.ManyToManyField(
         UserGroup, blank=True, help_text='User group(s) that use this IT System')
     softwares = models.ManyToManyField(
-        Software,
-        blank=True,
+        Software, blank=True,
         help_text='Software that is used to provide this IT System')
     hardwares = models.ManyToManyField(
-        ITSystemHardware,
-        blank=True,
+        ITSystemHardware, blank=True,
         help_text='Hardware that is used to provide this IT System')
     bh_support = models.ForeignKey(
-        tracking_models.DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name='bh_support',
+        DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name='bh_support',
         verbose_name='business hours support', help_text='Business hours support contact')
     ah_support = models.ForeignKey(
-        tracking_models.DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name='ah_support',
+        DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name='ah_support',
         verbose_name='after hours support', help_text='After-hours support contact')
     system_reqs = models.TextField(
         blank=True,
@@ -502,30 +258,22 @@ class ITSystem(tracking_models.CommonFields):
     system_type_display = models.CharField(
         max_length=128, null=True, editable=False)
     vulnerability_docs = models.URLField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to documentation related to known vulnerability reports')
     workaround = models.TextField(
-        blank=True,
-        help_text='Written procedure for users to work around an outage of this system')
+        blank=True, help_text='Written procedure for users to work around an outage of this system')
     recovery_docs = models.URLField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to recovery procedure(s) in the event of system failure')
     mtd = models.DurationField(
         help_text='Maximum Tolerable Downtime (days hh:mm:ss)',
-        default=timedelta(
-            days=14))
+        default=timedelta(days=14))
     rto = models.DurationField(
         help_text='Recovery Time Objective (days hh:mm:ss)',
-        default=timedelta(
-            days=7))
+        default=timedelta(days=7))
     rpo = models.DurationField(
         help_text='Recovery Point Objective/Data Loss Interval (days hh:mm:ss)',
-        default=timedelta(
-            hours=24))
+        default=timedelta(hours=24))
     contingency_plan = models.FileField(
         blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d',
         help_text='NOTE: changes to this field will delete current contingency plan approvals.')
@@ -573,7 +321,31 @@ class ITSystem(tracking_models.CommonFields):
             return ''
 
 
-class Backup(tracking_models.CommonFields):
+class ITSystemDependency(models.Model):
+    """A model to represent a dependency that an ITSystem has on another, plus
+    the criticality of that dependency.
+    """
+    itsystem = models.ForeignKey(
+        ITSystem, on_delete=models.PROTECT, verbose_name='IT System',
+        help_text='The IT System')
+    dependency = models.ForeignKey(
+        ITSystem, on_delete=models.PROTECT, related_name='dependency',
+        help_text='The system which is depended upon by the IT System')
+    criticality = models.PositiveIntegerField(
+        choices=CRITICALITY_CHOICES, help_text='How critical is the dependency?')
+
+    class Meta:
+        verbose_name = 'IT System dependency'
+        verbose_name_plural = 'IT System dependencies'
+        unique_together = ('itsystem', 'dependency')
+        ordering = ('itsystem__name', 'criticality')
+
+    def __str__(self):
+        return '{} - {} ({})'.format(
+            self.itsystem.name, self.dependency.name, self.get_criticality_display())
+
+
+class Backup(CommonFields):
     """Represents the details of backup & recovery arrangements for a single
     piece of computing hardware.
     """
@@ -605,46 +377,33 @@ class Backup(tracking_models.CommonFields):
     system = models.OneToOneField(Hardware)
     operating_system = models.CharField(max_length=120)
     parent_host = models.ForeignKey(
-        Hardware,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
+        Hardware, on_delete=models.PROTECT, null=True, blank=True,
         related_name='host')
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=0)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=0)
     database_backup = models.CharField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to Database backup/restore/logs info')
     database_schedule = models.PositiveSmallIntegerField(
         choices=SCHEDULE_CHOICES, default=0)
     filesystem_backup = models.CharField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to Filesystem backup/restore/logs info')
     filesystem_schedule = models.PositiveSmallIntegerField(
         choices=SCHEDULE_CHOICES, default=0)
     appdata_backup = models.CharField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to Application Data backup/restore/logs info')
     appdata_schedule = models.PositiveSmallIntegerField(
         choices=SCHEDULE_CHOICES, default=0)
     appconfig_backup = models.CharField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to Config for App/Server')
     appconfig_schedule = models.PositiveSmallIntegerField(
         choices=SCHEDULE_CHOICES, default=0)
     os_backup = models.CharField(
-        max_length=2048,
-        null=True,
-        blank=True,
+        max_length=2048, null=True, blank=True,
         help_text='URL to Build Documentation')
     os_schedule = models.PositiveSmallIntegerField(
         choices=SCHEDULE_CHOICES, default=0)
@@ -656,7 +415,7 @@ class Backup(tracking_models.CommonFields):
 
     def next_test_date(self):
         if self.test_schedule == 0:
-            return "Doesn't require testing"
+            return 'NO TESTING REQUIRED'
         if not self.last_tested:
             return 'NEVER TESTED'
         else:
@@ -716,7 +475,8 @@ class BusinessProcess(models.Model):
     description = models.TextField(null=True, blank=True)
     functions = models.ManyToManyField(BusinessFunction)
     criticality = models.PositiveIntegerField(
-        choices=CRITICALITY_CHOICES, null=True, blank=True, help_text='How critical is the process?')
+        choices=CRITICALITY_CHOICES, null=True, blank=True,
+        help_text='How critical is the process?')
 
     class Meta:
         verbose_name_plural = 'business processes'
@@ -733,34 +493,12 @@ class ProcessITSystemRelationship(models.Model):
     process = models.ForeignKey(BusinessProcess, on_delete=models.PROTECT)
     itsystem = models.ForeignKey(ITSystem, on_delete=models.PROTECT)
     importance = models.PositiveIntegerField(
-        choices=IMPORTANCE_CHOICES, help_text='How important is the IT System to undertaking this process?')
+        choices=IMPORTANCE_CHOICES,
+        help_text='How important is the IT System to undertaking this process?')
 
     class Meta:
         unique_together = ('process', 'itsystem')
 
     def __str__(self):
-        return '{} - {} ({})'.format(self.itsystem.name,
-                                     self.process.name, self.get_importance_display())
-
-
-class ITSystemDependency(models.Model):
-    """A model to represent a dependency that an ITSystem has on another, plus
-    the criticality of that dependency.
-    """
-    itsystem = models.ForeignKey(
-        ITSystem, on_delete=models.PROTECT, verbose_name='IT System', help_text='The IT System')
-    dependency = models.ForeignKey(
-        ITSystem, on_delete=models.PROTECT, related_name='dependency',
-        help_text='The system which is depended upon by the IT System')
-    criticality = models.PositiveIntegerField(
-        choices=CRITICALITY_CHOICES, help_text='How critical is the dependency?')
-
-    class Meta:
-        verbose_name = 'IT System dependency'
-        verbose_name_plural = 'IT System dependencies'
-        unique_together = ('itsystem', 'dependency')
-        ordering = ('itsystem__name', 'criticality')
-
-    def __str__(self):
-        return '{} - {} ({})'.format(self.itsystem.name,
-                                     self.dependency.name, self.get_criticality_display())
+        return '{} - {} ({})'.format(
+            self.itsystem.name, self.process.name, self.get_importance_display())

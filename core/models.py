@@ -1,31 +1,27 @@
 from __future__ import unicode_literals
-import hashlib
-import logging
-import os
-
 from django.conf import settings
-from django.core import management
-from django.db import models
-from django.utils import timezone
-from django.contrib.sessions.models import Session
 from django.contrib.auth import get_user_model
 from django.contrib.auth.signals import user_logged_in
-
+from django.contrib.sessions.models import Session
+from django.core import management
+from django.db import models
+from django.http import HttpResponseRedirect
+from django.utils import timezone
+import hashlib
+from ipware.ip import get_ip
+import logging
+from modelcluster.fields import ParentalKey
+from modelcluster.contrib.taggit import ClusterTaggableManager
+import os
+from taggit.models import TaggedItemBase
+from wagtail.wagtailadmin.edit_handlers import FieldPanel, StreamFieldPanel
 from wagtail.wagtailcore.models import Page
 from wagtail.wagtailcore import blocks
 from wagtail.wagtailcore.fields import StreamField
-from wagtail.wagtailsearch import index
-from wagtail.wagtailadmin.edit_handlers import FieldPanel, StreamFieldPanel
-from modelcluster.fields import ParentalKey
-from modelcluster.contrib.taggit import ClusterTaggableManager
-from taggit.models import TaggedItemBase
-from django.http import HttpResponseRedirect
-
-from tracking.models import DepartmentUser
-
-from ipware.ip import get_ip
-
 from wagtail.wagtailimages.formats import Format, register_image_format
+from wagtail.wagtailsearch import index
+
+from organisation.models import DepartmentUser
 
 '''To add a new size format use the following format
    register_image_format(Format('name', 'label', 'class_names', 'filter_spec'))
@@ -126,7 +122,6 @@ class Content(Page):
             with open(os.path.join(settings.MEDIA_ROOT, "images", self.slug + ".html")) as output:
                 output.write(response.content)
         return response
-
 
     class Meta:
         ordering = ("date",)
