@@ -14,8 +14,6 @@ class Vendor(models.Model):
     extra_data = JSONField(default=dict(), null=True, blank=True)
 
     class Meta:
-        # This line is required because we moved this model between apps.
-        db_table = 'assets_vendor'
         ordering = ('name',)
 
     def __str__(self):
@@ -50,8 +48,6 @@ class SoftwareLicense(CommonFields):
         blank=True, help_text='Direct license keys or details')
 
     class Meta:
-        # This line is required because we moved this model between apps.
-        db_table = 'assets_softwarelicense'
         ordering = ('name',)
 
     def __str__(self):

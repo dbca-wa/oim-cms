@@ -5,8 +5,8 @@ from mixer.backend.django import mixer
 import random
 import string
 
-from registers.models import OrgUnit, CostCentre, Location, ITSystem
-from tracking.models import DepartmentUser
+from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
+from registers.models import ITSystem
 
 
 def random_dpaw_email():

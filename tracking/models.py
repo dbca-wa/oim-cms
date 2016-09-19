@@ -245,10 +245,6 @@ class FreshdeskTicket(models.Model):
         'registers.ITSystem', blank=True, null=True,
         help_text='IT System to which this ticket relates.')
 
-    class Meta:
-        # This line is required because we moved this model between apps.
-        db_table = 'tracking_freshdeskticket'
-
     def __str__(self):
         return 'Freshdesk ticket ID {}'.format(self.ticket_id)
 
@@ -347,10 +343,6 @@ class FreshdeskConversation(models.Model):
         DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
         help_text='Department User who is adding to the conversation.')
 
-    class Meta:
-        # This line is required because we moved this model between apps.
-        db_table = 'tracking_freshdeskconversation'
-
     def __str__(self):
         return 'Freshdesk conversation ID {}'.format(self.conversation_id)
 
@@ -397,10 +389,6 @@ class FreshdeskContact(models.Model):
     du_user = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
         help_text='Department User that is represented by this Freshdesk contact.')
-
-    class Meta:
-        # This line is required because we moved this model between apps.
-        db_table = 'tracking_freshdeskcontact'
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.email)
