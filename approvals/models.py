@@ -18,7 +18,7 @@ class Approval(models.Model):
         DepartmentUser, editable=False, related_name='requester')
     approver = models.ForeignKey(
         DepartmentUser, related_name='approver',
-        help_text='The staff member that is request to approve the item.')
+        help_text='The staff member that is requested to approve the item.')
     proposal_url = models.URLField(
         max_length=2000, null=True, blank=True, verbose_name='proposal URL',
         help_text='Optional URL to the item that requires approval.')
