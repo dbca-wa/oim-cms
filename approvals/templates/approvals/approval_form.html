@@ -1,0 +1,9 @@
+<h1>Create a new approval</h1>
+{% if form.errors %}
+<div class="alert alert-danger" role="alert">Please correct the error(s) below</div>
+{% endif %}
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Save" />
+</form>

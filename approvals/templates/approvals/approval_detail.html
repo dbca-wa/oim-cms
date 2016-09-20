@@ -1,0 +1,8 @@
+<h1>Approval {{ object.pk }}</h1>
+<p>Created: {{ object.created_date|date }}</p>
+<p>GUID: {{ object.guid }}</p>
+<p>Requester: {{ object.requester }}</p>
+<p>Approver: {{ object.approver }}</p>
+<p>Request URL: {{ object.proposal_url }}</p>
+<p>Request description: {{ object.proposal_desc }}</p>
+<p>Request confirmed: {{ object.confirmed_date|date }}</p>
