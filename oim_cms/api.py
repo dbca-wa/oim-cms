@@ -1,5 +1,6 @@
 from babel.dates import format_timedelta
 from django.conf import settings
+from django.conf.urls import include, url
 from django.db.models import F
 from django.http import (
     HttpResponseRedirect, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest)
@@ -789,11 +790,11 @@ def profile(request):
             request.user.email, qs.count()))
     user = qs.get(email__iexact=request.user.email)
 
-    if request.method == "GET":
+    if request.method == 'GET':
         data = qs.values(*self.VALUES_ARGS)[0]
         # Add the password_age_days property to the API response.
         data['password_age_days'] = user.password_age_days
-    elif request.method == "POST":
+    elif request.method == 'POST':
         if 'photo' in request.POST and request.POST['photo'] == 'delete':
             user.photo.delete()
         elif 'photo' in request.FILES:
@@ -813,3 +814,20 @@ def profile(request):
         data = DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS)[0]
     return HttpResponse(json.dumps(
         {'objects': [self.formatters.format(request, data)]}, cls=MoreTypesJSONEncoder))
+
+
+api_urlpatterns = [
+    url(r'^freshdesk', freshdesk, name='api_freshdesk'),
+    url(r'^ec2_instances', include(EC2InstanceResource.urls())),
+    url(r'^itsystems', include(ITSystemResource.urls())),
+    url(r'^itsystems.csv', ITSystemResource.as_csv),
+    url(r'^mudmaps', include(MudMapResource.urls())),
+    url(r'^mudmaps.csv', MudMapResource.as_csv),
+    url(r'^locations', include(LocationResource.urls())),
+    url(r'^locations.csv', LocationResource.as_csv),
+    url(r'^devices', include(HardwareResource.urls())),
+    url(r'^users', include(UserResource.urls())),
+    url(r'^profile', profile, name='api_profile'),
+    url(r'^options', include(OptionResource.urls())),
+    url(r'^whoami', whoamiResource.as_detail(), name='api_whoami'),
+]

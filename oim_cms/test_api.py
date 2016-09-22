@@ -20,13 +20,7 @@ class ApiTestCase(TestCase):
     client = Client()
 
     def setUp(self):
-        self.user = User.objects.create_user(
-            username='testuser', email='user@dpaw.wa.gov.au.com', password='pass')
-        self.admin = User.objects.create_user(
-            username='admin', email='admin@dpaw.wa.gov.com', password='pass', is_superuser=True)
-        # Log in testuser by default.
-        self.client.login(username='testuser', password='pass')
-        # Generate some DepartmentUser objects.
+        # Generate some other DepartmentUser objects.
         mixer.cycle(5).blend(
             DepartmentUser, photo=None, active=True,
             email=random_dpaw_email, org_unit=None,
@@ -62,6 +56,46 @@ class ApiTestCase(TestCase):
         # Generate some IT Systems.
         self.it1 = mixer.blend(ITSystem, status=0, owner=self.user1)
         self.it2 = mixer.blend(ITSystem, status=1, owner=self.user2)
+        # Generate a test user for endpoint responses.
+        self.testuser = User.objects.create_user(
+            username='testuser', email='user@dpaw.wa.gov.au.com', password='pass')
+        # Create a DepartmentUser object for testuser.
+        mixer.blend(
+            DepartmentUser, photo=None, active=True, email=self.testuser.email,
+            org_unit=None, cost_centre=None)
+        # Log in testuser by default.
+        self.client.login(username='testuser', password='pass')
+
+
+class ProfileTestCase(ApiTestCase):
+    url = '/api/profile'
+
+    def test_profile_api_get(self):
+        """Test the profile API endpoint GET response
+        """
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_profile_api_post(self):
+        """Test the profile API endpoint GET response
+        """
+        response = self.client.get(self.url)
+        j = json.loads(response.content)
+        obj = j['objects'][0]
+        self.assertFalse(obj['telephone'])
+        tel = '9111 1111'
+        response = self.client.post(self.url, {'telephone': tel})
+        self.assertEqual(response.status_code, 200)
+        j = json.loads(response.content)
+        obj = j['objects'][0]
+        self.assertEqual(obj['telephone'], tel)
+
+    def test_profile_api_anon(self):
+        """Test that anonymous users can't use the profile endpoint
+        """
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
 
 
 class OptionResourceTestCase(ApiTestCase):
