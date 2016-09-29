@@ -6,7 +6,7 @@ from .models import Approval
 
 @register(Approval)
 class ApprovalAdmin(ModelAdmin):
-    list_display = ['pk', 'requester', 'approver', 'confirmed_date']
+    list_display = ['pk', 'guid', 'requester', 'approver', 'confirmed_date']
     form = ApprovalForm
 
     def save_model(self, request, obj, form, change):
