@@ -19,7 +19,6 @@ class ApprovalCreate(CreateView):
         approval.requester = DepartmentUser.objects.get(
             email__iexact=self.request.user.email)
         approval.save()
-        # TODO: Email the approver.
         return super(ApprovalCreate, self).form_valid(form)
 
 

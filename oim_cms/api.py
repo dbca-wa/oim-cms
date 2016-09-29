@@ -17,6 +17,7 @@ from restless.dj import DjangoResource
 from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
 
+from approvals.api import ApprovalResource
 from core.models import UserSession
 from mudmap.models import MudMap
 from organisation.models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
@@ -817,6 +818,7 @@ def profile(request):
 
 
 api_urlpatterns = [
+    url(r'^approvals/', include(ApprovalResource.urls())),
     url(r'^freshdesk', freshdesk, name='api_freshdesk'),
     url(r'^ec2_instances', include(EC2InstanceResource.urls())),
     url(r'^itsystems', include(ITSystemResource.urls())),
