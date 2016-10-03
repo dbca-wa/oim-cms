@@ -1,6 +1,8 @@
 from __future__ import unicode_literals, absolute_import
 from datetime import timedelta, datetime
 from dateutil.relativedelta import relativedelta
+from django import forms
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
@@ -25,6 +27,22 @@ DOC_STATUS_CHOICES = (
     (2, 'Released'),
     (3, 'Superseded'),
 )
+
+
+class ChoiceArrayField(ArrayField):
+    """
+    A field that allows us to store an array of choices.
+    Uses Django's postgres ArrayField and a MultipleChoiceField for its formfield.
+    Source:
+    https://blogs.gnome.org/danni/2016/03/08/multiple-choice-using-djangos-postgres-arrayfield/
+    """
+    def formfield(self, **kwargs):
+        defaults = {
+            'form_class': forms.MultipleChoiceField,
+            'choices': self.base_field.choices,
+        }
+        defaults.update(kwargs)
+        return super(ArrayField, self).formfield(**defaults)
 
 
 @python_2_unicode_compatible
@@ -168,7 +186,7 @@ class ITSystem(CommonFields):
         (5, 'Local System (Standalone)')
     )
     AUTHENTICATION_CHOICES = (
-        (1, 'Domain Credentials'),
+        (1, 'Domain/application Credentials'),
         (2, 'Single Sign On'),
         (3, 'Externally Managed')
     )
@@ -182,6 +200,44 @@ class ITSystem(CommonFields):
         (3, 'Mobile application'),
         (4, 'Service'),
     )
+    HEALTH_CHOICES = (
+        (0, 'Healthy'),
+        (1, 'Issues noted'),
+        (2, 'At risk'),
+    )
+    RISK_CHOICES = (
+        ('0', 'IT System features not aligned to business processes'),
+        ('1', 'IT System technology refresh lifecycle not safeguarded or future-proofed'),
+        ('2', 'IT System data/information integrity and availability not aligned to business processes'),
+        ('3', 'IT System emergency contingency and disaster recovery approach not well established'),
+        ('4', 'IT System support arrangements not well established, value for money and/or safeguarded'),
+        ('5', 'IT System roles and responsibilities not well established'),
+        ('6', 'IT System solution design not aligned to department IT standards'),
+        ('7', 'IT System change management does not consistently consider risk and security'),
+        ('8', 'IT System incident and security management not triaged on business criticality'),
+        ('9', 'IT System user training not well established'),
+    )
+    FUNCTION_CHOICES = (
+        ('0', 'Planning'),
+        ('1', 'Operation'),
+        ('2', 'Reporting'),
+    )
+    USE_CHOICES = (
+        ('0', 'Measurement'),
+        ('1', 'Information'),
+        ('2', 'Wisdom'),
+        ('3', 'Data'),
+        ('4', 'Knowledge'),
+        ('5', 'Intelligence'),
+    )
+    CAPABILITY_CHOICES = (
+        ('0', 'Information lifecycle'),
+        ('1', 'Communication and collaboration'),
+        ('2', 'Automation and integration'),
+        ('3', 'Security and risk management'),
+        ('4', 'Intelligence and analytics'),
+    )
+
     name = models.CharField(max_length=128, unique=True)
     system_id = models.CharField(max_length=16, unique=True)
     acronym = models.CharField(max_length=16, null=True, blank=True)
@@ -215,17 +271,20 @@ class ITSystem(CommonFields):
         max_length=2048, null=True, blank=True,
         help_text='URL to status/uptime info')
     authentication = models.PositiveSmallIntegerField(
-        choices=AUTHENTICATION_CHOICES, default=1)
+        choices=AUTHENTICATION_CHOICES, default=1,
+        help_text='The method by which users authenticate themselve to the system.')
     authentication_display = models.CharField(
         max_length=128, null=True, editable=False)
     access = models.PositiveSmallIntegerField(
-        choices=ACCESS_CHOICES, default=3)
+        choices=ACCESS_CHOICES, default=3,
+        help_text='The network upon which this system is accessible.')
     access_display = models.CharField(
         max_length=128, null=True, editable=False)
     request_access = models.TextField(
         blank=True, help_text='Procedure to request access to this application')
     criticality = models.PositiveIntegerField(
-        choices=CRITICALITY_CHOICES, null=True, blank=True)
+        choices=CRITICALITY_CHOICES, null=True, blank=True,
+        help_text='How critical is this system to P&W core functions?')
     criticality_display = models.CharField(
         max_length=128, null=True, editable=False)
     availability = models.PositiveIntegerField(
@@ -239,10 +298,10 @@ class ITSystem(CommonFields):
     user_groups = models.ManyToManyField(
         UserGroup, blank=True, help_text='User group(s) that use this IT System')
     softwares = models.ManyToManyField(
-        Software, blank=True,
+        Software, blank=True, verbose_name='software',
         help_text='Software that is used to provide this IT System')
     hardwares = models.ManyToManyField(
-        ITSystemHardware, blank=True,
+        ITSystemHardware, blank=True, verbose_name='hardware',
         help_text='Hardware that is used to provide this IT System')
     bh_support = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, null=True, blank=True, related_name='bh_support',
@@ -283,6 +342,52 @@ class ITSystem(CommonFields):
         DocumentApproval, blank=True)
     contingency_plan_last_tested = models.DateField(
         null=True, blank=True, help_text='Date that the plan was last tested.')
+    notes = models.TextField(blank=True, null=True)
+    system_health = models.PositiveIntegerField(
+        choices=HEALTH_CHOICES, null=True, blank=True)
+    system_creation_date = models.DateField(
+        null=True, blank=True,
+        help_text='Date that this system went into production.')
+    risks = ChoiceArrayField(
+        null=True, blank=True,
+        base_field=models.CharField(max_length=256, choices=RISK_CHOICES), default=list,
+        verbose_name='IT System risks')
+    critical_period = models.CharField(
+        max_length=255, null=True, blank=True,
+        help_text='Is there a period/season when this system is most important?')
+    alt_processing = models.TextField(
+        null=True, blank=True, verbose_name='alternate processing procedure')
+    technical_recov = models.TextField(
+        null=True, blank=True, verbose_name='technical recovery procedure')
+    post_recovery = models.TextField(
+        null=True, blank=True, verbose_name='post recovery procedure',
+        help_text='Functional testing and post recovery procedure.')
+    variation_iscp = models.TextField(
+        null=True, blank=True, verbose_name='Variation to the ISCP')
+    user_notification = models.TextField(
+        null=True, blank=True,
+        help_text='List of users/stakeholders to contact regarding incidents')
+    function = ChoiceArrayField(
+        null=True, blank=True,
+        base_field=models.CharField(max_length=256, choices=FUNCTION_CHOICES), default=list,
+        verbose_name='IT System function(s)')
+    use = ChoiceArrayField(
+        null=True, blank=True,
+        base_field=models.CharField(max_length=256, choices=USE_CHOICES), default=list,
+        verbose_name='IT System use(s)')
+    capability = ChoiceArrayField(
+        null=True, blank=True,
+        base_field=models.CharField(max_length=256, choices=CAPABILITY_CHOICES), default=list,
+        verbose_name='IT System capabilities')
+    unique_evidence = models.NullBooleanField(
+        default=None, help_text='''Is the digital content kept in this business'''
+        ''' system unique evidence of the official business of the Department?''')
+    point_of_truth = models.NullBooleanField(
+        default=None, help_text='''Is the digital content kept in this business'''
+        ''' system a single point of truth?''')
+    legal_need_to_retain = models.NullBooleanField(
+        default=None, help_text='''Is there a legal or compliance need to keep'''
+        ''' the digital content in this system?''')
 
     class Meta:
         verbose_name = 'IT System'
@@ -498,6 +603,7 @@ class ProcessITSystemRelationship(models.Model):
 
     class Meta:
         unique_together = ('process', 'itsystem')
+        verbose_name_plural = 'Process/IT System relationships'
 
     def __str__(self):
         return '{} - {} ({})'.format(
