@@ -136,6 +136,7 @@ class ITSystemAdmin(VersionAdmin):
         'contingency_plan_last_tested',
         'system_health',
         'system_creation_date',
+        'backup_info',
         'risks',
         'critical_period',
         'alt_processing',

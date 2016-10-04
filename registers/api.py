@@ -7,7 +7,7 @@ from oim_cms.utils import CSVDjangoResource
 from restless.dj import DjangoResource
 from restless.resources import skip_prepare
 
-from .models import ITSystem, Hardware
+from .models import ITSystem, Hardware, ITSystemDependency
 
 
 class ITSystemResource(CSVDjangoResource):
@@ -93,7 +93,7 @@ class ITSystemResource(CSVDjangoResource):
                 'backup_test_date': i.host.backup.last_tested.isoformat() if (hasattr(i, 'host.backup') and i.host.backup and i.host.backup.last_tested) else '',
 
             } for i in data.hardwares.all()],
-            'processes': {'relationships': [{
+            'processes': [{
                 'process__name': i.process.name,
                 'process__criticality': i.process.get_criticality_display() if i.process.criticality else '',
                 'process__importance': i.get_importance_display(),
@@ -107,16 +107,43 @@ class ITSystemResource(CSVDjangoResource):
                         )
                     )]
                 )))
-            } for i in data.processitsystemrelationship_set.all().order_by('importance')]},
-            'dependencies': {'relationships': [{
+            } for i in data.processitsystemrelationship_set.all().order_by('importance')],
+            'dependencies': [{
                 'dependency__system_id': i.dependency.system_id,
                 'dependency__name': i.dependency.name,
                 'criticality': i.get_criticality_display()
-            } for i in data.itsystemdependency_set.all()]},
+            } for i in data.itsystemdependency_set.all()],
+            'dependants': [{
+                'dependant__system_id': i.itsystem.system_id,
+                'dependant__name': i.itsystem.name,
+                'criticality': i.get_criticality_display()
+                } for i in ITSystemDependency.objects.filter(dependency=data)],
             'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
             'contingency_plan_url': domain + settings.MEDIA_URL + data.contingency_plan.name if data.contingency_plan else '',
             'contingency_plan_status': data.get_contingency_plan_status_display(),
             'contingency_plan_last_tested': data.contingency_plan_last_tested,
+            'notes': data.notes,
+            'backup_info': data.backup_info,
+            'system_health': data.get_system_health_display(),
+            'system_health_rag': data.system_health,
+            'system_creation_date': data.system_creation_date,
+            # I love list comprehensions 4 eva
+            'risks': [next(i for i in data.RISK_CHOICES if i[0] == risk[0])[1] for risk in data.risks],
+            'change_history': [],
+            'related_incidents': [],
+            'related_projects': [],
+            'critical_period': data.critical_period,
+            'alt_processing': data.alt_processing,
+            'technical_recov': data.technical_recov,
+            'post_recovery': data.post_recovery,
+            'variation_iscp': data.variation_iscp,
+            'user_notification': data.user_notification,
+            'function': [next(i for i in data.FUNCTION_CHOICES if i[0] == f[0])[1] for f in data.function],
+            'use': [next(i for i in data.USE_CHOICES if i[0] == u[0])[1] for u in data.use],
+            'capability': [next(i for i in data.CAPABILITY_CHOICES if i[0] == c[0])[1] for c in data.capability],
+            'unique_evidence': 'Unknown' if data.unique_evidence is None else data.unique_evidence,
+            'point_of_truth': 'Unknown' if data.point_of_truth is None else data.point_of_truth,
+            'legal_need_to_retain': 'Unknown' if data.legal_need_to_retain is None else data.legal_need_to_retain,
         }
         return prepped
 

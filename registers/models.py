@@ -352,6 +352,9 @@ class ITSystem(CommonFields):
         null=True, blank=True,
         base_field=models.CharField(max_length=256, choices=RISK_CHOICES), default=list,
         verbose_name='IT System risks')
+    backup_info = models.TextField(
+        null=True, blank=True, verbose_name='backup information',
+        help_text="Information about the backup/archiving of this system's data.")
     critical_period = models.CharField(
         max_length=255, null=True, blank=True,
         help_text='Is there a period/season when this system is most important?')
