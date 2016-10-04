@@ -1,4 +1,4 @@
-from babel.dates import format_timedelta
+from __future__ import unicode_literals, absolute_import
 from django.conf import settings
 from django.conf.urls import include, url
 from django.db.models import F
@@ -7,8 +7,6 @@ from django.http import (
 from django.utils.text import slugify
 from django.utils.timezone import make_aware
 from django.views.decorators.csrf import csrf_exempt
-from djqscsv import render_to_csv_response
-import itertools
 import json
 from mptt.templatetags.mptt_tags import cache_tree_children
 import requests
@@ -21,9 +19,10 @@ from approvals.api import ApprovalResource
 from core.models import UserSession
 from mudmap.models import MudMap
 from organisation.models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
-from registers.models import Hardware, ITSystem
+from registers.api import ITSystemResource, HardwareResource
 from tracking.models import EC2Instance
 
+from .utils import CSVDjangoResource
 
 POSITION_TYPE_DICT = dict(DepartmentUser.POSITION_TYPE_CHOICES)
 ACCOUNT_TYPE_DICT = dict(DepartmentUser.ACCOUNT_TYPE_CHOICES)
@@ -188,19 +187,6 @@ class FieldsFormatter(object):
         return data
 
 
-class CSVDjangoResource(DjangoResource):
-
-    @classmethod
-    def as_csv(cls, request):
-        resource = cls()
-        if not hasattr(resource, "list_qs"):
-            return HttpResponse(
-                "list_qs not implemented for {}".format(cls.__name__))
-        resource.request = request
-        return render_to_csv_response(
-            resource.list_qs(), field_order=resource.VALUES_ARGS)
-
-
 @csrf_exempt
 def freshdesk(request):
     lines = []
@@ -336,48 +322,6 @@ class whoamiResource(DjangoResource):
             session__session_key=self.request.session.session_key)
 
 
-class HardwareResource(DjangoResource):
-    VALUES_ARGS = (
-        "email", "date_updated",
-        "computer__hostname",
-        "local_info",
-        "local_current")
-
-    def is_authenticated(self):
-        return True
-
-    @skip_prepare
-    def list(self):
-        FILTERS = {"computer__isnull": False, "local_info__isnull": False}
-        # Only return production apps
-        if "hostname" in self.request.GET:
-            FILTERS["computer__hostname__istartswith"] = self.request.GET[
-                "hostname"]
-        if self.request.GET.get("local_current", "").lower() == "false":
-            FILTERS["local_current"] = False
-        data = list(Hardware.objects.filter(
-            **FILTERS).values(*self.VALUES_ARGS))
-        for row in data:
-            row.update(json.loads(row["local_info"]))
-        return data
-
-    @skip_prepare
-    def create(self):
-        computer = Hardware.objects.get(
-            computer__hostname__istartswith=self.data["hostname"])
-        local_info = json.dumps(self.data)
-        computer.local_info = local_info
-        computer.local_current = self.data.get("local_current", False)
-        computer.save()
-        data = list(
-            Hardware.objects.filter(
-                pk=computer.pk).values(
-                *
-                self.VALUES_ARGS))[0]
-        data.update(json.loads(data["local_info"]))
-        return data
-
-
 class EC2InstanceResource(CSVDjangoResource):
     VALUES_ARGS = (
         'pk', 'name', 'ec2id', 'launch_time', 'running', 'next_state'
@@ -472,134 +416,6 @@ class LocationResource(CSVDjangoResource):
             if row["point"]:
                 row["point"] = row["point"].wkt
         return data
-
-
-class ITSystemResource(CSVDjangoResource):
-
-    def prepare(self, data):
-        """Prepare a custom API response for ITSystemResource objects.
-        """
-        # Owner > CC > Division > Manager
-        cost_centre__division__manager__name = ''
-        cost_centre__division__manager__email = ''
-        cost_centre__division__manager__title = ''
-        cost_centre__division__name = ''
-        cost_centre__name = ''
-        cost_centre__code = ''
-        # Every damn field is nullable!
-        if data.owner:
-            if data.owner.cost_centre:
-                cost_centre__name = data.owner.cost_centre.name
-                cost_centre__code = data.owner.cost_centre.code
-                if data.owner.cost_centre.division:
-                    cost_centre__division__name = data.owner.cost_centre.division.name
-                    if data.owner.cost_centre.division.manager:
-                        cost_centre__division__manager__name = data.owner.cost_centre.division.manager.name
-                        cost_centre__division__manager__email = data.owner.cost_centre.division.manager.email
-                        cost_centre__division__manager__title = data.owner.cost_centre.division.manager.title
-
-        domain = self.request.build_absolute_uri().replace(self.request.get_full_path(), '')
-        prepped = {
-            'pk': data.pk,
-            'name': data.name,
-            'acronym': data.acronym,
-            'system_id': data.system_id,
-            'description': data.description,
-            'documentation': data.documentation,
-            'technical_documentation': data.technical_documentation,
-            'authentication_display': data.authentication_display or '',
-            'access_display': data.access_display or '',
-            'preferred_contact__name': data.preferred_contact.name if data.preferred_contact else '',
-            'preferred_contact__email': data.preferred_contact.email if data.preferred_contact else '',
-            'preferred_contact__title': data.preferred_contact.title if data.preferred_contact else '',
-            'cost_centre__division__manager__name': cost_centre__division__manager__name,
-            'cost_centre__division__manager__email': cost_centre__division__manager__email,
-            'cost_centre__division__manager__title': cost_centre__division__manager__title,
-            'cost_centre__division__name': cost_centre__division__name,
-            'cost_centre__name': cost_centre__name,
-            'cost_centre__code': cost_centre__code,
-            'owner__name': data.owner.name if data.owner else '',
-            'owner__email': data.owner.email if data.owner else '',
-            'owner__title': data.owner.title if data.owner else '',
-            'custodian__name': data.custodian.name if data.custodian else '',
-            'custodian__email': data.custodian.email if data.custodian else '',
-            'custodian__title': data.custodian.title if data.custodian else '',
-            'data_custodian__name': data.data_custodian.name if data.data_custodian else '',
-            'data_custodian__email': data.data_custodian.email if data.data_custodian else '',
-            'data_custodian__title': data.data_custodian.title if data.data_custodian else '',
-            'link': data.link,
-            'status_html': data.status_html or '',
-            'schema': data.schema_url or '',
-            'system_reqs': data.system_reqs,
-            'system_type': data.system_type_display or '',
-            'vulnerability_docs': data.vulnerability_docs,
-            'workaround': data.workaround,
-            'recovery_docs': data.recovery_docs,
-            'bh_support': {'name': data.bh_support.name, 'email': data.bh_support.email, 'telephone': data.bh_support.telephone} if data.bh_support else {},
-            'ah_support': {'name': data.ah_support.name, 'email': data.ah_support.email, 'telephone': data.ah_support.telephone} if data.ah_support else {},
-            'availability': data.availability_display or '',
-            'status_display': data.status_display or '',
-            'criticality': data.criticality_display or '',
-            'mtd': format_timedelta(data.mtd),
-            'rto': format_timedelta(data.rto),
-            'rpo': format_timedelta(data.rpo),
-            'softwares': [{
-                'name': i.name,
-                'url': i.url,
-            } for i in data.softwares.all()],
-            'hardwares': [{
-                'host': i.host.name,
-                'role': i.get_role_display(),
-                'host__location': i.host.location.name if i.host.location else '',
-                'operating_system': i.host.os.name if i.host.os else '',
-                'operating_system__url': i.host.os.url if i.host.os else '',
-                'backup': i.host.backup.get_os_schedule_display() if (hasattr(i, 'host.backup') and i.host.backup) else '',
-                'backup_test_date': i.host.backup.last_tested.isoformat() if (hasattr(i, 'host.backup') and i.host.backup and i.host.backup.last_tested) else '',
-
-            } for i in data.hardwares.all()],
-            'processes': {'relationships': [{
-                'process__name': i.process.name,
-                'process__criticality': i.process.get_criticality_display() if i.process.criticality else '',
-                'process__importance': i.get_importance_display(),
-                # Flatten the function(s) associated with the process.
-                'function__name': ', '.join(f.name for f in i.process.functions.all()),
-                # One nest listed comprehension to rule them all.
-                'function__service': ', '.join(sorted(set(
-                    [str(s.number) for s in list(
-                        itertools.chain.from_iterable(
-                            [f.services.all() for f in i.process.functions.all()]
-                        )
-                    )]
-                )))
-            } for i in data.processitsystemrelationship_set.all().order_by('importance')]},
-            'dependencies': {'relationships': [{
-                'dependency__system_id': i.dependency.system_id,
-                'dependency__name': i.dependency.name,
-                'criticality': i.get_criticality_display()
-            } for i in data.itsystemdependency_set.all()]},
-            'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
-            'contingency_plan_url': domain + settings.MEDIA_URL + data.contingency_plan.name if data.contingency_plan else '',
-            'contingency_plan_status': data.get_contingency_plan_status_display(),
-            'contingency_plan_last_tested': data.contingency_plan_last_tested,
-        }
-        return prepped
-
-    def list_qs(self):
-        # Only return production apps
-        FILTERS = {"status": 0}
-        if "all" in self.request.GET:
-            del FILTERS["status"]
-        if "system_id" in self.request.GET:
-            del FILTERS["status"]
-            FILTERS["system_id__icontains"] = self.request.GET["system_id"]
-        if "name" in self.request.GET:
-            FILTERS["name"] = self.request.GET["name"]
-        if "pk" in self.request.GET:
-            FILTERS["pk"] = self.request.GET["pk"]
-        return ITSystem.objects.filter(**FILTERS)
-
-    def list(self):
-        return list(self.list_qs())
 
 
 class UserResource(DjangoResource):
@@ -813,13 +629,13 @@ api_urlpatterns = [
     url(r'^approvals/', include(ApprovalResource.urls())),
     url(r'^freshdesk', freshdesk, name='api_freshdesk'),
     url(r'^ec2_instances', include(EC2InstanceResource.urls())),
-    url(r'^itsystems', include(ITSystemResource.urls())),
+    url(r'^itsystems/', include(ITSystemResource.urls())),
     url(r'^itsystems.csv', ITSystemResource.as_csv),
     url(r'^mudmaps', include(MudMapResource.urls())),
     url(r'^mudmaps.csv', MudMapResource.as_csv),
     url(r'^locations', include(LocationResource.urls())),
     url(r'^locations.csv', LocationResource.as_csv),
-    url(r'^devices', include(HardwareResource.urls())),
+    url(r'^devices/', include(HardwareResource.urls())),
     url(r'^users', include(UserResource.urls())),
     url(r'^profile', profile, name='api_profile'),
     url(r'^options', include(OptionResource.urls())),
