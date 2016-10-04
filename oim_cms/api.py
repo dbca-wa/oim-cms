@@ -546,10 +546,6 @@ class ITSystemResource(CSVDjangoResource):
             'softwares': [{
                 'name': i.name,
                 'url': i.url,
-                'license': i.license.name if i.license else '',
-                'license__url': i.license.url if i.license else '',
-                'support': i.license.support if i.license else '',
-                'support__url': i.license.support_url if i.license else '',
             } for i in data.softwares.all()],
             'hardwares': [{
                 'host': i.host.name,
@@ -557,10 +553,6 @@ class ITSystemResource(CSVDjangoResource):
                 'host__location': i.host.location.name if i.host.location else '',
                 'operating_system': i.host.os.name if i.host.os else '',
                 'operating_system__url': i.host.os.url if i.host.os else '',
-                'operating_system__license': i.host.os.license.name if (i.host.os and i.host.os.license) else '',
-                'operating_system__license__url': i.host.os.license.url if (i.host.os and i.host.os.license) else '',
-                'operating_system__support': i.host.os.license.support if (i.host.os and i.host.os.license) else '',
-                'operating_system__support__url': i.host.os.license.support_url if (i.host.os and i.host.os.license) else '',
                 'backup': i.host.backup.get_os_schedule_display() if (hasattr(i, 'host.backup') and i.host.backup) else '',
                 'backup_test_date': i.host.backup.last_tested.isoformat() if (hasattr(i, 'host.backup') and i.host.backup and i.host.backup.last_tested) else '',
 
