@@ -3,14 +3,11 @@ from django.conf import settings
 from django.conf.urls import include, url
 from django.db.models import F
 from django.http import (
-    HttpResponseRedirect, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest)
-from django.utils.text import slugify
-from django.utils.timezone import make_aware
+    HttpResponseRedirect, HttpResponseForbidden, HttpResponseBadRequest)
 from django.views.decorators.csrf import csrf_exempt
 import json
 from mptt.templatetags.mptt_tags import cache_tree_children
 import requests
-from restless.utils import MoreTypesJSONEncoder
 from restless.dj import DjangoResource
 from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
@@ -18,173 +15,13 @@ from restless.resources import skip_prepare
 from approvals.api import ApprovalResource
 from core.models import UserSession
 from mudmap.models import MudMap
-from organisation.models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
+from organisation.api import DepartmentUserResource, profile
+from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
 from registers.api import ITSystemResource, HardwareResource
+from registers.models import ITSystem
 from tracking.models import EC2Instance
 
 from .utils import CSVDjangoResource
-
-POSITION_TYPE_DICT = dict(DepartmentUser.POSITION_TYPE_CHOICES)
-ACCOUNT_TYPE_DICT = dict(DepartmentUser.ACCOUNT_TYPE_CHOICES)
-
-
-def format_position_type(request, value):
-    if value is not None:
-        return POSITION_TYPE_DICT[value]
-    else:
-        return value
-
-
-def format_account_type(request, value):
-    if value is not None:
-        return ACCOUNT_TYPE_DICT[value]
-    else:
-        return value
-
-
-def format_fileField(request, value):
-    if value:
-        return request.build_absolute_uri(
-            "{}{}".format(settings.MEDIA_URL, value))
-    else:
-        return value
-
-
-class FieldsFormatter(object):
-    """
-    A formatter object to format specified fields with cofigured formatter object.
-
-    This takes a
-        ``request`` parameter , a http request object
-        ``formatters`` parameter: a dictionary of keys (a dotted lookup path to
-        the desired attribute/key on the object) and values(a formatter object).
-
-    for propertis without a configed formatter method, return the raw value directly.
-
-    This method will replace the old value with formatted value.
-
-    Example::
-
-        preparer = FieldsFormatter(request,fields={
-            # ``user`` is the key the client will see.
-            # ``author.pk`` is the dotted path lookup ``FieldsPreparer``
-            # will traverse on the data to return a value.
-            'photo': format_fileField,
-        })
-
-    """
-
-    def __init__(self, formatters):
-        super(FieldsFormatter, self).__init__()
-        self._formatters = formatters
-
-    def format(self, request, data):
-        """
-        format data with configured formatter object
-        data can be a list or a single object
-        """
-        if data:
-            if isinstance(data, list):
-                # list object
-                for row in data:
-                    self.format_object(request, row)
-            else:
-                # a single object
-                self.format_object(request, data)
-
-        return data
-
-    def format_object(self, request, data):
-        """
-        format a simgle object.
-
-        Uses the ``lookup_data`` method to traverse dotted paths.
-
-        Replace the value with formatted value, if required.
-
-        """
-        if not self._formatters:
-            # No fields specified. Serialize everything.
-            return data
-
-        for lookup, formatter in self._formatters.items():
-            if not formatter:
-                continue
-            data = self.format_data(request, lookup, data, formatter)
-
-        return data
-
-    def format_data(self, request, lookup, data, formatter):
-        """
-        Given a lookup string, attempts to descend through nested data looking for
-        the value ,format the value and then replace the old value with formatted value.
-
-        Can work with either dictionary-alikes or objects (or any combination of
-        those).
-
-        Lookups should be a string. If it is a dotted path, it will be split on
-        ``.`` & it will traverse through to find the final value. If not, it will
-        simply attempt to find either a key or attribute of that name & return it.
-
-        Example::
-
-            >>> data = {
-            ...     'type': 'message',
-            ...     'greeting': {
-            ...         'en': 'hello',
-            ...         'fr': 'bonjour',
-            ...         'es': 'hola',
-            ...     },
-            ...     'person': Person(
-            ...         name='daniel'
-            ...     )
-            ... }
-            >>> lookup_data('type', data)
-            'message'
-            >>> lookup_data('greeting.en', data)
-            'hello'
-            >>> lookup_data('person.name', data)
-            'daniel'
-
-        """
-        parts = lookup.split('.')
-
-        if not parts or not parts[0]:
-            return formatter(request, data)
-
-        part = parts[0]
-        remaining_lookup = '.'.join(parts[1:])
-
-        if hasattr(data, 'keys') and hasattr(data, '__getitem__'):
-            # Dictionary enough for us.
-            try:
-                value = data[part]
-                if remaining_lookup:
-                    # is an object
-                    self.format_data(
-                        request, remaining_lookup, value, formatter)
-                else:
-                    # is a simple type value
-                    data[part] = formatter(request, value)
-            except:
-                # format failed, ignore
-                pass
-        else:
-            try:
-                value = getattr(data, part)
-                # Assume it's an object.
-                if remaining_lookup:
-                    # is an object
-                    self.format_data(
-                        request, remaining_lookup, value, formatter)
-                else:
-                    # is a simple type value
-                    setattr(data, part, formatter(request, value))
-            except:
-                # format failed, ignore
-                pass
-
-        return data
 
 
 @csrf_exempt
@@ -192,25 +29,25 @@ def freshdesk(request):
     lines = []
     for key, val in request.POST.iteritems():
         if not val:
-            val = "(blank)"
-        lines.append("<li><b>{}</b>: {}</li>".format(key, val))
+            val = '(blank)'
+        lines.append('<li><b>{}</b>: {}</li>'.format(key, val))
     lines.sort()
-    description = "<ul>{}</ul>".format("".join(lines))
-    ticket = {"helpdesk_ticket": {
-        "subject": request.POST.get("subject", "Form submitted"),
-        "email": request.user.email,
-        "priority": int(request.POST.get("priority", 1)),
-        "status": int(request.POST.get("status", 2)),
-        "description_html": description,
-        "source": 4
+    description = '<ul>{}</ul>'.format(''.join(lines))
+    ticket = {'helpdesk_ticket': {
+        'subject': request.POST.get('subject', 'Form submitted'),
+        'email': request.user.email,
+        'priority': int(request.POST.get('priority', 1)),
+        'status': int(request.POST.get('status', 2)),
+        'description_html': description,
+        'source': 4
     }}
-    r = requests.post(settings.FRESHDESK_ENDPOINT + "/helpdesk/tickets.json",
+    r = requests.post(settings.FRESHDESK_ENDPOINT + '/helpdesk/tickets.json',
                       auth=settings.FRESHDESK_AUTH, headers={
-                          "Content-Type": "application/json"},
+                          'Content-Type': 'application/json'},
                       data=json.dumps(ticket))
-    ticket_id = json.loads(r.content)["helpdesk_ticket"]["display_id"]
+    ticket_id = json.loads(r.content)['helpdesk_ticket']['display_id']
     return HttpResponseRedirect(
-        settings.FRESHDESK_ENDPOINT + "/support/tickets/{}".format(ticket_id))
+        settings.FRESHDESK_ENDPOINT + '/support/tickets/{}'.format(ticket_id))
 
 
 def recursive_node_to_dict(node):
@@ -219,8 +56,8 @@ def recursive_node_to_dict(node):
         'name': node.name, 'id': node.pk,
         'children': [recursive_node_to_dict(c) for c in node._cached_children]
     }
-    if not result["children"]:
-        del result["children"]
+    if not result['children']:
+        del result['children']
     return result
 
 
@@ -233,25 +70,25 @@ class OptionResource(DjangoResource):
 
     @skip_prepare
     def list(self):
-        return getattr(self, "data_" + self.request.GET["list"])()
+        return getattr(self, 'data_' + self.request.GET['list'])()
 
     def data_org_structure(self):
         return [recursive_node_to_dict(cache_tree_children(dept.get_descendants_active(include_self=True))[0])
                 for dept in OrgUnit.objects.filter(unit_type=0).order_by('name')]
 
     def data_cost_centre(self):
-        return ["CC{} / {}".format(*c) for c in CostCentre.objects.all().exclude(org_position__name__icontains='inactive').values_list("code", "org_position__name")]
+        return ['CC{} / {}'.format(*c) for c in CostCentre.objects.all().exclude(org_position__name__icontains='inactive').values_list('code', 'org_position__name')]
 
     def data_org_unit(self):
         return [{'name': i.name, 'id': i.pk} for i in OrgUnit.objects.all()]
 
     def data_dept_user(self):
         return [u[0] for u in DepartmentUser.objects.filter(
-            active=True, email__iendswith=".wa.gov.au").order_by("email").values_list("email")]
+            active=True, email__iendswith='.wa.gov.au').order_by('email').values_list('email')]
 
     def data_itsystem(self):
-        return ["{} {}".format(
-            *s) for s in ITSystem.objects.all().values_list("system_id", "name")]
+        return ['{} {}'.format(
+            *s) for s in ITSystem.objects.all().values_list('system_id', 'name')]
 
     def data_statuslogin(self):
         return [l[1] for l in list(ITSystem.STATUS_CHOICES) + list(ITSystem.ACCESS_CHOICES) + list(ITSystem.AUTHENTICATION_CHOICES)]
@@ -263,7 +100,7 @@ class OptionResource(DjangoResource):
         return [i.name for i in OrgUnit.objects.filter(unit_type=1).order_by('name')]
 
     def data_dept(self):
-        return [i.acronym for i in OrgUnit.objects.filter(unit_type=0, acronym__gt="").order_by('name')]
+        return [i.acronym for i in OrgUnit.objects.filter(unit_type=0, acronym__gt='').order_by('name')]
 
     def data_department(self):
         return [i.name for i in OrgUnit.objects.filter(unit_type=0).order_by('name')]
@@ -281,7 +118,7 @@ class OptionResource(DjangoResource):
         return [i.name for i in OrgUnit.objects.filter(unit_type=5).order_by('name')]
 
 
-class whoamiResource(DjangoResource):
+class WhoAmIResource(DjangoResource):
     """
     whoami is a read only resource and does not require any request parameters.
     This resource can be used to return the authentication data by whoami request and auth request.
@@ -331,12 +168,12 @@ class EC2InstanceResource(CSVDjangoResource):
         return True
 
     def list_qs(self):
-        if "ec2id" in self.request.GET:
+        if 'ec2id' in self.request.GET:
             return EC2Instance.objects.filter(
-                ec2id=self.request.GET["ec2id"]).values(*self.VALUES_ARGS)
+                ec2id=self.request.GET['ec2id']).values(*self.VALUES_ARGS)
         else:
             return EC2Instance.objects.exclude(
-                running=F("next_state")).values(*self.VALUES_ARGS)
+                running=F('next_state')).values(*self.VALUES_ARGS)
 
     @skip_prepare
     def list(self):
@@ -350,15 +187,15 @@ class EC2InstanceResource(CSVDjangoResource):
             deleted = None
         else:
             deleted = EC2Instance.objects.exclude(
-                ec2id__in=[i["InstanceId"] for i in self.data]).delete()
+                ec2id__in=[i['InstanceId'] for i in self.data]).delete()
         for instc in self.data:
-            instance, created = EC2Instance.objects.get_or_create(ec2id=instc["InstanceId"])
-            instance.name = [x["Value"] for x in instc["Tags"] if x["Key"] == "Name"][0]
-            instance.launch_time = instc["LaunchTime"]
-            instance.running = instc["State"]["Name"] == "running"
+            instance, created = EC2Instance.objects.get_or_create(ec2id=instc['InstanceId'])
+            instance.name = [x['Value'] for x in instc['Tags'] if x['Key'] == 'Name'][0]
+            instance.launch_time = instc['LaunchTime']
+            instance.running = instc['State']['Name'] == 'running'
             instance.extra_data = instc
             instance.save()
-        return {"saved": len(self.data), "deleted": deleted}
+        return {'saved': len(self.data), 'deleted': deleted}
 
 
 class MudMapResource(CSVDjangoResource):
@@ -368,14 +205,13 @@ class MudMapResource(CSVDjangoResource):
 
     def is_authenticated(self):
         return True
-        return self.data.get("name", "").startswith(
+        return self.data.get('name', '').startswith(
             self.request.user.email.lower())
 
     def list_qs(self):
-        # Only return production apps
         FILTERS = {}
-        if "mudmap_id" in self.request.GET:
-            FILTERS["pk"] = self.request.GET["mudmap_id"]
+        if 'mudmap_id' in self.request.GET:
+            FILTERS['pk'] = self.request.GET['mudmap_id']
         return MudMap.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
 
     @skip_prepare
@@ -385,16 +221,16 @@ class MudMapResource(CSVDjangoResource):
 
     @skip_prepare
     def create(self):
-        mudmap, created = MudMap.objects.get_or_create(name=self.data["name"])
-        if "delete" in self.data:
+        mudmap, created = MudMap.objects.get_or_create(name=self.data['name'])
+        if 'delete' in self.data:
             mudmap.delete()
-            return {"deleted": self.data["name"]}
+            return {'deleted': self.data['name']}
         else:
-            mudmap.geojson = self.data["features"]
-            mudmap.lastsave = self.data["lastsave"]
+            mudmap.geojson = self.data['features']
+            mudmap.lastsave = self.data['lastsave']
             mudmap.user = self.request.user
             mudmap.save()
-            return {"saved": self.data["name"]}
+            return {'saved': self.data['name']}
 
 
 class LocationResource(CSVDjangoResource):
@@ -403,226 +239,18 @@ class LocationResource(CSVDjangoResource):
     )
 
     def list_qs(self):
-        # Only return production apps
         FILTERS = {}
-        if "location_id" in self.request.GET:
-            FILTERS["pk"] = self.request.GET["location_id"]
+        if 'location_id' in self.request.GET:
+            FILTERS['pk'] = self.request.GET['location_id']
         return Location.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
 
     @skip_prepare
     def list(self):
         data = list(self.list_qs())
         for row in data:
-            if row["point"]:
-                row["point"] = row["point"].wkt
+            if row['point']:
+                row['point'] = row['point'].wkt
         return data
-
-
-class UserResource(DjangoResource):
-    COMPACT_ARGS = (
-        "pk", "name", "title", "employee_id", "email", "telephone", "mobile_phone", "photo", "photo_ad",
-        "org_data", "parent__email", "parent__name", "username", "org_unit__location__id", "org_unit__location__name",
-        "org_unit__location__address", "org_unit__location__pobox", "org_unit__location__phone",
-        "org_unit__location__fax", "ad_guid", "org_unit__secondary_location__name", "preferred_name"
-    )
-    VALUES_ARGS = COMPACT_ARGS + (
-        "ad_dn", "ad_data", "date_updated", "date_ad_updated", "active", "ad_deleted",
-        "in_sync", "given_name", "surname", "home_phone", "other_phone",
-        "notes", "working_hours", "position_type", "account_type")
-    MINIMAL_ARGS = (
-        "pk", "name", "preferred_name", "title", "email", "telephone",
-        "mobile_phone", "photo", "org_unit__location__name"
-    )
-    PROPERTY_ARGS = (
-        "password_age_days",
-    )
-
-    formatters = FieldsFormatter(formatters={
-        "photo": format_fileField,
-        "photo_ad": format_fileField,
-        'position_type': format_position_type,
-        'account_type': format_account_type,
-    })
-
-    def is_authenticated(self):
-        return True
-
-    def org_structure(self, sync_o365=False, exclude_populate_groups=False):
-        qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
-        if exclude_populate_groups:  # Exclude objects where populate_primary_group == False
-            qs = qs.exclude(populate_primary_group=False)
-        structure = []
-        if sync_o365:
-            orgunits = OrgUnit.objects.filter(sync_o365=True)
-        else:
-            orgunits = OrgUnit.objects.all()
-        costcentres = CostCentre.objects.all()
-        locations = Location.objects.all()
-        slocations = SecondaryLocation.objects.all()
-        defaultowner = "support@dpaw.wa.gov.au"
-        for obj in orgunits:
-            structure.append({"id": 'db-org_{}'.format(obj.pk),
-                              "name": str(obj), "email": slugify(obj.name), "owner": getattr(obj.manager, "email", defaultowner),
-                              "members": [d[0] for d in qs.filter(org_unit__in=obj.get_descendants(include_self=True)).values_list("email")]})
-        for obj in costcentres:
-            structure.append({"id": 'db-cc_{}'.format(obj.pk),
-                              "name": str(obj), "email": slugify(obj.name), "owner": getattr(obj.manager, "email", defaultowner),
-                              "members": [d[0] for d in qs.filter(cost_centre=obj).values_list("email")]})
-        for obj in locations:
-            structure.append({"id": 'db-loc_{}'.format(obj.pk),
-                              "name": str(obj), "email": slugify(obj.name) + "-location", "owner": getattr(obj.manager, "email", defaultowner),
-                              "members": [d[0] for d in qs.filter(org_unit__location=obj).values_list("email")]})
-        for obj in slocations:
-            structure.append({"id": 'db-locs_{}'.format(obj.pk),
-                              "name": str(obj), "email": slugify(obj.name) + "-location", "owner": getattr(obj.manager, "email", defaultowner),
-                              "members": [d[0] for d in qs.filter(org_unit__secondary_location=obj).values_list("email")]})
-        for row in structure:
-            if row["members"]:
-                row["email"] = "{}@{}".format(
-                    row["email"], row["members"][0].split("@", 1)[1])
-        return structure
-
-    def list(self):
-        """Pass query params to modify the API output.
-        Include `org_structure=true` and `sync_o365=true` to output only
-        OrgUnits with sync_o365 == True.
-        Include `populate_groups=true` to output only DepartmentUsers
-        with populate_primary_group == True.
-        """
-        sync_o365 = True
-        if 'sync_o365' in self.request.GET and self.request.GET['sync_o365'] == 'false':
-            sync_o365 = False
-        else:
-            sync_o365 = True
-        if 'populate_groups' in self.request.GET and self.request.GET['populate_groups'] == 'true':
-            exclude_populate_groups = True  # Will exclude populate_primary_group == False
-        else:
-            exclude_populate_groups = False  # Will ignore populate_primary_group
-        if "org_structure" in self.request.GET:
-            return self.org_structure(sync_o365=sync_o365, exclude_populate_groups=exclude_populate_groups)
-
-        if "all" in self.request.GET:
-            users = DepartmentUser.objects.all().order_by('name')
-        else:
-            FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
-            # Filters below are exclusive.
-            if "email" in self.request.GET:
-                FILTERS["email__iexact"] = self.request.GET["email"]
-            elif "ad_guid" in self.request.GET:
-                FILTERS["ad_guid__endswith"] = self.request.GET["ad_guid"]
-            elif "cost_centre" in self.request.GET:
-                FILTERS["cost_centre__code"] = self.request.GET["cost_centre"]
-            # Exclude shared and role-based account types.
-            users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[5, 9]).order_by('name')
-
-        # Parameters to modify the API output.
-        if "compact" in self.request.GET:
-            self.VALUES_ARGS = self.COMPACT_ARGS
-        elif "minimal" in self.request.GET:
-            self.VALUES_ARGS = self.MINIMAL_ARGS
-
-        user_values = list(users.values(*self.VALUES_ARGS))
-
-        return self.formatters.format(self.request, user_values)
-
-    @skip_prepare
-    def create(self):
-        try:
-            try:
-                user = DepartmentUser.objects.get(
-                    email__iexact=self.data["EmailAddress"])
-            except:
-                try:
-                    user = DepartmentUser.objects.get(
-                        ad_guid__iendswith=self.data["ObjectGUID"])
-                except:
-                    try:
-                        user = DepartmentUser.objects.get(
-                            ad_dn=self.data["DistinguishedName"])
-                    except:
-                        user = DepartmentUser(ad_guid=self.data["ObjectGUID"])
-            if self.data.get("Deleted"):
-                user.active = False
-                user.ad_deleted = True
-                user.ad_updated = True
-                user.save()
-                data = list(
-                    DepartmentUser.objects.filter(
-                        pk=user.pk).values(
-                        *self.VALUES_ARGS))[0]
-                return self.formatters.format(self.request, data)
-            modified = make_aware(
-                user._meta.get_field_by_name("date_updated")[0].clean(
-                    self.data["Modified"], user))
-            if not user.pk or not user.date_ad_updated or modified > user.date_updated:
-                user.email = self.data["EmailAddress"]
-                user.ad_guid = self.data["ObjectGUID"]
-                user.ad_dn = self.data["DistinguishedName"]
-                user.username = self.data["SamAccountName"]
-                user.expiry_date = self.data.get("AccountExpirationDate")
-                user.active = self.data["Enabled"]
-                user.ad_deleted = False
-                user.ad_data = self.data
-                if not user.name:
-                    user.name = self.data["Name"]
-                if not user.title:
-                    user.title = self.data["Title"]
-                if not user.given_name:
-                    user.given_name = self.data["GivenName"]
-                if not user.surname:
-                    user.surname = self.data["Surname"]
-                user.date_ad_updated = self.data["Modified"]
-                user.ad_updated = True
-                user.save()
-            data = list(
-                DepartmentUser.objects.filter(
-                    pk=user.pk).values(
-                    *self.VALUES_ARGS))[0]
-        except Exception as e:
-            data = self.data
-            data["Error"] = repr(e)
-        return self.formatters.format(self.request, data)
-
-
-@csrf_exempt
-def profile(request):
-    if not request.user.is_authenticated():
-        return HttpResponseForbidden()
-
-    # Profile API view should return one object only.
-    self = UserResource()
-    if not hasattr(request, 'user') or not request.user.email:
-        return HttpResponseBadRequest('No user email in request')
-    qs = DepartmentUser.objects.filter(email__iexact=request.user.email)
-    if qs.count() > 1 or qs.count() < 1:
-        return HttpResponseBadRequest('API request for {} should return one profile; it returned {}!'.format(
-            request.user.email, qs.count()))
-    user = qs.get(email__iexact=request.user.email)
-
-    if request.method == 'GET':
-        data = qs.values(*self.VALUES_ARGS)[0]
-        # Add the password_age_days property to the API response.
-        data['password_age_days'] = user.password_age_days
-    elif request.method == 'POST':
-        if 'photo' in request.POST and request.POST['photo'] == 'delete':
-            user.photo.delete()
-        elif 'photo' in request.FILES:
-            user.photo.save(
-                request.FILES['photo'].name,
-                request.FILES['photo'],
-                save=False)
-        if 'telephone' in request.POST:
-            user.telephone = request.POST['telephone']
-        if 'mobile_phone' in request.POST:
-            user.mobile_phone = request.POST['mobile_phone']
-        if 'other_phone' in request.POST:
-            user.other_phone = request.POST['other_phone']
-        if 'preferred_name' in request.POST:
-            user.preferred_name = request.POST['preferred_name']
-        user.save()
-        data = DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS)[0]
-    return HttpResponse(json.dumps(
-        {'objects': [self.formatters.format(request, data)]}, cls=MoreTypesJSONEncoder))
 
 
 api_urlpatterns = [
@@ -636,8 +264,8 @@ api_urlpatterns = [
     url(r'^locations', include(LocationResource.urls())),
     url(r'^locations.csv', LocationResource.as_csv),
     url(r'^devices/', include(HardwareResource.urls())),
-    url(r'^users', include(UserResource.urls())),
-    url(r'^profile', profile, name='api_profile'),
+    url(r'^users/', include(DepartmentUserResource.urls())),
+    url(r'^profile/', profile, name='api_profile'),
     url(r'^options', include(OptionResource.urls())),
-    url(r'^whoami', whoamiResource.as_detail(), name='api_whoami'),
+    url(r'^whoami', WhoAmIResource.as_detail(), name='api_whoami'),
 ]

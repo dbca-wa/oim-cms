@@ -1,20 +1,17 @@
-import json
+from django.http import HttpResponseRedirect, HttpResponse
+from django.contrib.auth import login, logout
+from django.core.cache import cache
 from django.shortcuts import render
-
-from core.models import Content
-from tracking.models import DepartmentUser
+from django.views.decorators.csrf import csrf_exempt
+from django_auth_ldap.backend import LDAPBackend
+from ipware.ip import get_ip
+import json
 from wagtail.wagtailcore.models import PageRevision
 from wagtail.wagtailsearch.models import Query
 
-from django.contrib.auth import login, logout
-from django.http import HttpResponseRedirect, HttpResponse
-from django.core.cache import cache
-
-from oim_cms.api import whoamiResource
-from core.models import UserSession
-from django_auth_ldap.backend import LDAPBackend
-from ipware.ip import get_ip
-from django.views.decorators.csrf import csrf_exempt
+from core.models import Content, UserSession
+from oim_cms.api import WhoAmIResource
+from tracking.models import DepartmentUser
 
 
 @csrf_exempt
@@ -117,7 +114,7 @@ def auth(request):
                 "WWW-Authenticate"] = 'Basic realm="Please login with your username or email address"'
             response.content = repr(e)
             return response
-    response = HttpResponse(whoamiResource.as_detail()(request).content)
+    response = HttpResponse(WhoAmIResource.as_detail()(request).content)
     headers, cache_headers = json.loads(response.content), dict()
     headers["full_name"] = u"{}, {}".format(
         headers.get(

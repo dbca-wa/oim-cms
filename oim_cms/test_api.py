@@ -68,7 +68,7 @@ class ApiTestCase(TestCase):
 
 
 class ProfileTestCase(ApiTestCase):
-    url = '/api/profile'
+    url = '/api/profile/'
 
     def test_profile_api_get(self):
         """Test the profile API endpoint GET response
@@ -166,33 +166,33 @@ class OptionResourceTestCase(ApiTestCase):
         self.assertNotContains(response, self.user1.email)
 
 
-class UserResourceTestCase(ApiTestCase):
+class DepartmentUserResourceTestCase(ApiTestCase):
 
     def test_user_list(self):
-        """Test the UserResource list responses
+        """Test the DepartmentUserResource list responses
         """
-        url = '/api/users'
+        url = '/api/users/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         r = json.loads(response.content)
         self.assertTrue(isinstance(r['objects'], list))
         # Test the compact response.
-        url = '/api/users?compact=true'
+        url = '/api/users/?compact=true'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Test the minimal response.
-        url = '/api/users?minimal=true'
+        url = '/api/users/?minimal=true'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Test filtering by email.
-        url = '/api/users?email={}'.format(self.user1.email)
+        url = '/api/users/?email={}'.format(self.user1.email)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
     def test_org_structure(self):
-        """Test the UserResource org_structure response
+        """Test the DepartmentUserResource org_structure response
         """
-        url = '/api/users?org_structure=true'
+        url = '/api/users/?org_structure=true'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # User 1 will be present in the response.
@@ -200,7 +200,7 @@ class UserResourceTestCase(ApiTestCase):
         # Test sync_o365=true request parameter.
         self.div1.sync_o365 = False
         self.div1.save()
-        url = '/api/users?org_structure=true&sync_o365=true'
+        url = '/api/users/?org_structure=true&sync_o365=true'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Division 1 won't be present in the response.
