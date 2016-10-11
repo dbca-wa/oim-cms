@@ -9,7 +9,7 @@ import json
 from restless.dj import DjangoResource
 from restless.resources import skip_prepare
 from restless.utils import MoreTypesJSONEncoder
-from oim_cms.utils import FieldsFormatter
+from oim_cms.utils import FieldsFormatter, CSVDjangoResource
 
 from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
 
@@ -209,6 +209,26 @@ class DepartmentUserResource(DjangoResource):
             data = self.data
             data['Error'] = repr(e)
         return self.formatters.format(self.request, data)
+
+
+class LocationResource(CSVDjangoResource):
+    VALUES_ARGS = (
+        'pk', 'name', 'address', 'phone', 'fax', 'email', 'point', 'url',
+        'bandwidth_url')
+
+    def list_qs(self):
+        FILTERS = {}
+        if 'location_id' in self.request.GET:
+            FILTERS['pk'] = self.request.GET['location_id']
+        return Location.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
+
+    @skip_prepare
+    def list(self):
+        data = list(self.list_qs())
+        for row in data:
+            if row['point']:
+                row['point'] = row['point'].wkt
+        return data
 
 
 @csrf_exempt

@@ -212,11 +212,11 @@ class LocationResourceTestCase(ApiTestCase):
     def test_list(self):
         """Test the LocationResource list response
         """
-        url = '/api/locations'
+        url = '/api/locations/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Test filtering by location_id.
-        url = '/api/locations?location_id={}'.format(self.loc1.pk)
+        url = '/api/locations/?location_id={}'.format(self.loc1.pk)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -224,7 +224,7 @@ class LocationResourceTestCase(ApiTestCase):
 class ITSystemResourceTestCase(ApiTestCase):
 
     def test_list(self):
-        """Test the LocationResource list response
+        """Test the ITSystemResource list response
         """
         url = '/api/itsystems/'
         response = self.client.get(url)
