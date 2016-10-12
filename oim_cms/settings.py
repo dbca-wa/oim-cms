@@ -287,6 +287,10 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'INFO'
         },
+        'organisation' : {
+            'handlers': ['file'],
+            'level': 'DEBUG'
+        }
     }
 }
 

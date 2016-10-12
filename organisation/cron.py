@@ -3,6 +3,7 @@ from django.core.mail import send_mail
 from django.template import loader
 from django_cron import CronJobBase,Schedule
 from .models import DepartmentUser
+import logging
 
 
 class PasswordReminderCronJob(CronJobBase):
@@ -13,6 +14,7 @@ class PasswordReminderCronJob(CronJobBase):
 
     schedule = Schedule(run_every_mins = RUN_EVERY_MINS)
     code = 'organisation.password_reminder_cron_job'
+    logger  = logging.getLogger(__name__)
 
     def do(self):
         #send email to users with password which is about to expire
@@ -31,6 +33,6 @@ class PasswordReminderCronJob(CronJobBase):
                 to = u.email
 
                 send_mail(subject,template,self.EMAIL_FROM,[to],fail_silently=False,html_message=template)
-
+                self.logger.info("Email sent to "+ u.email )
         except Exception as e:
-            raise e
+            self.logger.error( str(e) )
