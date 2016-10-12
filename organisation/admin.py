@@ -127,12 +127,12 @@ class DepartmentUserAdmin(ModelAdmin):
                 f.close()
                 alesco_data_import(f.name)
                 messages.info(request, 'Spreadsheet uploaded successfully!')
-                return redirect('admin:tracking_departmentuser_changelist')
+                return redirect('admin:organisation_departmentuser_changelist')
         else:
             form = self.AlescoImportForm()
         context['form'] = form
 
-        return TemplateResponse(request, 'tracking/alesco_import.html', context)
+        return TemplateResponse(request, 'organisation/alesco_import.html', context)
 
     def export(self, request):
         """Exports DepartmentUser data to a CSV, and returns
@@ -168,17 +168,17 @@ class OrgUnitAdmin(MPTTModelAdmin):
     list_filter = ('unit_type',)
 
     def users(self, obj):
-        from tracking.models import DepartmentUser
+        from organisation.models import DepartmentUser
         dusers = obj.departmentuser_set.filter(**DepartmentUser.ACTIVE_FILTER)
         return format_html(
             '<a href="{}?org_unit={}">{}</a>',
-            reverse('admin:tracking_departmentuser_changelist'),
+            reverse('admin:organisation_departmentuser_changelist'),
             obj.pk, dusers.count())
 
     def members(self, obj):
         return format_html(
             '<a href="{}?org_unit__in={}">{}</a>',
-            reverse('admin:tracking_departmentuser_changelist'),
+            reverse('admin:organisation_departmentuser_changelist'),
             ','.join([str(o.pk)
                       for o in obj.get_descendants(include_self=True)]),
             obj.members().count()
@@ -209,5 +209,5 @@ class CostCentreAdmin(ModelAdmin):
     def users(self, obj):
         return format_html(
             '<a href="{}?cost_centre={}">{}</a>',
-            reverse('admin:tracking_departmentuser_changelist'),
+            reverse('admin:organisation_departmentuser_changelist'),
             obj.pk, obj.departmentuser_set.count())
