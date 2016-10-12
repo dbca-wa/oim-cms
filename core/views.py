@@ -1,35 +1,17 @@
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth import login, logout
 from django.core.cache import cache
-from django.conf import settings
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+from django_auth_ldap.backend import LDAPBackend
+from ipware.ip import get_ip
 import json
 from wagtail.wagtailcore.models import PageRevision
 from wagtail.wagtailsearch.models import Query
-from ipware.ip import get_ip
-import adal
 
 from core.models import Content, UserSession
 from oim_cms.api import WhoAmIResource
 from tracking.models import DepartmentUser
-
-
-def check_azure_ad(username, password):
-    # helper for querying Azure AD directly for authentication
-    context = adal.AuthenticationContext(settings.AZUREAD_AUTHORITY)
-    try:
-        token = context.acquire_token_with_username_password(
-            settings.AZUREAD_RESOURCE, 
-            username, password, 
-            settings.SOCIAL_AUTH_AZUREAD_OAUTH2_KEY, 
-            settings.SOCIAL_AUTH_AZUREAD_OAUTH2_SECRET
-        )
-        user = User.objects.filter(email__iexact=token['userId'])
-        user = None if not user else user[0]
-        return user
-    except adal.adal_error.AdalError:
-        return None
 
 
 @csrf_exempt
@@ -40,11 +22,15 @@ def auth_ip(request):
     # If there's a basic auth header, perform a check.
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
     if basic_auth:
-        # Check basic auth against Azure AD as an alternative to SSO.
+        # Check basic auth against LDAP as an alternative to SSO.
         username, password = request.META["HTTP_AUTHORIZATION"].split(
             " ", 1)[1].strip().decode('base64').split(":", 1)
-        user = check_azure_ad(username, password)
-
+        ldapauth = LDAPBackend()
+        if username.find("@") > -1:
+            username = DepartmentUser.objects.get(
+                email__iexact=username).username
+        user = ldapauth.authenticate(username=username,
+                                     password=password)
         if not user:
             us = UserSession.objects.filter(user__username=username)[0]
             assert us.shared_id == password
@@ -105,12 +91,17 @@ def auth(request):
         response["X-auth-cache-hit"] = "success"
         return response
     if not request.user.is_authenticated():
-        # Check basic auth against Azure AD as an alternative to SSO.
+        # Check basic auth against LDAP as an alternative to SSO.
         try:
             assert request.META.get("HTTP_AUTHORIZATION") is not None
             username, password = request.META["HTTP_AUTHORIZATION"].split(
                 " ", 1)[1].strip().decode('base64').split(":", 1)
-            user = check_azure_ad(username, password)
+            ldapauth = LDAPBackend()
+            if username.find("@") > -1:
+                username = DepartmentUser.objects.get(
+                    email__iexact=username).username
+            user = ldapauth.authenticate(username=username,
+                                         password=password)
             if not user:
                 us = UserSession.objects.filter(user__username=username)[0]
                 assert us.shared_id == password
@@ -120,7 +111,7 @@ def auth(request):
         except Exception as e:
             response = HttpResponse(status=401)
             response[
-                "WWW-Authenticate"] = 'Basic realm="Please login with your Department email address"'
+                "WWW-Authenticate"] = 'Basic realm="Please login with your username or email address"'
             response.content = repr(e)
             return response
     response = HttpResponse(WhoAmIResource.as_detail()(request).content)
