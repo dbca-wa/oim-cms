@@ -36,3 +36,7 @@ class PasswordReminderCronJob(CronJobBase):
                 self.logger.info("Email sent to "+ u.email )
         except Exception as e:
             self.logger.error( str(e) )
+'''
+cron job command
+0 0 * * * source /home/user/.bashrc && source /home/user/path/to/project/your-project/venv/bin/activate && python /home/user/path/to/project/your-project/manage.py runcrons > /home/user/path/to/project/tour-project/logs/cronjob.log
+'''
