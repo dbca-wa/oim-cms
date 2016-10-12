@@ -152,6 +152,9 @@ class DepartmentUserResource(DjangoResource):
 
         return self.formatters.format(self.request, user_values)
 
+    def is_authenticated(self):
+        return True
+
     @skip_prepare
     def create(self):
         try:
