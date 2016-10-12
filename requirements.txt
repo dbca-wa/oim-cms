@@ -11,8 +11,7 @@ django-model-utils==2.5
 django-debug-toolbar==1.5
 django-compressor==2.0
 restless==2.0.1
-python-ldap==2.4.22
-django-auth-ldap==1.2.7
+git+https://github.com/scottp-dpaw/azure-activedirectory-library-for-python@passwordauth#egg=adal
 django-ipware==1.1.2
 python-social-auth==0.2.14
 graphviz==0.4.8

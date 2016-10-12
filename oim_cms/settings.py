@@ -64,46 +64,10 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'social.backends.azuread.AzureADOAuth2',
 )
-# LDAP settings (required to check auth as an alternative to SSO).
-import ldap
-from django_auth_ldap.config import LDAPSearch, LDAPSearchUnion, GroupOfNamesType
-LDAP_SERVER_URI = env('LDAP_SERVER_URI', 'ldap://')
-LDAP_ACCESS_DN = env('LDAP_ACCESS_DN', 'dn')
-LDAP_ACCESS_PASSWORD = env('LDAP_ACCESS_PASSWORD', 'pass')
-LDAP_SEARCH_SCOPE = env('LDAP_SEARCH_SCOPE', 'scope')
-AUTH_LDAP_SERVER_URI = LDAP_SERVER_URI
-AUTH_LDAP_BIND_DN = LDAP_ACCESS_DN
-AUTH_LDAP_BIND_PASSWORD = LDAP_ACCESS_PASSWORD
-AUTH_LDAP_ALWAYS_UPDATE_USER = False
-AUTH_LDAP_AUTHORIZE_ALL_USERS = True
-AUTH_LDAP_FIND_GROUP_PERMS = False
-AUTH_LDAP_MIRROR_GROUPS = False
-AUTH_LDAP_CACHE_GROUPS = False
-AUTH_LDAP_GROUP_CACHE_TIMEOUT = 300
-AUTH_LDAP_USER_SEARCH = LDAPSearchUnion(
-    LDAPSearch('{}'.format(LDAP_SEARCH_SCOPE),
-               ldap.SCOPE_SUBTREE,
-               '(sAMAccountName=%(user)s)'),
-    LDAPSearch('{}'.format(LDAP_SEARCH_SCOPE),
-               ldap.SCOPE_SUBTREE,
-               '(mail=%(user)s)'),
-)
-AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-    '{}'.format(LDAP_SEARCH_SCOPE),
-    ldap.SCOPE_SUBTREE, '(objectClass=group)'
-)
-AUTH_LDAP_GLOBAL_OPTIONS = {
-    ldap.OPT_X_TLS_REQUIRE_CERT: False,
-    ldap.OPT_REFERRALS: False,
-}
-AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr='cn')
-AUTH_LDAP_USER_ATTR_MAP = {
-    'first_name': 'givenName',
-    'last_name': 'sn',
-    'email': 'mail',
-}
 SOCIAL_AUTH_AZUREAD_OAUTH2_KEY = env('AZUREAD_CLIENTID', 'clientid')
 SOCIAL_AUTH_AZUREAD_OAUTH2_SECRET = env('AZUREAD_SECRETKEY', 'secret')
+AZUREAD_AUTHORITY = env('AZUREAD_AUTHORITY', 'https://login.microsoftonline.com')
+AZUREAD_RESOURCE = env('AZUREAD_RESOURCE', '00000002-0000-0000-c000-000000000000')
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
 SOCIAL_AUTH_TRAILING_SLASH = False
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = "/"
@@ -145,7 +109,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'oim_cms.urls'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
 DATABASES = {'default': database.config()}
-APPLICATION_VERSION = '1.1.2'
+APPLICATION_VERSION = '1.1.3'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 
