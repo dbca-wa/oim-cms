@@ -45,7 +45,7 @@ class DepartmentUserAdmin(ModelAdmin):
                 'preferred_name', 'photo', 'title', 'parent',
                 'account_type', 'position_type',
                 'cost_centres_secondary', 'org_units_secondary',
-                'telephone', 'mobile_phone', 'other_phone',
+                'telephone', 'mobile_phone', 'extension', 'other_phone',
                 'populate_primary_group', 'vip', 'executive', 'contractor',
                 'secondary_locations', 'notes', 'working_hours', 'extra_data',
             )
