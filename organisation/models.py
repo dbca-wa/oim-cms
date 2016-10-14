@@ -88,6 +88,7 @@ class DepartmentUser(MPTTModel):
         null=True, editable=False, verbose_name='Date AD updated')
     telephone = models.CharField(max_length=128, null=True, blank=True)
     mobile_phone = models.CharField(max_length=128, null=True, blank=True)
+    extension = models.CharField(max_length=128, null=True, blank=True)
     home_phone = models.CharField(max_length=128, null=True, blank=True)
     other_phone = models.CharField(max_length=128, null=True, blank=True)
     active = models.BooleanField(default=True, editable=False)

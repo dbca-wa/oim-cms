@@ -199,6 +199,7 @@ class ITSystem(CommonFields):
         (2, 'Client application'),
         (3, 'Mobile application'),
         (4, 'Service'),
+        (5, 'Externally hosted application'),
     )
     HEALTH_CHOICES = (
         (0, 'Healthy'),
