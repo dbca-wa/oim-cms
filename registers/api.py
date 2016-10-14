@@ -144,6 +144,7 @@ class ITSystemResource(CSVDjangoResource):
             'unique_evidence': 'Unknown' if data.unique_evidence is None else data.unique_evidence,
             'point_of_truth': 'Unknown' if data.point_of_truth is None else data.point_of_truth,
             'legal_need_to_retain': 'Unknown' if data.legal_need_to_retain is None else data.legal_need_to_retain,
+            'other_projects': data.other_projects,
         }
         return prepped
 

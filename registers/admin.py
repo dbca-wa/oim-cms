@@ -145,6 +145,7 @@ class ITSystemAdmin(VersionAdmin):
         'post_recovery',
         'variation_iscp',
         'user_notification',
+        'other_projects',
         'function',
         'use',
         'capability',
