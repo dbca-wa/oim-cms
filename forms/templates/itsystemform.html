@@ -1,0 +1,47 @@
+{% extends "f5-base.html" %}
+{% load core_tags wagtailcore_tags humanize %}
+
+{% block title %}{% if http_error_code %}{{ http_error_code }} - {{ request.get_full_path }}{% else %}Search{% if search_results %} Results{% endif %}{% endif %}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.search-container {
+    height: 15em;
+    cursor: pointer;
+    overflow: hidden;
+}
+.search-compress {
+    transform:scale(0.6);
+    width:162%;
+    transform-origin: 2% 0;
+    filter: blur(1px);
+    -webkit-filter: blur(1px);
+}
+.search-compress:hover {
+    filter: none;
+    -webkit-filter: none;
+}
+</style>
+<div class="row"><div class="large-12 columns">
+
+        <BR>
+    <H1>Edit IT Systems Request</h1>
+    <div id='formnotify'></div>
+    <form>
+        <input type='hidden' value='{{ csrf_token }}' name='csrftoken' id='csrftoken'>
+        <input type='hidden' value='' name='reqid' id='reqid'>
+        <label  style='width: 50%'>System ID: </label><span><input type='hidden' class='vTextField' id='reqid' style='width: 50%'><span id='reqlabval' ></span></span>
+        <label  style='width: 50%'>Name: </label><span><input type='text' class='vTextField' id='reqname' style='width: 50%'></span>
+        <label  style='width: 50%'>Description: </label><span><textarea type='text' id='reqdescription' class='vTextField' style='width: 50%;height: 230px;'></textarea></span>
+        <label  style='width: 50%'>Custodian: </label>
+                <span>
+                    <select id='reqcustodian' class='selectize-control movies single loading' style='width: 50%' >
+                    </select>
+                </span>
+        <input type='button' value='Save' onclick="useradminforms.saveITSystemReq();">
+        
+    </form>
+
+
+</div></div>
+{% endblock %}

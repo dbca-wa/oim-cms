@@ -187,6 +187,9 @@ def search(request):
         'search_results': search_results,
     })
 
+def forms(request):
+    return render(request, 'itsystemform.html', {
+    })
 
 def error404(request):
     search_query = " ".join(request.get_full_path().split("/"))
