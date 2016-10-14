@@ -43,7 +43,7 @@ def format_account_type(request, value):
 class DepartmentUserResource(DjangoResource):
     COMPACT_ARGS = (
         'pk', 'name', 'title', 'employee_id', 'email', 'telephone',
-        'mobile_phone', 'photo', 'photo_ad', 'org_data', 'parent__email',
+        'mobile_phone', 'extension', 'photo', 'photo_ad', 'org_data', 'parent__email',
         'parent__name', 'username', 'org_unit__location__id',
         'org_unit__location__name', 'org_unit__location__address',
         'org_unit__location__pobox', 'org_unit__location__phone',
@@ -151,6 +151,9 @@ class DepartmentUserResource(DjangoResource):
         user_values = list(users.values(*self.VALUES_ARGS))
 
         return self.formatters.format(self.request, user_values)
+
+    def is_authenticated(self):
+        return True
 
     @skip_prepare
     def create(self):
@@ -264,6 +267,8 @@ def profile(request):
             user.telephone = request.POST['telephone']
         if 'mobile_phone' in request.POST:
             user.mobile_phone = request.POST['mobile_phone']
+        if 'extension' in request.POST:
+            user.extension = request.POST['extension']
         if 'other_phone' in request.POST:
             user.other_phone = request.POST['other_phone']
         if 'preferred_name' in request.POST:
