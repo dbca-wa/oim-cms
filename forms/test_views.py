@@ -39,3 +39,11 @@ class ITSystemFormsViewsTestCase(TestCase):
         response = self.client.get(url, data={'reqid': self.itsystem.pk})
         self.assertEqual(response.status_code, 200)
 
+    def test_api_peoplelist(self):
+        """Test the api_peoplelist GET response
+        """
+
+        url = reverse('api_peoplelist')
+        response = self.client.get(url, data={'keyword': '%'})
+        self.assertEqual(response.status_code, 200)
+
