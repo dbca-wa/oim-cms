@@ -4,6 +4,7 @@ from django.test import TestCase, Client
 from mixer.backend.django import mixer
 from organisation.models import DepartmentUser
 from forms.api import ITSystemObj, PeopleObj, SaveITSystemRequest
+from registers.models import ITSystem
 
 #from .models import Approval
 
@@ -28,12 +29,13 @@ class ITSystemFormsViewsTestCase(TestCase):
         self.user2.set_password('pass')
         self.user2.save()
 
+        self.itsystem = mixer.blend(ITSystem)
+
     def test_api_itsystemreq(self):
         """Test the api_itsystemreq GET response
         """
-
-        url = reverse('api_itsystemreq', kwargs={'reqid': 194})
-        response = self.client.get(url)
+        
+        url = reverse('api_itsystemreq')
+        response = self.client.get(url, data={'reqid': self.itsystem.pk})
         self.assertEqual(response.status_code, 200)
 
-        #kwargs={'reqid': '194'}
