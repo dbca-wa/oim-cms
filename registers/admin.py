@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from reversion.admin import VersionAdmin
 from StringIO import StringIO
 import unicodecsv
-
+from .utils import OimModelAdmin
 from .models import (
     Software, Hardware, UserGroup, DocumentApproval, ITSystemHardware,
     ITSystem, ITSystemDependency, Backup, BusinessService, BusinessFunction,
@@ -15,14 +15,14 @@ from .models import (
 
 
 @register(Software)
-class SoftwareAdmin(VersionAdmin):
+class SoftwareAdmin(VersionAdmin,OimModelAdmin):
     list_display = ('name', 'url', 'os')
     list_filter = ('os',)
     search_fields = ('name', 'url',)
 
 
 @register(Hardware)
-class HardwareAdmin(VersionAdmin):
+class HardwareAdmin(VersionAdmin,OimModelAdmin):
     list_display = (
         'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4',
         'ports', 'serials', 'os')
@@ -32,19 +32,19 @@ class HardwareAdmin(VersionAdmin):
 
 
 @register(UserGroup)
-class UserGroupAdmin(VersionAdmin):
+class UserGroupAdmin(VersionAdmin,OimModelAdmin):
     list_display = ('name', 'user_count')
     search_fields = ('name',)
 
 
 @register(DocumentApproval)
-class DocumentApprovalAdmin(ModelAdmin):
+class DocumentApprovalAdmin(OimModelAdmin):
     list_diplay = ('department_user', 'approval_role', 'date_created')
     raw_id_fields = ('department_user',)
 
 
 @register(ITSystemHardware)
-class ITSystemHardwareAdmin(VersionAdmin):
+class ITSystemHardwareAdmin(VersionAdmin,OimModelAdmin):
     list_display = ('hostname', 'role', 'affected_itsystems')
     list_filter = ('role',)
     raw_id_fields = ('host',)
@@ -90,7 +90,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
 
 
 @register(ITSystem)
-class ITSystemAdmin(VersionAdmin):
+class ITSystemAdmin(VersionAdmin,OimModelAdmin):
     list_display = (
         'system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian',
         'preferred_contact', 'access', 'authentication')
@@ -208,14 +208,14 @@ class ITSystemAdmin(VersionAdmin):
 
 
 @register(ITSystemDependency)
-class ITSystemDependencyAdmin(VersionAdmin):
+class ITSystemDependencyAdmin(VersionAdmin,OimModelAdmin):
     list_display = ('itsystem', 'dependency', 'criticality')
     list_filter = ('criticality',)
     search_fields = ('itsystem__name', 'dependency__name')
 
 
 @register(Backup)
-class BackupAdmin(VersionAdmin):
+class BackupAdmin(VersionAdmin,OimModelAdmin):
     raw_id_fields = ('system', 'parent_host')
     list_display = (
         'name', 'host', 'operating_system', 'role', 'status', 'last_tested', 'backup_documentation')
@@ -239,13 +239,13 @@ class BackupAdmin(VersionAdmin):
 
 
 @register(BusinessService)
-class BusinessServiceAdmin(VersionAdmin):
+class BusinessServiceAdmin(VersionAdmin,OimModelAdmin):
     list_display = ('number', 'name')
     search_fields = ('name', 'description')
 
 
 @register(BusinessFunction)
-class BusinessFunctionAdmin(VersionAdmin):
+class BusinessFunctionAdmin(VersionAdmin,OimModelAdmin):
     list_display = ('name', 'function_services')
     list_filter = ('services',)
     search_fields = ('name', 'description')
@@ -256,14 +256,14 @@ class BusinessFunctionAdmin(VersionAdmin):
 
 
 @register(BusinessProcess)
-class BusinessProcessAdmin(VersionAdmin):
+class BusinessProcessAdmin(VersionAdmin,OimModelAdmin):
     list_display = ('name', 'criticality')
     list_filter = ('criticality', 'functions')
     search_fields = ('name', 'description', 'functions__name')
 
 
 @register(ProcessITSystemRelationship)
-class ProcessITSystemRelationshipAdmin(VersionAdmin):
+class ProcessITSystemRelationshipAdmin(VersionAdmin,OimModelAdmin):
     list_display = ('process', 'itsystem', 'importance')
     list_filter = ('importance', 'process', 'itsystem')
     search_fields = ('process__name', 'itsystem__name')
