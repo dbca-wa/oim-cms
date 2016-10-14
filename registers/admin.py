@@ -98,7 +98,8 @@ class ITSystemAdmin(VersionAdmin):
         'access',
         'authentication',
         'status',
-        'contingency_plan_status')
+        'contingency_plan_status',
+        'system_type')
     search_fields = (
         'system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description',
         'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')

@@ -9,7 +9,7 @@ import json
 from restless.dj import DjangoResource
 from restless.resources import skip_prepare
 from restless.utils import MoreTypesJSONEncoder
-from oim_cms.utils import FieldsFormatter
+from oim_cms.utils import FieldsFormatter, CSVDjangoResource
 
 from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
 
@@ -43,7 +43,7 @@ def format_account_type(request, value):
 class DepartmentUserResource(DjangoResource):
     COMPACT_ARGS = (
         'pk', 'name', 'title', 'employee_id', 'email', 'telephone',
-        'mobile_phone', 'photo', 'photo_ad', 'org_data', 'parent__email',
+        'mobile_phone', 'extension', 'photo', 'photo_ad', 'org_data', 'parent__email',
         'parent__name', 'username', 'org_unit__location__id',
         'org_unit__location__name', 'org_unit__location__address',
         'org_unit__location__pobox', 'org_unit__location__phone',
@@ -152,6 +152,9 @@ class DepartmentUserResource(DjangoResource):
 
         return self.formatters.format(self.request, user_values)
 
+    def is_authenticated(self):
+        return True
+
     @skip_prepare
     def create(self):
         try:
@@ -211,6 +214,26 @@ class DepartmentUserResource(DjangoResource):
         return self.formatters.format(self.request, data)
 
 
+class LocationResource(CSVDjangoResource):
+    VALUES_ARGS = (
+        'pk', 'name', 'address', 'phone', 'fax', 'email', 'point', 'url',
+        'bandwidth_url')
+
+    def list_qs(self):
+        FILTERS = {}
+        if 'location_id' in self.request.GET:
+            FILTERS['pk'] = self.request.GET['location_id']
+        return Location.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
+
+    @skip_prepare
+    def list(self):
+        data = list(self.list_qs())
+        for row in data:
+            if row['point']:
+                row['point'] = row['point'].wkt
+        return data
+
+
 @csrf_exempt
 def profile(request):
     """An API view that returns the profile for the request user.
@@ -244,6 +267,8 @@ def profile(request):
             user.telephone = request.POST['telephone']
         if 'mobile_phone' in request.POST:
             user.mobile_phone = request.POST['mobile_phone']
+        if 'extension' in request.POST:
+            user.extension = request.POST['extension']
         if 'other_phone' in request.POST:
             user.other_phone = request.POST['other_phone']
         if 'preferred_name' in request.POST:

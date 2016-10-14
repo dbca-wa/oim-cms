@@ -1,9 +1,7 @@
 from __future__ import unicode_literals, absolute_import
 from django.conf import settings
 from django.conf.urls import include, url
-from django.db.models import F
-from django.http import (
-    HttpResponseRedirect, HttpResponseForbidden, HttpResponseBadRequest)
+from django.http import HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 import json
 from mptt.templatetags.mptt_tags import cache_tree_children
@@ -15,17 +13,20 @@ from restless.resources import skip_prepare
 from approvals.api import ApprovalResource
 from core.models import UserSession
 from mudmap.models import MudMap
-from organisation.api import DepartmentUserResource, profile
+from organisation.api import DepartmentUserResource, LocationResource, profile
 from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
 from registers.api import ITSystemResource, HardwareResource
 from registers.models import ITSystem
-from tracking.models import EC2Instance
+from tracking.api import EC2InstanceResource
 
 from .utils import CSVDjangoResource
 
 
 @csrf_exempt
 def freshdesk(request):
+    """An API view to create a new Freshdesk ticket via a POST to the
+    Freshdesk API.
+    """
     lines = []
     for key, val in request.POST.iteritems():
         if not val:
@@ -159,45 +160,6 @@ class WhoAmIResource(DjangoResource):
             session__session_key=self.request.session.session_key)
 
 
-class EC2InstanceResource(CSVDjangoResource):
-    VALUES_ARGS = (
-        'pk', 'name', 'ec2id', 'launch_time', 'running', 'next_state'
-    )
-
-    def is_authenticated(self):
-        return True
-
-    def list_qs(self):
-        if 'ec2id' in self.request.GET:
-            return EC2Instance.objects.filter(
-                ec2id=self.request.GET['ec2id']).values(*self.VALUES_ARGS)
-        else:
-            return EC2Instance.objects.exclude(
-                running=F('next_state')).values(*self.VALUES_ARGS)
-
-    @skip_prepare
-    def list(self):
-        data = list(self.list_qs())
-        return data
-
-    @skip_prepare
-    def create(self):
-        if not isinstance(self.data, list):
-            self.data = [self.data]
-            deleted = None
-        else:
-            deleted = EC2Instance.objects.exclude(
-                ec2id__in=[i['InstanceId'] for i in self.data]).delete()
-        for instc in self.data:
-            instance, created = EC2Instance.objects.get_or_create(ec2id=instc['InstanceId'])
-            instance.name = [x['Value'] for x in instc['Tags'] if x['Key'] == 'Name'][0]
-            instance.launch_time = instc['LaunchTime']
-            instance.running = instc['State']['Name'] == 'running'
-            instance.extra_data = instc
-            instance.save()
-        return {'saved': len(self.data), 'deleted': deleted}
-
-
 class MudMapResource(CSVDjangoResource):
     VALUES_ARGS = (
         'pk', 'name', 'user', 'last_saved'
@@ -233,35 +195,15 @@ class MudMapResource(CSVDjangoResource):
             return {'saved': self.data['name']}
 
 
-class LocationResource(CSVDjangoResource):
-    VALUES_ARGS = (
-        'pk', 'name', 'address', 'phone', 'fax', 'email', 'point', 'url', 'bandwidth_url'
-    )
-
-    def list_qs(self):
-        FILTERS = {}
-        if 'location_id' in self.request.GET:
-            FILTERS['pk'] = self.request.GET['location_id']
-        return Location.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
-
-    @skip_prepare
-    def list(self):
-        data = list(self.list_qs())
-        for row in data:
-            if row['point']:
-                row['point'] = row['point'].wkt
-        return data
-
-
 api_urlpatterns = [
     url(r'^approvals/', include(ApprovalResource.urls())),
     url(r'^freshdesk', freshdesk, name='api_freshdesk'),
-    url(r'^ec2_instances', include(EC2InstanceResource.urls())),
+    url(r'^ec2_instances/', include(EC2InstanceResource.urls())),
     url(r'^itsystems/', include(ITSystemResource.urls())),
     url(r'^itsystems.csv', ITSystemResource.as_csv),
     url(r'^mudmaps', include(MudMapResource.urls())),
     url(r'^mudmaps.csv', MudMapResource.as_csv),
-    url(r'^locations', include(LocationResource.urls())),
+    url(r'^locations/', include(LocationResource.urls())),
     url(r'^locations.csv', LocationResource.as_csv),
     url(r'^devices/', include(HardwareResource.urls())),
     url(r'^users/', include(DepartmentUserResource.urls())),
