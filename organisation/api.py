@@ -10,12 +10,13 @@ from restless.dj import DjangoResource
 from restless.resources import skip_prepare
 from restless.utils import MoreTypesJSONEncoder
 from oim_cms.utils import FieldsFormatter, CSVDjangoResource
+import logging
 
 from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
 
 
 ACCOUNT_TYPE_DICT = dict(DepartmentUser.ACCOUNT_TYPE_CHOICES)
-
+logger  = logging.getLogger('ad_sync')
 
 def format_fileField(request, value):
     if value:
@@ -107,6 +108,7 @@ class DepartmentUserResource(DjangoResource):
             if row['members']:
                 row['email'] = '{}@{}'.format(
                     row['email'], row['members'][0].split('@', 1)[1])
+        logger.info(structure)
         return structure
 
     def list(self):
@@ -149,7 +151,7 @@ class DepartmentUserResource(DjangoResource):
             self.VALUES_ARGS = self.MINIMAL_ARGS
 
         user_values = list(users.values(*self.VALUES_ARGS))
-
+        logger.info(self.formatters.format(self.request, user_values))
         return self.formatters.format(self.request, user_values)
 
     def is_authenticated(self):
@@ -180,6 +182,7 @@ class DepartmentUserResource(DjangoResource):
                     DepartmentUser.objects.filter(
                         pk=user.pk).values(
                         *self.VALUES_ARGS))[0]
+                logger.info(self.formatters.format(self.request, data))
                 return self.formatters.format(self.request, data)
             modified = make_aware(
                 user._meta.get_field_by_name('date_updated')[0].clean(
@@ -211,6 +214,8 @@ class DepartmentUserResource(DjangoResource):
         except Exception as e:
             data = self.data
             data['Error'] = repr(e)
+            logger.error(repr(e))
+        logger.info(self.formatters.format(self.request, data))
         return self.formatters.format(self.request, data)
 
 
