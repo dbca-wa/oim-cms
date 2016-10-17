@@ -392,6 +392,9 @@ class ITSystem(CommonFields):
     legal_need_to_retain = models.NullBooleanField(
         default=None, help_text='''Is there a legal or compliance need to keep'''
         ''' the digital content in this system?''')
+    other_projects = models.TextField(
+        null=True, blank=True,
+        help_text='Details of related IT Systems and projects.')
 
     class Meta:
         verbose_name = 'IT System'
