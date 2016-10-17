@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, absolute_import
 from django.conf import settings
 from django.conf.urls import url
-from django.contrib.admin import register, ModelAdmin
+from django.contrib.admin import register
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from reversion.admin import VersionAdmin
@@ -15,14 +15,14 @@ from .models import (
 
 
 @register(Software)
-class SoftwareAdmin(VersionAdmin,OimModelAdmin):
+class SoftwareAdmin(VersionAdmin, OimModelAdmin):
     list_display = ('name', 'url', 'os')
     list_filter = ('os',)
     search_fields = ('name', 'url',)
 
 
 @register(Hardware)
-class HardwareAdmin(VersionAdmin,OimModelAdmin):
+class HardwareAdmin(VersionAdmin, OimModelAdmin):
     list_display = (
         'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4',
         'ports', 'serials', 'os')
@@ -32,7 +32,7 @@ class HardwareAdmin(VersionAdmin,OimModelAdmin):
 
 
 @register(UserGroup)
-class UserGroupAdmin(VersionAdmin,OimModelAdmin):
+class UserGroupAdmin(VersionAdmin, OimModelAdmin):
     list_display = ('name', 'user_count')
     search_fields = ('name',)
 
@@ -44,7 +44,7 @@ class DocumentApprovalAdmin(OimModelAdmin):
 
 
 @register(ITSystemHardware)
-class ITSystemHardwareAdmin(VersionAdmin,OimModelAdmin):
+class ITSystemHardwareAdmin(VersionAdmin, OimModelAdmin):
     list_display = ('hostname', 'role', 'affected_itsystems')
     list_filter = ('role',)
     raw_id_fields = ('host',)
@@ -90,7 +90,7 @@ class ITSystemHardwareAdmin(VersionAdmin,OimModelAdmin):
 
 
 @register(ITSystem)
-class ITSystemAdmin(VersionAdmin,OimModelAdmin):
+class ITSystemAdmin(VersionAdmin, OimModelAdmin):
     list_display = (
         'system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian',
         'preferred_contact', 'access', 'authentication')
@@ -209,14 +209,14 @@ class ITSystemAdmin(VersionAdmin,OimModelAdmin):
 
 
 @register(ITSystemDependency)
-class ITSystemDependencyAdmin(VersionAdmin,OimModelAdmin):
+class ITSystemDependencyAdmin(VersionAdmin, OimModelAdmin):
     list_display = ('itsystem', 'dependency', 'criticality')
     list_filter = ('criticality',)
     search_fields = ('itsystem__name', 'dependency__name')
 
 
 @register(Backup)
-class BackupAdmin(VersionAdmin,OimModelAdmin):
+class BackupAdmin(VersionAdmin, OimModelAdmin):
     raw_id_fields = ('system', 'parent_host')
     list_display = (
         'name', 'host', 'operating_system', 'role', 'status', 'last_tested', 'backup_documentation')
@@ -240,13 +240,13 @@ class BackupAdmin(VersionAdmin,OimModelAdmin):
 
 
 @register(BusinessService)
-class BusinessServiceAdmin(VersionAdmin,OimModelAdmin):
+class BusinessServiceAdmin(VersionAdmin, OimModelAdmin):
     list_display = ('number', 'name')
     search_fields = ('name', 'description')
 
 
 @register(BusinessFunction)
-class BusinessFunctionAdmin(VersionAdmin,OimModelAdmin):
+class BusinessFunctionAdmin(VersionAdmin, OimModelAdmin):
     list_display = ('name', 'function_services')
     list_filter = ('services',)
     search_fields = ('name', 'description')
@@ -257,14 +257,14 @@ class BusinessFunctionAdmin(VersionAdmin,OimModelAdmin):
 
 
 @register(BusinessProcess)
-class BusinessProcessAdmin(VersionAdmin,OimModelAdmin):
+class BusinessProcessAdmin(VersionAdmin, OimModelAdmin):
     list_display = ('name', 'criticality')
     list_filter = ('criticality', 'functions')
     search_fields = ('name', 'description', 'functions__name')
 
 
 @register(ProcessITSystemRelationship)
-class ProcessITSystemRelationshipAdmin(VersionAdmin,OimModelAdmin):
+class ProcessITSystemRelationshipAdmin(VersionAdmin, OimModelAdmin):
     list_display = ('process', 'itsystem', 'importance')
     list_filter = ('importance', 'process', 'itsystem')
     search_fields = ('process__name', 'itsystem__name')
