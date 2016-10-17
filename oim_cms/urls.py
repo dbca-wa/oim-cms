@@ -19,7 +19,7 @@ urlpatterns = [
     url(r'^django-admin/', include(admin.site.urls)),
     url(r'^admin/', include(wagtailadmin_urls)),
     url(r'^documents/', include(wagtaildocs_urls)),
-    url(r'^forms/', views.forms, name='forms'),
+    url(r'^forms/itsystemreq/', views.forms, name='forms_itesystemreq'),
     url(r'^api/', include(api_urlpatterns)),
     url(r'^draft/(?P<path>.*)', views.draft, name='draft'),
     url(r'^search', views.search, name='search'),
