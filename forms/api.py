@@ -60,7 +60,6 @@ def ITSystemObj(self):
             itsobj['reqsystem_reqs'] = value.system_reqs
             itsobj['reqworkaround'] = value.workaround
             itsobj['reqrecovery_docs'] = value.recovery_docs
-            itsobj['reqsystem_creation_date'] = value.system_creation_date.strftime('%d/%m/%Y')
             itsobj['reqcritical_period'] = value.critical_period
             itsobj['reqalt_processing'] = value.alt_processing
             itsobj['reqtechnical_recov'] = value.technical_recov
@@ -69,6 +68,11 @@ def ITSystemObj(self):
             itsobj['requnique_evidence'] = value.unique_evidence
             itsobj['reqpoint_of_truth'] = value.point_of_truth
             itsobj['reqlegal_need_to_retain'] = value.legal_need_to_retain
+
+            if value.system_creation_date:
+				itsobj['reqsystem_creation_date'] = value.system_creation_date.strftime('%d/%m/%Y')
+            else:
+                itsobj['reqsystem_creation_date'] = ""
 
     DepartmentUser.objects.only('id','given_name','surname', 'title')
     rows = DepartmentUser.objects.filter(id=itsobj['reqcustodianid'])
