@@ -35,3 +35,4 @@ class PermissionsTestCase(TestCase):
         self.assertEqual(test_user3.has_module_perms('organisation'),True) # super user
         self.assertEqual(test_user4.has_module_perms('organisation'),False) # user who is not staff
         self.assertEqual(test_user1.has_module_perms('some_app'),False) # test functinality in another group
+        self.assertEqual(test_user3.has_module_perms('some_app'),True) # test supper user functinality in another group
