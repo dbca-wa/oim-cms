@@ -12,7 +12,7 @@ from wagtail.wagtailsearch.models import Query
 from core.models import Content, UserSession
 from oim_cms.api import WhoAmIResource
 from tracking.models import DepartmentUser
-
+from forms.api import ITSystemPermssionCheck
 
 @csrf_exempt
 def auth_ip(request):
@@ -188,7 +188,10 @@ def search(request):
     })
 
 def forms(request):
+    reqid = request.GET['reqid']
+    PermsResp = ITSystemPermssionCheck(request,reqid)
     return render(request, 'itsystemform.html', {
+                'PermCheck': PermsResp
     })
 
 def error404(request):

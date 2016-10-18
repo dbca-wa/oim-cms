@@ -22,9 +22,9 @@
     -webkit-filter: none;
 }
 </style>
+{% if PermCheck == True %}
 <div class="row"><div class="large-12 columns">
         <BR>
-
         <H1>Edit IT Systems Request</h1>
         <div id='formnotify'></div>
 		<div id='dpawforms' class='dpawforms' > 
@@ -89,5 +89,25 @@ $(document).ready(function(){
         useradminforms.loadITSystemReq();
         });
 </script>
+{% else %}
+     <div class="row"><div class="large-12 columns">
+       <BR>
+       <H1>Permission Denied</h1>
+       <div class='permissiondenied' > Sorry you do not have access </div>
+       
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+{% endif %}
 {% endblock %}
 
