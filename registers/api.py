@@ -111,13 +111,17 @@ class ITSystemResource(CSVDjangoResource):
             'dependencies': [{
                 'dependency__system_id': i.dependency.system_id,
                 'dependency__name': i.dependency.name,
-                'criticality': i.get_criticality_display()
+                'criticality': i.get_criticality_display(),
+                'custodian__name': i.dependency.custodian.name if i.dependency.custodian else '',
+                'custodian__email': i.dependency.custodian.email if i.dependency.custodian else '',
             } for i in data.itsystemdependency_set.all()],
             'dependants': [{
                 'dependant__system_id': i.itsystem.system_id,
                 'dependant__name': i.itsystem.name,
-                'criticality': i.get_criticality_display()
-                } for i in ITSystemDependency.objects.filter(dependency=data)],
+                'criticality': i.get_criticality_display(),
+                'custodian__name': i.itsystem.custodian.name if i.itsystem.custodian else '',
+                'custodian__email': i.itsystem.custodian.email if i.itsystem.custodian else '',
+            } for i in ITSystemDependency.objects.filter(dependency=data)],
             'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
             'contingency_plan_url': domain + settings.MEDIA_URL + data.contingency_plan.name if data.contingency_plan else '',
             'contingency_plan_status': data.get_contingency_plan_status_display(),

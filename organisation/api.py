@@ -129,8 +129,17 @@ class DepartmentUserResource(DjangoResource):
             return self.org_structure(sync_o365=sync_o365, exclude_populate_groups=exclude_populate_groups)
 
         if 'all' in self.request.GET:
-            users = DepartmentUser.objects.all().order_by('name')
+            # Return all DU objects, including those deleted in AD.
+            users = DepartmentUser.objects.all()
+        elif 'ad_deleted' in self.request.GET:
+            if self.request.GET['ad_deleted'] == 'false':
+                # Return all DU objects that are not deleted in AD (inc. inactive, shared, etc.)
+                users = DepartmentUser.objects.filter(ad_deleted=False)
+            elif self.request.GET['ad_deleted'] == 'true':
+                # Return all DU objects that are deleted in AD (inc. inactive, shared, etc.)
+                users = DepartmentUser.objects.filter(ad_deleted=True)
         else:
+            # Return 'active' DU objects only.
             FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
             # Filters below are exclusive.
             if 'email' in self.request.GET:
@@ -140,8 +149,9 @@ class DepartmentUserResource(DjangoResource):
             elif 'cost_centre' in self.request.GET:
                 FILTERS['cost_centre__code'] = self.request.GET['cost_centre']
             # Exclude shared and role-based account types.
-            users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[5, 9]).order_by('name')
+            users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[5, 9])
 
+        users = users.order_by('name')
         # Parameters to modify the API output.
         if 'compact' in self.request.GET:
             self.VALUES_ARGS = self.COMPACT_ARGS

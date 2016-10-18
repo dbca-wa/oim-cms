@@ -149,7 +149,7 @@ CRON_CLASSES = (
 ROOT_URLCONF = 'oim_cms.urls'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
 DATABASES = {'default': database.config()}
-APPLICATION_VERSION = '1.1.4'
+APPLICATION_VERSION = '1.1.5'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 
@@ -276,7 +276,8 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'cms.log'),
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 5
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
         },
     },
     'loggers': {
