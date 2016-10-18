@@ -201,7 +201,7 @@ def ITSystemPermssionCheck(self,reqid):
     permObj['superUserCheck'] = False
     PermUserInfo['userid'] = 0
 
-# Check Logged in User is in Group
+    # Check Logged in User is in Group
     permObj['groupcheck'] = groupCheck(self, 'OIM Staff') 
 
     # Get custonian id from IT System Req
