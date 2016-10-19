@@ -2,16 +2,54 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth import login, logout
 from django.core.cache import cache
 from django.shortcuts import render
+from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from django_auth_ldap.backend import LDAPBackend
 from ipware.ip import get_ip
 import json
+import adal
 from wagtail.wagtailcore.models import PageRevision
 from wagtail.wagtailsearch.models import Query
 
 from core.models import Content, UserSession
 from oim_cms.api import WhoAmIResource
+from django.contrib.auth.models import User
 from tracking.models import DepartmentUser
+
+
+def force_email(username):
+    if username.find("@") == -1:
+        candidates = User.objects.filter(
+            username__iexact=username)
+        if not candidates:
+            return None
+        return candidates[0].email
+    return username
+
+
+def adal_authenticate(email, password):
+    try:
+        context = adal.AuthenticationContext(settings.AZUREAD_AUTHORITY)
+        token = context.acquire_token_with_username_password(
+            settings.AZUREAD_RESOURCE, email, password,
+            settings.SOCIAL_AUTH_AZUREAD_OAUTH2_KEY,
+            settings.SOCIAL_AUTH_AZUREAD_OAUTH2_SECRET
+        )
+
+    except adal.adal_error.AdalError:
+        return None
+
+    candidates = User.objects.filter(email__iexact=token['userId'])
+    if candidates.exists():
+        return candidates[0]
+    else:
+        return None
+
+
+def shared_id_authenticate(email, shared_id):
+    us = UserSession.objects.filter(user__email__iexact=email).order_by('-session__expire_date')
+    if (not us.exists()) or (us[0].shared_id != shared_id):
+        return None
+    return us[0].user
 
 
 @csrf_exempt
@@ -22,19 +60,14 @@ def auth_ip(request):
     # If there's a basic auth header, perform a check.
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
     if basic_auth:
-        # Check basic auth against LDAP as an alternative to SSO.
+        # Check basic auth against Azure AD as an alternative to SSO.
         username, password = request.META["HTTP_AUTHORIZATION"].split(
             " ", 1)[1].strip().decode('base64').split(":", 1)
-        ldapauth = LDAPBackend()
-        if username.find("@") > -1:
-            username = DepartmentUser.objects.get(
-                email__iexact=username).username
-        user = ldapauth.authenticate(username=username,
-                                     password=password)
+        username = force_email(username)
+        user = adal_authenticate(username, password)
+        
         if not user:
-            us = UserSession.objects.filter(user__username=username)[0]
-            assert us.shared_id == password
-            user = us.user
+            user = shared_id_authenticate(username, password)
 
         if user:
             response = HttpResponse(json.dumps(
@@ -90,22 +123,21 @@ def auth(request):
             response[key] = val
         response["X-auth-cache-hit"] = "success"
         return response
+
     if not request.user.is_authenticated():
-        # Check basic auth against LDAP as an alternative to SSO.
+        # Check basic auth against Azure AD as an alternative to SSO.
         try:
             assert request.META.get("HTTP_AUTHORIZATION") is not None
             username, password = request.META["HTTP_AUTHORIZATION"].split(
                 " ", 1)[1].strip().decode('base64').split(":", 1)
-            ldapauth = LDAPBackend()
-            if username.find("@") > -1:
-                username = DepartmentUser.objects.get(
-                    email__iexact=username).username
-            user = ldapauth.authenticate(username=username,
-                                         password=password)
+            username = force_email(username)
+            user = adal_authenticate(username, password)
+            
             if not user:
-                us = UserSession.objects.filter(user__username=username)[0]
-                assert us.shared_id == password
-                user = us.user
+                user = shared_id_authenticate(username, password)
+            
+            if not user:
+                raise Exception('Authentication failed')
             user.backend = "django.contrib.auth.backends.ModelBackend"
             login(request, user)
         except Exception as e:
