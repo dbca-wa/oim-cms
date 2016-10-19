@@ -10,12 +10,13 @@ from restless.dj import DjangoResource
 from restless.resources import skip_prepare
 from restless.utils import MoreTypesJSONEncoder
 from oim_cms.utils import FieldsFormatter, CSVDjangoResource
+import logging
 
 from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
 
 
 ACCOUNT_TYPE_DICT = dict(DepartmentUser.ACCOUNT_TYPE_CHOICES)
-
+logger  = logging.getLogger('ad_sync')
 
 def format_fileField(request, value):
     if value:
@@ -159,69 +160,100 @@ class DepartmentUserResource(DjangoResource):
             self.VALUES_ARGS = self.MINIMAL_ARGS
 
         user_values = list(users.values(*self.VALUES_ARGS))
-
         return self.formatters.format(self.request, user_values)
 
     def is_authenticated(self):
         return True
 
-    @skip_prepare
-    def create(self):
-        try:
-            try:
-                user = DepartmentUser.objects.get(
-                    email__iexact=self.data['EmailAddress'])
-            except:
-                try:
-                    user = DepartmentUser.objects.get(
-                        ad_guid__iendswith=self.data['ObjectGUID'])
-                except:
-                    try:
-                        user = DepartmentUser.objects.get(
-                            ad_dn=self.data['DistinguishedName'])
-                    except:
-                        user = DepartmentUser(ad_guid=self.data['ObjectGUID'])
+    @csrf_exempt
+    def update(self,pk):
+        user = self.userExists()
+        if user :
             if self.data.get('Deleted'):
                 user.active = False
                 user.ad_deleted = True
                 user.ad_updated = True
                 user.save()
-                data = list(
-                    DepartmentUser.objects.filter(
-                        pk=user.pk).values(
-                        *self.VALUES_ARGS))[0]
+
+                data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+                logger.info("Removed user {} \n{}".format(user.name,self.formatters.format(self.request, data)))
+
                 return self.formatters.format(self.request, data)
-            modified = make_aware(
-                user._meta.get_field_by_name('date_updated')[0].clean(
-                    self.data['Modified'], user))
-            if not user.pk or not user.date_ad_updated or modified > user.date_updated:
-                user.email = self.data['EmailAddress']
-                user.ad_guid = self.data['ObjectGUID']
-                user.ad_dn = self.data['DistinguishedName']
-                user.username = self.data['SamAccountName']
-                user.expiry_date = self.data.get('AccountExpirationDate')
-                user.active = self.data['Enabled']
-                user.ad_deleted = False
-                user.ad_data = self.data
-                if not user.name:
-                    user.name = self.data['Name']
-                if not user.title:
-                    user.title = self.data['Title']
-                if not user.given_name:
-                    user.given_name = self.data['GivenName']
-                if not user.surname:
-                    user.surname = self.data['Surname']
-                user.date_ad_updated = self.data['Modified']
-                user.ad_updated = True
-                user.save()
-            data = list(
-                DepartmentUser.objects.filter(
-                    pk=user.pk).values(
-                    *self.VALUES_ARGS))[0]
+            modified = make_aware(user._meta.get_field_by_name('date_updated')[0].clean(self.data['Modified'], user))
+            if user.date_ad_updated or modified < user.date_updated:
+                old_user = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+                updated_user = self.updateUser(user)
+                data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+                log_data = {
+                    'old_user' : old_user['ad_data'],
+                    'updated_user': updated_user.ad_data
+                }
+                logger.info("Updated user {}\n{}".format(user.name,self.formatters.format(self.request, log_data)))
+
+            return self.formatters.format(self.request, data)
+        logger.error("User Does Not Exist")
+        return self.formatters.format(self.request, {"Error":"User Does Not Exist"})
+
+    @skip_prepare
+    def create(self):
+        user = self.userExists()
+        if not user :
+            try:
+                user = DepartmentUser(ad_guid=self.data['ObjectGUID'])
+                user = self.updateUser(user)
+                data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+                logger.info("Created User {} \n{} ".format(user.name,self.formatters.format(self.request, data)))
+                return self.formatters.format(self.request, data)
+            except Exception as e:
+                data = self.data
+                data['Error'] = repr(e)
+                logger.error(repr(e))
+        logger.error("User Already Exist")
+        return self.formatters.format(self.request, {"Error":"User Already Exist"})
+
+
+    def updateUser(self,user):
+        try:
+            user.email = self.data['EmailAddress']
+            user.ad_guid = self.data['ObjectGUID']
+            user.ad_dn = self.data['DistinguishedName']
+            user.username = self.data['SamAccountName']
+            user.expiry_date = self.data.get('AccountExpirationDate')
+            user.active = self.data['Enabled']
+            user.ad_deleted = False
+            user.ad_data = self.data
+            if not user.name:
+                user.name = self.data['Name']
+            if self.data['Title']:
+                user.title = self.data['Title']
+            if not user.given_name:
+                user.given_name = self.data['GivenName']
+            if not user.surname:
+                user.surname = self.data['Surname']
+            user.date_ad_updated = self.data['Modified']
+            user.ad_updated = True
+            user.save()
+            return user
         except Exception as e:
-            data = self.data
-            data['Error'] = repr(e)
-        return self.formatters.format(self.request, data)
+            raise e
+        return False
+
+    def userExists(self):
+        ''' check if a user  exists '''
+        try:
+            user = DepartmentUser.objects.get(
+                email__iexact=self.data['EmailAddress'])
+        except:
+            try:
+                user = DepartmentUser.objects.get(
+                    ad_guid__iendswith=self.data['ObjectGUID'])
+            except:
+                try:
+                    user = DepartmentUser.objects.get(
+                        ad_dn=self.data['DistinguishedName'])
+                except:
+                    return False
+        return user
 
 
 class LocationResource(CSVDjangoResource):
