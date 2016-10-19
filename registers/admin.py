@@ -25,7 +25,7 @@ class SoftwareAdmin(VersionAdmin, OimModelAdmin):
 class HardwareAdmin(VersionAdmin, OimModelAdmin):
     list_display = (
         'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4',
-        'ports', 'serials', 'os')
+        'os', 'location')
     list_filter = ('device_type', 'os', 'cost_centre')
     search_fields = (
         'name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')

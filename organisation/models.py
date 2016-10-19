@@ -125,6 +125,12 @@ class DepartmentUser(MPTTModel):
         default=False, verbose_name='security clearance granted',
         help_text='''Security clearance approved by CC Manager (confidentiality
         agreement, referee check, police clearance, etc.''')
+    o365_licence = models.NullBooleanField(
+        default=None, editable=False,
+        help_text='Account consumes an Office 365 licence.')
+    shared_account = models.BooleanField(
+        default=False, editable=False,
+        help_text='Automatically set from account type.')
 
     class MPTTMeta:
         order_insertion_by = ['name']
@@ -146,6 +152,8 @@ class DepartmentUser(MPTTModel):
         return self.email
 
     def save(self, *args, **kwargs):
+        """Override the save method with additional business logic.
+        """
         if self.employee_id and self.employee_id.lower() == "n/a":
             self.employee_id = None
         if self.employee_id:
@@ -175,6 +183,8 @@ class DepartmentUser(MPTTModel):
                 "tech_contact": str(self.cost_centre.tech_contact),
             }
         self.update_photo_ad()
+        if self.account_type in [5, 9]:  # Shared/role-based account types.
+            self.shared_account = True
         super(DepartmentUser, self).save(*args, **kwargs)
 
     def update_photo_ad(self):

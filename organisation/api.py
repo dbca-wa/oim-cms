@@ -54,7 +54,7 @@ class DepartmentUserResource(DjangoResource):
         'ad_dn', 'ad_data', 'date_updated', 'date_ad_updated', 'active',
         'ad_deleted', 'in_sync', 'given_name', 'surname', 'home_phone',
         'other_phone', 'notes', 'working_hours', 'position_type',
-        'account_type')
+        'account_type', 'o365_licence', 'shared_account')
     MINIMAL_ARGS = (
         'pk', 'name', 'preferred_name', 'title', 'email', 'telephone',
         'mobile_phone', 'photo', 'org_unit__location__name')

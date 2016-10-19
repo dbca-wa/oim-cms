@@ -284,7 +284,8 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'ad_sync_actions.log'),
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 25
+            'maxBytes': 1024 * 1024 * 25,
+            'backupCount': 5,
         }
     },
     'loggers': {
