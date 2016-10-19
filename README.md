@@ -1,3 +1,6 @@
+[![Build
+status](https://travis-ci.org/parksandwildlife/oim-cms.svg?branch=master)](https://travis-ci.org/parksandwildlife/oim-cms/builds) [![Coverage Status](https://coveralls.io/repos/github/parksandwildlife/oim-cms/badge.svg?branch=master)](https://coveralls.io/github/parksandwildlife/oim-cms?branch=master)
+
 OIM Extranet
 ============
 

@@ -29,3 +29,5 @@ Unidecode==0.04.19
 mixer==5.5.7
 django-cron==0.5.0
 django-confy==1.0.4
+coverage>=4.0.3
+coveralls>=1.1
