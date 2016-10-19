@@ -171,24 +171,14 @@ class DepartmentUserResource(DjangoResource):
                 return self.formatters.format(self.request, data)
             modified = make_aware(user._meta.get_field_by_name('date_updated')[0].clean(self.data['Modified'], user))
             if user.date_ad_updated or modified < user.date_updated:
-                user = self.updateUser(user)
+                old_user = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+                updated_user = self.updateUser(user)
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info("Updated user {}\n{}".format(user.name,self.formatters.format(self.request, data)))
-                # TODO find way to log old and user data
-                """
-                data['Old_User'] = {
-                                    "EmailAddress":old_user.email,
-                                    "ObjectGUID":old_user.ad_guid,
-                                    "DistinguishedName":old_user.ad_dn,
-                                    "SamAccountName":old_user.username,
-                                    "AccountExpirationDate":old_user.expiry_date,
-                                    "Enabled":old_user.active,
-                                    "Name":old_user.name,
-                                    "Title":old_user.title,
-                                    "GivenName":old_user.given_name,
-                                    "Surname":old_user.surname
-                                    }
-                """
+                log_data = {
+                    'old_user' : old_user['ad_data'],
+                    'updated_user': updated_user.ad_data
+                }
+                logger.info("Updated user {}\n{}".format(user.name,self.formatters.format(self.request, log_data)))
 
             return self.formatters.format(self.request, data)
         logger.error("User Does Not Exist")
@@ -202,7 +192,7 @@ class DepartmentUserResource(DjangoResource):
                 user = DepartmentUser(ad_guid=self.data['ObjectGUID'])
                 user = self.updateUser(user)
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info("Modified User {} \n{} ".format(user.name,self.formatters.format(self.request, data)))
+                logger.info("Created User {} \n{} ".format(user.name,self.formatters.format(self.request, data)))
                 return self.formatters.format(self.request, data)
             except Exception as e:
                 data = self.data
@@ -224,9 +214,9 @@ class DepartmentUserResource(DjangoResource):
             user.ad_data = self.data
             if not user.name:
                 user.name = self.data['Name']
-            #if not user.title:
-            user.title = self.data['Title']
-            #if not user.given_name:
+            if self.data['Title']:
+                user.title = self.data['Title']
+            if not user.given_name:
                 user.given_name = self.data['GivenName']
             if not user.surname:
                 user.surname = self.data['Surname']
