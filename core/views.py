@@ -57,6 +57,7 @@ def auth_ip(request):
     # Get the IP of the current user, try and match it up to a session.
     current_ip = get_ip(request)
 
+
     # If there's a basic auth header, perform a check.
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
     if basic_auth:
@@ -71,7 +72,7 @@ def auth_ip(request):
 
         if user:
             response = HttpResponse(json.dumps(
-                {'email': user.email, 'client_logon_ip': current_ip}))
+                {'email': user.email, 'client_logon_ip': current_ip}), content_type='application/json')
             response["X-email"] = user.email
             response["X-client-logon-ip"] = current_ip
             return response
@@ -97,7 +98,7 @@ def auth_ip(request):
         except:
             headers["kmi_roles"] = ''
 
-    response = HttpResponse(json.dumps(headers))
+    response = HttpResponse(json.dumps(headers), content_type='application/json')
     for key, val in headers.iteritems():
         key = "X-" + key.replace("_", "-")
         response[key] = val
@@ -118,7 +119,7 @@ def auth(request):
         "HTTP_AUTHORIZATION") or request.session.session_key)
     content = cache.get(cachekey)
     if content:
-        response = HttpResponse(content[0])
+        response = HttpResponse(content[0], content_type='application/json')
         for key, val in content[1].iteritems():
             response[key] = val
         response["X-auth-cache-hit"] = "success"
