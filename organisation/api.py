@@ -16,7 +16,8 @@ from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCe
 
 
 ACCOUNT_TYPE_DICT = dict(DepartmentUser.ACCOUNT_TYPE_CHOICES)
-logger  = logging.getLogger('ad_sync')
+logger = logging.getLogger('ad_sync')
+
 
 def format_fileField(request, value):
     if value:
@@ -68,6 +69,10 @@ class DepartmentUserResource(DjangoResource):
     })
 
     def org_structure(self, sync_o365=False, exclude_populate_groups=False):
+        """A custom API endpoint to return the organisation structure: a list
+        of each organisational unit's metadata (name, manager, members).
+        Includes OrgUnits, cost centres, locations and secondary locations.
+        """
         qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
         if exclude_populate_groups:  # Exclude objects where populate_primary_group == False
             qs = qs.exclude(populate_primary_group=False)
@@ -163,21 +168,23 @@ class DepartmentUserResource(DjangoResource):
         return self.formatters.format(self.request, user_values)
 
     def is_authenticated(self):
+        """This method os currently required for create/update to work via the
+        AD sync scripts.
+        TODO: implement optional token-based auth to secure this).
+        """
         return True
 
     @csrf_exempt
-    def update(self,pk):
-        user = self.userExists()
-        if user :
+    def update(self, pk):
+        user = self.get_user()
+        if user:
             if self.data.get('Deleted'):
                 user.active = False
                 user.ad_deleted = True
                 user.ad_updated = True
                 user.save()
-
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info("Removed user {} \n{}".format(user.name,self.formatters.format(self.request, data)))
-
+                logger.info("Set user {} as deleted in AD\n{}".format(user.name,self.formatters.format(self.request, data)))
                 return self.formatters.format(self.request, data)
             modified = make_aware(user._meta.get_field_by_name('date_updated')[0].clean(self.data['Modified'], user))
             if user.date_ad_updated or modified < user.date_updated:
@@ -185,34 +192,35 @@ class DepartmentUserResource(DjangoResource):
                 updated_user = self.updateUser(user)
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
                 log_data = {
-                    'old_user' : old_user['ad_data'],
+                    'old_user': old_user['ad_data'],
                     'updated_user': updated_user.ad_data
                 }
-                logger.info("Updated user {}\n{}".format(user.name,self.formatters.format(self.request, log_data)))
+                logger.info("Updated user {}\n{}".format(user.name, self.formatters.format(self.request, log_data)))
 
             return self.formatters.format(self.request, data)
-        logger.error("User Does Not Exist")
-        return self.formatters.format(self.request, {"Error":"User Does Not Exist"})
+        else:
+            logger.error("User does not exist")
+            logger.info(self.data)
+            return self.formatters.format(self.request, {"Error": "User does not exist"})
 
     @skip_prepare
     def create(self):
-        user = self.userExists()
-        if not user :
+        user = self.get_user()
+        if not user:
             try:
                 user = DepartmentUser(ad_guid=self.data['ObjectGUID'])
                 user = self.updateUser(user)
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info("Created User {} \n{} ".format(user.name,self.formatters.format(self.request, data)))
+                logger.info("Created User {} \n{} ".format(user.name, self.formatters.format(self.request, data)))
                 return self.formatters.format(self.request, data)
             except Exception as e:
                 data = self.data
                 data['Error'] = repr(e)
                 logger.error(repr(e))
-        logger.error("User Already Exist")
-        return self.formatters.format(self.request, {"Error":"User Already Exist"})
+        logger.error("User already exists")
+        return self.formatters.format(self.request, {"Error": "User already exists"})
 
-
-    def updateUser(self,user):
+    def updateUser(self, user):
         try:
             user.email = self.data['EmailAddress']
             user.ad_guid = self.data['ObjectGUID']
@@ -238,22 +246,19 @@ class DepartmentUserResource(DjangoResource):
             raise e
         return False
 
-    def userExists(self):
-        ''' check if a user  exists '''
-        try:
-            user = DepartmentUser.objects.get(
-                email__iexact=self.data['EmailAddress'])
-        except:
-            try:
-                user = DepartmentUser.objects.get(
-                    ad_guid__iendswith=self.data['ObjectGUID'])
-            except:
-                try:
-                    user = DepartmentUser.objects.get(
-                        ad_dn=self.data['DistinguishedName'])
-                except:
-                    return False
-        return user
+    def get_user(self):
+        '''Return a DepartmentUser if it exists, else return None.
+        '''
+        if 'ObjectGUID' in self.data and \
+                DepartmentUser.objects.filter(ad_guid=self.data['ObjectGUID']).exists():
+            return DepartmentUser.objects.get(ad_guid=self.data['ObjectGUID'])
+        if 'EmailAddress' in self.data and \
+                DepartmentUser.objects.filter(email__iexact=self.data['EmailAddress']).exists():
+            return DepartmentUser.objects.get(email__iexact=self.data['EmailAddress'])
+        if 'DistinguishedName' in self.data and \
+                DepartmentUser.objects.filter(ad_dn=self.data['DistinguishedName']).exists():
+            return DepartmentUser.objects.get(ad_dn=self.data['DistinguishedName'])
+        return None
 
 
 class LocationResource(CSVDjangoResource):

@@ -58,7 +58,10 @@ class DepartmentUser(MPTTModel):
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
         help_text="HR Employee ID, use 'n/a' if a contractor")
-    username = models.CharField(max_length=128, editable=False, unique=True)
+    email = models.EmailField(unique=True, editable=False)
+    username = models.CharField(
+        max_length=128, editable=False, unique=True,
+        help_text='Pre-Windows 2000 login username.')
     name = models.CharField(max_length=128, help_text='Format: Surname, Given name')
     given_name = models.CharField(
         max_length=128, null=True,
@@ -78,7 +81,6 @@ class DepartmentUser(MPTTModel):
     position_type = models.PositiveSmallIntegerField(
         choices=POSITION_TYPE_CHOICES, null=True, blank=True, default=0,
         help_text='Employee position working arrangement (should match Alesco status)')
-    email = models.EmailField(unique=True, editable=False)
     parent = TreeForeignKey(
         'self', on_delete=models.PROTECT, null=True, blank=True,
         related_name='children', editable=True, verbose_name='Reports to',
