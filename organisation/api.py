@@ -122,6 +122,7 @@ class DepartmentUserResource(DjangoResource):
         Include `populate_groups=true` to output only DepartmentUsers
         with populate_primary_group == True.
         """
+        FILTERS = {}
         sync_o365 = True
         if 'sync_o365' in self.request.GET and self.request.GET['sync_o365'] == 'false':
             sync_o365 = False
@@ -131,30 +132,35 @@ class DepartmentUserResource(DjangoResource):
             exclude_populate_groups = True  # Will exclude populate_primary_group == False
         else:
             exclude_populate_groups = False  # Will ignore populate_primary_group
+        # org_structure response.
         if 'org_structure' in self.request.GET:
             return self.org_structure(sync_o365=sync_o365, exclude_populate_groups=exclude_populate_groups)
-
+        # DepartmentUser object response.
+        # Some of the request parameters below are mutually exclusive.
         if 'all' in self.request.GET:
-            # Return all DU objects, including those deleted in AD.
+            # Return all objects, including those deleted in AD.
             users = DepartmentUser.objects.all()
         elif 'ad_deleted' in self.request.GET:
             if self.request.GET['ad_deleted'] == 'false':
-                # Return all DU objects that are not deleted in AD (inc. inactive, shared, etc.)
+                # Return all objects that are not deleted in AD.
                 users = DepartmentUser.objects.filter(ad_deleted=False)
             elif self.request.GET['ad_deleted'] == 'true':
-                # Return all DU objects that are deleted in AD (inc. inactive, shared, etc.)
+                # Return all objects that are deleted in AD.
                 users = DepartmentUser.objects.filter(ad_deleted=True)
+        elif 'email' in self.request.GET:
+            # Always return an object by email.
+            users = DepartmentUser.objects.filter(email__iexact=self.request.GET['email'])
+        elif 'ad_guid' in self.request.GET:
+            # Always return an object by UUID.
+            users = DepartmentUser.objects.filter(ad_guid=self.request.GET['ad_guid'])
+        elif 'cost_centre' in self.request.GET:
+            # Always return all objects by cost centre.
+            users = DepartmentUser.objects.filter(cost_centre__code=self.request.GET['cost_centre'])
         else:
-            # Return 'active' DU objects only.
+            # No other filtering:
+            # Return 'active' DU objects, excluding shared/role-based accounts
+            # and contractors.
             FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
-            # Filters below are exclusive.
-            if 'email' in self.request.GET:
-                FILTERS['email__iexact'] = self.request.GET['email']
-            elif 'ad_guid' in self.request.GET:
-                FILTERS['ad_guid__endswith'] = self.request.GET['ad_guid']
-            elif 'cost_centre' in self.request.GET:
-                FILTERS['cost_centre__code'] = self.request.GET['cost_centre']
-            # Exclude shared and role-based account types.
             users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[5, 9])
 
         users = users.order_by('name')
