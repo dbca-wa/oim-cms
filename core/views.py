@@ -1,4 +1,4 @@
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.contrib.auth import login, logout
 from django.core.cache import cache
 from django.shortcuts import render
@@ -52,6 +52,24 @@ def shared_id_authenticate(email, shared_id):
     if (not us.exists()) or (us[0].shared_id != shared_id):
         return None
     return us[0].user
+
+@csrf_exempt
+def auth_get(request):
+    if request.user.is_authenticated():
+        return auth(request)
+
+    if 'sso_user' in request.GET and 'sso_shared_id' in request.GET:
+        user = shared_id_authenticate(request.GET.get('sso_user'), 
+            request.GET.get('sso_shared_id'))
+        if user:
+            response = HttpResponse(json.dumps(
+                {'email': user.email, 'shared_id': request.GET.get('sso_shared_id')
+                }), content_type='application/json')
+            response["X-email"] = user.email
+            response["X-shared-id"] = request.GET.get('sso_shared_id')
+            return response
+
+    return HttpResponseForbidden()
 
 
 @csrf_exempt
