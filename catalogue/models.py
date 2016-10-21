@@ -27,7 +27,7 @@ http://localhost:8000/csw/server/?
 
 """
 import math
-import md5
+import hashlib
 import base64
 import os
 import re
@@ -491,7 +491,7 @@ class Record(models.Model):
 
         is_exist = lambda k: any([n.upper() in endpoint_parameters for n in (k if isinstance(k, tuple) or isinstance(k, list) else [k])])
         
-        querystring = "&".join(["{}={}".format(k[0] if isinstance(k, tuple) or isinstance(k, list) else k, v) for k, v in kvp.iteritems() if not is_exist(k)  ])
+        querystring = "&".join(["{}={}".format(k[0] if isinstance(k, tuple) or isinstance(k, list) else k, v) for k, v in kvp.items() if not is_exist(k)  ])
         if querystring:
             if original_endpoint[-1] in ("?", "&"):
                 link = "{}{}".format(original_endpoint, querystring)
@@ -505,7 +505,7 @@ class Record(models.Model):
         #get the endpoint after removing ows related parameters
         if endpoint_parameters:
             is_exist = lambda k: any([ any([k == key.upper() for key in item_key]) if isinstance(item_key, tuple) or isinstance(item_key, list) else k == item_key.upper()  for item_key in kvp ])
-            endpoint_querystring = "&".join(["{}={}".format(*v) for k, v in endpoint_parameters.iteritems() if not is_exist(k)  ])
+            endpoint_querystring = "&".join(["{}={}".format(*v) for k, v in endpoint_parameters.items() if not is_exist(k)  ])
             if endpoint_querystring:
                 endpoint = "{}?{}".format(endpoint, endpoint_querystring)
 
@@ -716,7 +716,7 @@ class Style(models.Model):
         return self.name
     
     def _calculate_checksum(self, content):
-        checksum = md5.new()
+        checksum = hashlib.md5()
         checksum.update(content.read())
         return base64.b64encode(checksum.digest())
 
@@ -785,7 +785,7 @@ def set_default_style (sender, instance, **kwargs):
 def set_checksum (sender, instance, **kwargs):
     update_fields=kwargs.get("update_fields", None)
     if not update_fields or "checksum" in update_fields:
-        checksum = md5.new()
+        checksum = hashlib.md5()
         checksum.update(instance.content.read())
         instance.checksum = base64.b64encode(checksum.digest())
 

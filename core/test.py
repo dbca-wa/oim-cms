@@ -4,6 +4,7 @@ from django.test import TestCase, Client
 
 from core import views
 
+import base64
 import mock
 import adal
 
@@ -20,7 +21,7 @@ class AuthTestCase(TestCase):
         self.test_user = User.objects.create(username=self.username, email=self.email)
 
     def basic_auth(self, username, password):
-        return 'Basic {}'.format('{}:{}'.format(username, password).encode('base64')).strip()
+        return 'Basic {}'.format(base64.b64encode('{}:{}'.format(username, password).encode('utf-8')).decode('utf-8'))
     
     @mock.patch('adal.AuthenticationContext.acquire_token_with_username_password')
     def test_auth_adal_with_username(self, mock_api_call):

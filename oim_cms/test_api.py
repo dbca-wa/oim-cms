@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from django.test import TestCase, Client
-import json
 from mixer.backend.django import mixer
 import random
 import string
@@ -80,13 +79,13 @@ class ProfileTestCase(ApiTestCase):
         """Test the profile API endpoint GET response
         """
         response = self.client.get(self.url)
-        j = json.loads(response.content)
+        j = response.json()
         obj = j['objects'][0]
         self.assertFalse(obj['telephone'])
         tel = '9111 1111'
         response = self.client.post(self.url, {'telephone': tel})
         self.assertEqual(response.status_code, 200)
-        j = json.loads(response.content)
+        j = response.json()
         obj = j['objects'][0]
         self.assertEqual(obj['telephone'], tel)
 
@@ -109,7 +108,7 @@ class OptionResourceTestCase(ApiTestCase):
         # Division 1 will be present in the response.
         self.assertContains(response, self.div1.name)
         # Response can be deserialised into a dict.
-        r = json.loads(response.content)
+        r = response.json()
         self.assertTrue(isinstance(r, dict))
         # Deserialised response contains a list.
         self.assertTrue(isinstance(r['objects'], list))
@@ -174,7 +173,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         url = '/api/users/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        r = json.loads(response.content)
+        r = response.json()
         self.assertTrue(isinstance(r['objects'], list))
         # Test the compact response.
         url = '/api/users/?compact=true'

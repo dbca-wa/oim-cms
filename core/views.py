@@ -6,6 +6,7 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from ipware.ip import get_ip
 import json
+import base64
 import adal
 from wagtail.wagtailcore.models import PageRevision
 from wagtail.wagtailsearch.models import Query
@@ -62,8 +63,8 @@ def auth_ip(request):
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
     if basic_auth:
         # Check basic auth against Azure AD as an alternative to SSO.
-        username, password = request.META["HTTP_AUTHORIZATION"].split(
-            " ", 1)[1].strip().decode('base64').split(":", 1)
+        username, password = base64.b64decode(
+            basic_auth.split(" ", 1)[1].strip()).decode('utf-8').split(":", 1)
         username = force_email(username)
         user = adal_authenticate(username, password)
         
@@ -99,7 +100,7 @@ def auth_ip(request):
             headers["kmi_roles"] = ''
 
     response = HttpResponse(json.dumps(headers), content_type='application/json')
-    for key, val in headers.iteritems():
+    for key, val in headers.items():
         key = "X-" + key.replace("_", "-")
         response[key] = val
 
@@ -120,7 +121,7 @@ def auth(request):
     content = cache.get(cachekey)
     if content:
         response = HttpResponse(content[0], content_type='application/json')
-        for key, val in content[1].iteritems():
+        for key, val in content[1].items():
             response[key] = val
         response["X-auth-cache-hit"] = "success"
         return response
@@ -128,9 +129,10 @@ def auth(request):
     if not request.user.is_authenticated():
         # Check basic auth against Azure AD as an alternative to SSO.
         try:
-            assert request.META.get("HTTP_AUTHORIZATION") is not None
-            username, password = request.META["HTTP_AUTHORIZATION"].split(
-                " ", 1)[1].strip().decode('base64').split(":", 1)
+            basic_auth = request.META.get("HTTP_AUTHORIZATION")
+            assert basic_auth is not None
+            username, password = base64.b64decode(
+                basic_auth.split(" ", 1)[1].strip()).decode('utf-8').split(":", 1)
             username = force_email(username)
             user = adal_authenticate(username, password)
             
@@ -147,8 +149,10 @@ def auth(request):
                 "WWW-Authenticate"] = 'Basic realm="Please login with your username or email address"'
             response.content = repr(e)
             return response
-    response = HttpResponse(WhoAmIResource.as_detail()(request).content)
-    headers, cache_headers = json.loads(response.content), dict()
+    response_data = WhoAmIResource.as_detail()(request).content
+    response = HttpResponse(response_data, content_type='application/json')
+    headers = json.loads(response_data.decode('utf-8'))
+    cache_headers = dict()
     headers["full_name"] = u"{}, {}".format(
         headers.get(
             "last_name", ""), headers.get(
@@ -161,7 +165,7 @@ def auth(request):
             "KMIRoles", '')
     except Exception as e:
         headers["kmi_roles"] = ''
-    for key, val in headers.iteritems():
+    for key, val in headers.items():
         key = "X-" + key.replace("_", "-")
         cache_headers[key], response[key] = val, val
     cache.set(cachekey, (response.content, cache_headers), 3600)

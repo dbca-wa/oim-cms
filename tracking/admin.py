@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from django.conf.urls import url
 from django.contrib.admin import register, ModelAdmin
 from django.http import HttpResponse
-from StringIO import StringIO
+from six import BytesIO
 import unicodecsv
 
 from .models import Computer, Mobile, EC2Instance, FreshdeskTicket
@@ -89,7 +89,7 @@ class FreshdeskTicketAdmin(ModelAdmin):
         fields = ['month', 'category', 'subcategory', 'ticket_count']
 
         # Write data for ITSystemHardware objects to the CSV.
-        stream = StringIO()
+        stream = BytesIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
 
