@@ -7,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from ipware.ip import get_ip
 import json
 import base64
+import hashlib
 import adal
 from wagtail.wagtailcore.models import PageRevision
 from wagtail.wagtailsearch.models import Query
@@ -66,10 +67,10 @@ def auth_ip(request):
         username, password = base64.b64decode(
             basic_auth.split(" ", 1)[1].strip()).decode('utf-8').split(":", 1)
         username = force_email(username)
-        user = adal_authenticate(username, password)
+        user = shared_id_authenticate(username, password)
         
         if not user:
-            user = shared_id_authenticate(username, password)
+            user = adal_authenticate(username, password)
 
         if user:
             response = HttpResponse(json.dumps(
@@ -109,6 +110,8 @@ def auth_ip(request):
 
 @csrf_exempt
 def auth(request):
+    basic_auth = request.META.get("HTTP_AUTHORIZATION")
+
     if request.user.is_authenticated():
         usersession = UserSession.objects.get(
             session_id=request.session.session_key)
@@ -116,8 +119,7 @@ def auth(request):
         if usersession.ip != current_ip:
             usersession.ip = current_ip
             usersession.save()
-    cachekey = "auth_cache_{}".format(request.META.get(
-        "HTTP_AUTHORIZATION") or request.session.session_key)
+    cachekey = "auth_cache_{}".format(hashlib.sha1(basic_auth.encode('utf-8')).hexdigest() or request.session.session_key)
     content = cache.get(cachekey)
     if content:
         response = HttpResponse(content[0], content_type='application/json')
@@ -129,20 +131,24 @@ def auth(request):
     if not request.user.is_authenticated():
         # Check basic auth against Azure AD as an alternative to SSO.
         try:
-            basic_auth = request.META.get("HTTP_AUTHORIZATION")
             assert basic_auth is not None
             username, password = base64.b64decode(
                 basic_auth.split(" ", 1)[1].strip()).decode('utf-8').split(":", 1)
             username = force_email(username)
-            user = adal_authenticate(username, password)
+            # first check for a shared_id match
+            # if yes, provide a response, but no session cookie
+            # (hence it'll only work against certain endpoints)
+            user = shared_id_authenticate(username, password)
             
             if not user:
-                user = shared_id_authenticate(username, password)
-            
+                # check against Azure AD
+                user = adal_authenticate(username, password)
+                # basic auth using username/password will generate a session cookie
+                if user:
+                    user.backend = "django.contrib.auth.backends.ModelBackend"
+                    login(request, user)
             if not user:
                 raise Exception('Authentication failed')
-            user.backend = "django.contrib.auth.backends.ModelBackend"
-            login(request, user)
         except Exception as e:
             response = HttpResponse(status=401)
             response[
