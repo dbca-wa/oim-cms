@@ -176,6 +176,9 @@ class DepartmentUserResource(DjangoResource):
 
     @csrf_exempt
     def update(self, pk):
+        """TODO: consolidate/refactor this method to remove duplication with
+        the create method.
+        """
         user = self.get_user()
         if user:
             if self.data.get('Deleted'):
@@ -189,11 +192,11 @@ class DepartmentUserResource(DjangoResource):
             modified = make_aware(user._meta.get_field_by_name('date_updated')[0].clean(self.data['Modified'], user))
             if user.date_ad_updated or modified < user.date_updated:
                 old_user = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                updated_user = self.updateUser(user)
+                updated_user_data = self.updateUser(user)
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
                 log_data = {
                     'old_user': old_user['ad_data'],
-                    'updated_user': updated_user.ad_data
+                    'updated_user_data': updated_user_data.ad_data
                 }
                 logger.info("Updated user {}\n{}".format(user.name, self.formatters.format(self.request, log_data)))
 
@@ -205,9 +208,15 @@ class DepartmentUserResource(DjangoResource):
 
     @skip_prepare
     def create(self):
+        """BUSINESS RULE: we allow POST requests for both create and update
+        operations, because we will typically be calling this endpoint from
+        systems where the DepartmentUser PK is unknown (we match existing
+        objects by GUID or email).
+        """
         user = self.get_user()
         if not user:
             try:
+                # For creation, we require the AD GUID.
                 user = DepartmentUser(ad_guid=self.data['ObjectGUID'])
                 user = self.updateUser(user)
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
@@ -217,10 +226,23 @@ class DepartmentUserResource(DjangoResource):
                 data = self.data
                 data['Error'] = repr(e)
                 logger.error(repr(e))
+        else:
+            old_user_data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+            updated_user_data = self.updateUser(user)
+            data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+            log_data = {
+                'old_user_data': old_user_data['ad_data'],
+                'updated_user_data': updated_user_data.ad_data
+            }
+            logger.info("Updated user {}\n{}".format(user.name, self.formatters.format(self.request, log_data)))
+
+            return self.formatters.format(self.request, data)
         logger.error("User already exists")
         return self.formatters.format(self.request, {"Error": "User already exists"})
 
     def updateUser(self, user):
+        """Method to update a DepartmentUser object from AD data.
+        """
         try:
             user.email = self.data['EmailAddress']
             user.ad_guid = self.data['ObjectGUID']
@@ -228,7 +250,7 @@ class DepartmentUserResource(DjangoResource):
             user.username = self.data['SamAccountName']
             user.expiry_date = self.data.get('AccountExpirationDate')
             user.active = self.data['Enabled']
-            user.ad_deleted = False
+            user.o365_licence = self.data['o365_licence']
             user.ad_data = self.data
             if not user.name:
                 user.name = self.data['Name']
@@ -240,14 +262,20 @@ class DepartmentUserResource(DjangoResource):
                 user.surname = self.data['Surname']
             user.date_ad_updated = self.data['Modified']
             user.ad_updated = True
+            # If the AD account has been deleted, update accordingly.
+            if self.data.get('Deleted', None):
+                user.active = False
+                user.ad_deleted = True
+                data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+                logger.info("Set user {} as deleted in AD\n{}".format(user.name,self.formatters.format(self.request, data)))
             user.save()
             return user
         except Exception as e:
             raise e
-        return False
 
     def get_user(self):
         '''Return a DepartmentUser if it exists, else return None.
+        Matches by AD GUID, then email, then DistinguishedName.
         '''
         if 'ObjectGUID' in self.data and \
                 DepartmentUser.objects.filter(ad_guid=self.data['ObjectGUID']).exists():
@@ -255,6 +283,9 @@ class DepartmentUserResource(DjangoResource):
         if 'EmailAddress' in self.data and \
                 DepartmentUser.objects.filter(email__iexact=self.data['EmailAddress']).exists():
             return DepartmentUser.objects.get(email__iexact=self.data['EmailAddress'])
+        if 'email' in self.data and \
+                DepartmentUser.objects.filter(email__iexact=self.data['email']).exists():
+            return DepartmentUser.objects.get(email__iexact=self.data['email'])
         if 'DistinguishedName' in self.data and \
                 DepartmentUser.objects.filter(ad_dn=self.data['DistinguishedName']).exists():
             return DepartmentUser.objects.get(ad_dn=self.data['DistinguishedName'])
