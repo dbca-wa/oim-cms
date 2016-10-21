@@ -48,7 +48,7 @@ class UserSession(models.Model):
     @property
     def shared_id(self):
         return hashlib.sha256("{}{}{}".format(
-            timezone.now().month, self.user.email, settings.SECRET_KEY).lower()).hexdigest()
+            timezone.now().month, self.user.email, settings.SECRET_KEY).lower().encode('utf-8')).hexdigest()
 
 
 def user_logged_in_handler(sender, request, user, **kwargs):

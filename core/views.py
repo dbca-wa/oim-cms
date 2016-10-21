@@ -111,6 +111,7 @@ def auth_ip(request):
 @csrf_exempt
 def auth(request):
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
+    basic_hash = hashlib.sha1(basic_auth.encode('utf-8')).hexdigest() if basic_auth else None
 
     if request.user.is_authenticated():
         usersession = UserSession.objects.get(
@@ -119,7 +120,7 @@ def auth(request):
         if usersession.ip != current_ip:
             usersession.ip = current_ip
             usersession.save()
-    cachekey = "auth_cache_{}".format(hashlib.sha1(basic_auth.encode('utf-8')).hexdigest() or request.session.session_key)
+    cachekey = "auth_cache_{}".format(basic_hash or request.session.session_key)
     content = cache.get(cachekey)
     if content:
         response = HttpResponse(content[0], content_type='application/json')
