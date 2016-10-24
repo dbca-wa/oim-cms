@@ -4,6 +4,7 @@ import json
 from mixer.backend.django import mixer
 import random
 import string
+from uuid import uuid1
 
 from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
 from registers.models import ITSystem
@@ -283,6 +284,52 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         self.assertEqual(response.status_code, 200)
         # User 1 won't be present in the response.
         self.assertNotContains(response, self.user1.email)
+
+    def test_create(self):
+        """Test the DepartmentUserResource create response
+        """
+        url = '/api/users/'
+        # Response should be status 400 where ObjectGUID is missing.
+        data = {}
+        response = self.client.post(url, json.dumps(data), content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+        # Try again with valid data.
+        data = {
+            'ObjectGUID': str(uuid1()),
+            'EmailAddress': 'testemail@dpaw.wa.gov.au',
+        }
+        response = self.client.post(url, json.dumps(data), content_type='application/json')
+        self.assertEqual(response.status_code, 201)  # Created
+        # A DepartmentUser with that email should now exist.
+        self.assertTrue(DepartmentUser.objects.filter(email='testemail@dpaw.wa.gov.au').exists())
+
+    def test_update(self):
+        """Test the DepartmentUserResource update response
+        """
+        url = '/api/users/'
+        data = {
+            'EmailAddress': self.user1.email,
+            'GivenName': 'John',
+            'Surname': 'Doe',
+        }
+        response = self.client.post(url, json.dumps(data), content_type='application/json')
+        self.assertEqual(response.status_code, 201)
+
+    def test_delete(self):
+        """Test the DepartmentUserResource update response (set user as 'AD deleted')
+        """
+        self.assertFalse(self.user1.ad_deleted)
+        self.assertTrue(self.user1.active)
+        url = '/api/users/'
+        data = {
+            'EmailAddress': self.user1.email,
+            'Deleted': 'true',
+        }
+        response = self.client.post(url, json.dumps(data), content_type='application/json')
+        self.assertEqual(response.status_code, 201)
+        user = DepartmentUser.objects.get(pk=self.user1.pk)  # Refresh from db
+        self.assertTrue(user.ad_deleted)
+        self.assertFalse(user.active)
 
 
 class LocationResourceTestCase(ApiTestCase):
