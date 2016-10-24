@@ -53,6 +53,25 @@ class ApiTestCase(TestCase):
         self.user2.save()
         self.div2.manager = self.user2
         self.div2.save()
+        # Mark a user as inactive and deleted in AD.
+        self.del_user = users[2]
+        self.del_user.active = False
+        self.del_user.ad_deleted = True
+        self.del_user.org_unit = self.div2
+        self.del_user.cost_centre = self.cc2
+        self.del_user.save()
+        # Make a contractor.
+        self.contract_user = users[3]
+        self.contract_user.contractor = True
+        self.contract_user.org_unit = self.div2
+        self.contract_user.cost_centre = self.cc2
+        self.contract_user.save()
+        # Make a shared account.
+        self.shared = users[4]
+        self.shared.account_type = 5  # Shared account type.
+        self.shared.org_unit = self.div1
+        self.shared.cost_centre = self.cc1
+        self.shared.save()
         # Generate some IT Systems.
         self.it1 = mixer.blend(ITSystem, status=0, owner=self.user1)
         self.it2 = mixer.blend(ITSystem, status=1, owner=self.user2)
@@ -176,6 +195,11 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         self.assertEqual(response.status_code, 200)
         r = json.loads(response.content)
         self.assertTrue(isinstance(r['objects'], list))
+        # Response should not contain inactive, contractors or shared accounts.
+        self.assertContains(response, self.user1.email)
+        self.assertNotContains(response, self.del_user.email)
+        self.assertNotContains(response, self.contract_user.email)
+        self.assertNotContains(response, self.shared.email)
         # Test the compact response.
         url = '/api/users/?compact=true'
         response = self.client.get(url)
@@ -184,10 +208,53 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         url = '/api/users/?minimal=true'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        # Test filtering by email.
+
+    def test_user_list_filtering(self):
+        """Test the DepartmentUserResource filtered list responses
+        """
+        # Test the "all" response.
+        url = '/api/users/?all=true'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.contract_user.email)
+        self.assertContains(response, self.del_user.email)
+        self.assertContains(response, self.shared.email)
+        # Test filtering by ad_deleted.
+        url = '/api/users/?ad_deleted=true'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.del_user.email)
+        self.assertNotContains(response, self.user1.email)
+        url = '/api/users/?ad_deleted=false'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.del_user.email)
+        self.assertContains(response, self.user1.email)
+        # Test filtering by email (should return only one object).
         url = '/api/users/?email={}'.format(self.user1.email)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        j = json.loads(response.content)
+        self.assertEqual(len(j['objects']), 1)
+        self.assertContains(response, self.user1.email)
+        self.assertNotContains(response, self.user2.email)
+        # Test filtering by GUID (should return only one object).
+        url = '/api/users/?ad_guid={}'.format(self.user1.ad_guid)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        j = json.loads(response.content)
+        self.assertEqual(len(j['objects']), 1)
+        self.assertContains(response, self.user1.email)
+        self.assertNotContains(response, self.user2.email)
+        # Test filtering by cost centre (should return all, inc. inactive and contractors).
+        url = '/api/users/?cost_centre={}'.format(self.cc2.code)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.user2.email)
+        self.assertContains(response, self.contract_user.email)
+        self.assertContains(response, self.del_user.email)
+        self.assertNotContains(response, self.user1.email)
+        self.assertNotContains(response, self.shared.email)  # Belongs to CC1.
 
     def test_org_structure(self):
         """Test the DepartmentUserResource org_structure response
@@ -205,6 +272,14 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         self.assertEqual(response.status_code, 200)
         # Division 1 won't be present in the response.
         self.assertNotContains(response, self.div1.name)
+        # Test populate_groups=true request parameter.
+        self.user1.populate_primary_group = False
+        self.user1.save()
+        url = '/api/users/?org_structure=true&populate_groups=true'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # User 1 won't be present in the response.
+        self.assertNotContains(response, self.user1.email)
 
 
 class LocationResourceTestCase(ApiTestCase):

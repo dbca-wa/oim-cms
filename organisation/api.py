@@ -154,7 +154,7 @@ class DepartmentUserResource(DjangoResource):
             # Always return an object by UUID.
             users = DepartmentUser.objects.filter(ad_guid=self.request.GET['ad_guid'])
         elif 'cost_centre' in self.request.GET:
-            # Always return all objects by cost centre.
+            # Always return all objects by cost centre (inc inactive & contractors).
             users = DepartmentUser.objects.filter(cost_centre__code=self.request.GET['cost_centre'])
         else:
             # No other filtering:
