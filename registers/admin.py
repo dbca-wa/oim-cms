@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, absolute_import
 from django.conf import settings
 from django.conf.urls import url
-from django.contrib.admin import register
+from django.contrib.admin import register, ModelAdmin
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from reversion.admin import VersionAdmin
@@ -9,8 +9,8 @@ from StringIO import StringIO
 import unicodecsv
 from .models import (
     Software, Hardware, UserGroup, DocumentApproval, ITSystemHardware,
-    ITSystem, ITSystemDependency, Backup, BusinessService, BusinessFunction,
-    BusinessProcess, ProcessITSystemRelationship)
+    ITSystem, ITSystemDependency, ITSystemVendor, Backup, BusinessService,
+    BusinessFunction, BusinessProcess, ProcessITSystemRelationship)
 
 
 @register(Software)
@@ -37,7 +37,7 @@ class UserGroupAdmin(VersionAdmin):
 
 
 @register(DocumentApproval)
-class DocumentApprovalAdmin(OimModelAdmin):
+class DocumentApprovalAdmin(ModelAdmin):
     list_diplay = ('department_user', 'approval_role', 'date_created')
     raw_id_fields = ('department_user',)
 
@@ -212,6 +212,12 @@ class ITSystemDependencyAdmin(VersionAdmin):
     list_display = ('itsystem', 'dependency', 'criticality')
     list_filter = ('criticality',)
     search_fields = ('itsystem__name', 'dependency__name')
+
+
+@register(ITSystemVendor)
+class ITSystemVendorAdmin(VersionAdmin):
+    list_display = ('itsystem', 'vendor')
+    search_fields = ('itsystem__name', 'vendor__name')
 
 
 @register(Backup)

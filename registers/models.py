@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 
+from assets.models import Vendor
 from organisation.models import DepartmentUser, Location
 from tracking.models import CommonFields, Computer, Mobile
 
@@ -30,8 +31,7 @@ DOC_STATUS_CHOICES = (
 
 
 class ChoiceArrayField(ArrayField):
-    """
-    A field that allows us to store an array of choices.
+    """A field that allows us to store an array of choices.
     Uses Django's postgres ArrayField and a MultipleChoiceField for its formfield.
     Source:
     https://blogs.gnome.org/danni/2016/03/08/multiple-choice-using-djangos-postgres-arrayfield/
@@ -101,6 +101,7 @@ class Hardware(CommonFields):
         verbose_name_plural = 'hardware'
 
 
+@python_2_unicode_compatible
 class UserGroup(models.Model):
     """A model to represent an arbitrary group of users for an IT System.
     E.g. 'All department staff', 'External govt agency staff', etc.
@@ -115,6 +116,7 @@ class UserGroup(models.Model):
         return '{} ({})'.format(self.name, self.user_count)
 
 
+@python_2_unicode_compatible
 class DocumentApproval(models.Model):
     """A model to represent an approval/endorsement by a DepartmentUser for an
     uploaded file.
@@ -140,6 +142,7 @@ class DocumentApproval(models.Model):
                 self.department_user, datetime.strftime(self.date_created, '%d-%b-%Y'))
 
 
+@python_2_unicode_compatible
 class ITSystemHardware(models.Model):
     """A model to represent the relationship between an IT System and a
     Hardware entity.
@@ -166,10 +169,11 @@ class ITSystemHardware(models.Model):
         return self.host.name.lower()
 
 
+@python_2_unicode_compatible
 class ITSystem(CommonFields):
     """Represents a named system providing a package of functionality to
     Department staff (normally vendor or bespoke software), which is supported
-    by OIM.
+    by OIM and/or an external vendor.
     """
     STATUS_CHOICES = (
         (0, 'Production'),
@@ -240,7 +244,8 @@ class ITSystem(CommonFields):
     )
 
     name = models.CharField(max_length=128, unique=True)
-    system_id = models.CharField(max_length=16, unique=True)
+    system_id = models.CharField(
+        max_length=16, unique=True, verbose_name='system ID')
     acronym = models.CharField(max_length=16, null=True, blank=True)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=4)
@@ -395,6 +400,10 @@ class ITSystem(CommonFields):
     other_projects = models.TextField(
         null=True, blank=True,
         help_text='Details of related IT Systems and projects.')
+    sla = models.TextField(
+        null=True, blank=True, verbose_name='Service Level Agreement',
+        help_text='''Details of any Service Level Agreement that exists for'''
+        ''' this IT System (typically with an external vendor).''')
 
     class Meta:
         verbose_name = 'IT System'
@@ -433,6 +442,7 @@ class ITSystem(CommonFields):
             return ''
 
 
+@python_2_unicode_compatible
 class ITSystemDependency(models.Model):
     """A model to represent a dependency that an ITSystem has on another, plus
     the criticality of that dependency.
@@ -457,6 +467,33 @@ class ITSystemDependency(models.Model):
             self.itsystem.name, self.dependency.name, self.get_criticality_display())
 
 
+@python_2_unicode_compatible
+class ITSystemVendor(models.Model):
+    """A model to represent the vendor/SME who provides or supports an IT
+    System, as well as details of that vendor's support arrangements.
+    """
+    itsystem = models.ForeignKey(
+        ITSystem, on_delete=models.PROTECT, verbose_name='IT System',
+        help_text='The IT System')
+    vendor = models.ForeignKey(
+        Vendor, on_delete=models.PROTECT,
+        help_text='The vendor of the IT System')
+    description = models.TextField(
+        null=True, blank=True,
+        help_text='''A description of the support and service arrangements'''
+        ''' provided by this vendor for the IT System. This should include'''
+        ''' details of the procedure for obtaining support.''')
+
+    class Meta:
+        verbose_name = 'IT System vendor'
+        unique_together = ('itsystem', 'vendor')
+        ordering = ('itsystem__name', 'vendor__name')
+
+    def __str__(self):
+        return '{}: {}'.format(self.itsystem.name, self.vendor.name)
+
+
+@python_2_unicode_compatible
 class Backup(CommonFields):
     """Represents the details of backup & recovery arrangements for a single
     piece of computing hardware.
@@ -548,6 +585,7 @@ class Backup(CommonFields):
         ordering = ('system__name',)
 
 
+@python_2_unicode_compatible
 class BusinessService(models.Model):
     """Represents the Department's core business services.
     """
@@ -563,6 +601,7 @@ class BusinessService(models.Model):
         return 'Service {}: {}'.format(self.number, self.name)
 
 
+@python_2_unicode_compatible
 class BusinessFunction(models.Model):
     """Represents a function of the Department, undertaken to meet the
     Department's core services. Each function must be linked to 1+
@@ -579,6 +618,7 @@ class BusinessFunction(models.Model):
         return self.name
 
 
+@python_2_unicode_compatible
 class BusinessProcess(models.Model):
     """Represents a business process that the Department undertakes in order
     to fulfil one of the Department's functions.
@@ -598,6 +638,7 @@ class BusinessProcess(models.Model):
         return self.name
 
 
+@python_2_unicode_compatible
 class ProcessITSystemRelationship(models.Model):
     """A model to represent the relationship between a BusinessProcess and an
     ITSystem object.
