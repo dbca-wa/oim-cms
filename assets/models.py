@@ -9,7 +9,7 @@ from tracking.models import CommonFields
 
 @python_2_unicode_compatible
 class Vendor(models.Model):
-    """Represents the vendor of a product (software or hardware).
+    """Represents the vendor of a product (software, hardware or service).
     """
     name = models.CharField(
         max_length=256, unique=True, help_text='E.g. Dell, Cisco, etc.')
