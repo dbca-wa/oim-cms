@@ -189,19 +189,26 @@ def auth(request):
             username, password = base64.b64decode(
                 basic_auth.split(" ", 1)[1].strip()).decode('utf-8').split(":", 1)
             username = force_email(username)
+
             # first check for a shared_id match
             # if yes, provide a response, but no session cookie
             # (hence it'll only work against certain endpoints)
             user = shared_id_authenticate(username, password)
-            
-            if not user:
-                # check against Azure AD
-                user = adal_authenticate(username, password)
-                # basic auth using username/password will generate a session cookie
-                if user:
-                    user.backend = "django.contrib.auth.backends.ModelBackend"
-                    login(request, user)
-            if not user:
+            if user:
+                response = HttpResponse(json.dumps(
+                    {'email': user.email, 'shared_id': password
+                    }), content_type='application/json')
+                response["X-email"] = user.email
+                response["X-shared-id"] = password
+                return response
+
+            # after that, check against Azure AD
+            user = adal_authenticate(username, password)
+            # basic auth using username/password will generate a session cookie
+            if user:
+                user.backend = "django.contrib.auth.backends.ModelBackend"
+                login(request, user)
+            else:
                 raise Exception('Authentication failed')
         except Exception as e:
             response = HttpResponse(status=401)
@@ -209,10 +216,10 @@ def auth(request):
                 "WWW-Authenticate"] = 'Basic realm="Please login with your username or email address"'
             response.content = str(e)
             return response
+
     response_data = WhoAmIResource.as_detail()(request).content
     response = HttpResponse(response_data, content_type='application/json')
     headers = json.loads(response_data.decode('utf-8'))
-    cache_headers = dict()
     headers["full_name"] = u"{}, {}".format(
         headers.get(
             "last_name", ""), headers.get(
@@ -225,12 +232,16 @@ def auth(request):
             "KMIRoles", '')
     except Exception as e:
         headers["kmi_roles"] = ''
+   
+    # cache response
+    cache_headers = dict()
     for key, val in headers.items():
         key = "X-" + key.replace("_", "-")
         cache_headers[key], response[key] = val, val
     # cache authentication entries
     cache.set("auth_cache_{}".format(basic_hash), (response.content, cache_headers), 3600)
     cache.set("auth_cache_{}".format(request.session.session_key), (response.content, cache_headers), 3600)
+
     return response
 
 
