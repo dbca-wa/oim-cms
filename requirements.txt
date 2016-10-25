@@ -11,11 +11,16 @@ django-model-utils==2.5
 django-debug-toolbar==1.5
 django-compressor==2.0
 restless==2.0.1
+
+# fork of Microsoft Azure AD auth library with password authentication fix
 git+https://github.com/scottp-dpaw/azure-activedirectory-library-for-python.git@passwordauth#egg=adal
 django-ipware==1.1.2
 python-social-auth==0.2.21
 graphviz==0.4.8
-git+https://github.com/rhoerbe/json2html.git#egg=json2html
+
+# fork of JSON to HTML lib with python 3 fixes
+git+https://github.com/scottp-dpaw/json2html.git@py3#egg=json2html
+
 djangorestframework==3.3.1
 Babel==2.2.0
 pycsw==2.0.2
