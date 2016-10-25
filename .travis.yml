@@ -15,6 +15,7 @@ env:
     global:
         - SECRET_KEY="SecretKeyForTravisCI"
         - DATABASE_URL="postgis://postgres@localhost:5432/travis_ci_test"
+        - AZUREAD_AUTHORITY="https://login.microsoftonline.com"
 install:
     - psql -U postgres -c "create extension postgis"
     - psql -U postgres -c "create role postgrest"

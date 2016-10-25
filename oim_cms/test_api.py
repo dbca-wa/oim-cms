@@ -3,6 +3,7 @@ from django.test import TestCase, Client
 from mixer.backend.django import mixer
 import random
 import string
+import json
 from uuid import uuid1
 
 from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
@@ -237,7 +238,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         url = '/api/users/?email={}'.format(self.user1.email)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        j = json.loads(response.content)
+        j = response.json()
         self.assertEqual(len(j['objects']), 1)
         self.assertContains(response, self.user1.email)
         self.assertNotContains(response, self.user2.email)
@@ -245,7 +246,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         url = '/api/users/?ad_guid={}'.format(self.user1.ad_guid)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        j = json.loads(response.content)
+        j = response.json()
         self.assertEqual(len(j['objects']), 1)
         self.assertContains(response, self.user1.email)
         self.assertNotContains(response, self.user2.email)
