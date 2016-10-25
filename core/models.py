@@ -47,7 +47,7 @@ class UserSession(models.Model):
 
     @property
     def shared_id(self):
-        return hashlib.sha256("{}{}{}".format(
+        return hashlib.sha256('{}{}{}'.format(
             timezone.now().month, self.user.email, settings.SECRET_KEY).lower().encode('utf-8')).hexdigest()
 
 
@@ -78,23 +78,23 @@ class ContentTag(TaggedItemBase):
 
 class Content(Page):
     body = StreamField([
-        ('heading', blocks.CharBlock(classname="full title")),
+        ('heading', blocks.CharBlock(classname='full title')),
         ('rich_text', blocks.RichTextBlock()),
         ('raw', blocks.RawHTMLBlock()),
         ('include_content', blocks.CharBlock()),
         ('content_list', blocks.CharBlock()),
     ], null=True, blank=True)
-    date = models.DateField("Content updated date", default=timezone.now)
+    date = models.DateField('Content updated date', default=timezone.now)
     template_filename = models.CharField(max_length=64, choices=(
-        ("content.html", "content.html"),
-        ("f6-content.html", "f6-content.html"),
-        ("f6-vue.html", "f6-vue.html"),
-    ), default="content.html")
+        ('content.html', 'content.html'),
+        ('f6-content.html', 'f6-content.html'),
+        ('f6-vue.html', 'f6-vue.html'),
+    ), default='content.html')
     tags = ClusterTaggableManager(through=ContentTag, blank=True)
 
     def get_template(self, request, *args, **kwargs):
-        template_name = request.GET.get("template", self.template_filename)
-        return "{}/{}".format(self.__class__._meta.app_label, template_name)
+        template_name = request.GET.get('template', self.template_filename)
+        return '{}/{}'.format(self.__class__._meta.app_label, template_name)
 
     promote_panels = Page.promote_panels + [
         FieldPanel('date'),
@@ -106,22 +106,22 @@ class Content(Page):
     ]
 
     settings_panels = Page.settings_panels + [
-        FieldPanel("template_filename")
+        FieldPanel('template_filename')
     ]
 
-    search_fields = Page.search_fields + (
+    search_fields = Page.search_fields + [
         index.SearchField('body'),
         index.FilterField('url_path'),
-    )
+    ]
 
     def serve(self, request):
-        if "draft" in request.GET:
-            return HttpResponseRedirect("/admin/pages/{}/view_draft/".format(self.pk))
+        if 'draft' in request.GET:
+            return HttpResponseRedirect('/admin/pages/{}/view_draft/'.format(self.pk))
         response = super(Content, self).serve(request)
-        if "embed" in request.GET:
-            with open(os.path.join(settings.MEDIA_ROOT, "images", self.slug + ".html")) as output:
+        if 'embed' in request.GET:
+            with open(os.path.join(settings.MEDIA_ROOT, 'images', self.slug + '.html')) as output:
                 output.write(response.content)
         return response
 
     class Meta:
-        ordering = ("date",)
+        ordering = ('date',)

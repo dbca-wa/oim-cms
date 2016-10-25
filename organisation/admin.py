@@ -20,13 +20,13 @@ class DepartmentUserAdmin(ModelAdmin):
     list_display = [
         'email', 'employee_id', 'username', 'active', 'vip', 'executive',
         'cost_centre', 'account_type', 'date_ad_updated']
-    list_filter = ['account_type', 'active', 'vip', 'executive']
+    list_filter = ['account_type', 'active', 'vip', 'executive', 'shared_account']
     search_fields = ['name', 'email', 'username', 'employee_id', 'preferred_name']
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
     readonly_fields = [
         'username', 'email', 'org_data_pretty', 'ad_data_pretty',
         'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
-        'alesco_data_pretty']
+        'alesco_data_pretty', 'o365_licence', 'shared_account']
     fieldsets = (
         ('Email/username', {
             'fields': ('email', 'username'),
@@ -53,6 +53,7 @@ class DepartmentUserAdmin(ModelAdmin):
         ('AD sync and HR data (read-only)', {
             'fields': (
                 'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
+                'o365_licence', 'shared_account',
                 'org_data_pretty', 'ad_data_pretty', 'alesco_data_pretty',
             )
         })

@@ -7,7 +7,7 @@ from oim_cms.utils import CSVDjangoResource
 from restless.dj import DjangoResource
 from restless.resources import skip_prepare
 
-from .models import ITSystem, Hardware, ITSystemDependency
+from .models import ITSystem, Hardware, ITSystemDependency, ITSystemVendor
 
 
 class ITSystemResource(CSVDjangoResource):
@@ -149,6 +149,11 @@ class ITSystemResource(CSVDjangoResource):
             'point_of_truth': 'Unknown' if data.point_of_truth is None else data.point_of_truth,
             'legal_need_to_retain': 'Unknown' if data.legal_need_to_retain is None else data.legal_need_to_retain,
             'other_projects': data.other_projects,
+            'sla': data.sla,
+            'vendors': [{
+                'vendor__name': i.vendor.name,
+                'description': i.description,
+            } for i in ITSystemVendor.objects.filter(itsystem=data)],
         }
         return prepped
 

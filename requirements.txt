@@ -1,7 +1,7 @@
 Django==1.9.9
 django-extensions==1.6.7
 git+https://github.com/parksandwildlife/dpaw-utils.git@0.3a12#egg=dpaw-utils
-wagtail==1.6.3
+wagtail==1.7
 django-queryset-csv==0.3.3
 django-mptt==0.8.6
 django-leaflet==0.18.1

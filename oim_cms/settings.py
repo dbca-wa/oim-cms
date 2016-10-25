@@ -245,6 +245,14 @@ LOGGING = {
             'maxBytes': 1024 * 1024 * 5,
             'backupCount': 5,
         },
+        'ad_file' : {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'ad_sync_actions.log'),
+            'formatter': 'verbose',
+            'maxBytes': 1024 * 1024 * 25,
+            'backupCount': 5,
+        }
     },
     'loggers': {
         'django.request': {
@@ -258,6 +266,10 @@ LOGGING = {
         'organisation' : {
             'handlers': ['file'],
             'level': 'DEBUG'
+        },
+        'ad_sync' : {
+            'handlers' : ['ad_file'],
+            'level': 'INFO'
         }
     }
 }
