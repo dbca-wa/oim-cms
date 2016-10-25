@@ -53,8 +53,10 @@ def shared_id_authenticate(email, shared_id):
         return None
     return us[0].user
 
+
 @csrf_exempt
 def auth_get(request):
+    # If user is using SSO, do a normal auth check.
     if request.user.is_authenticated():
         return auth(request)
 
@@ -72,6 +74,17 @@ def auth_get(request):
     return HttpResponseForbidden()
 
 
+@csrf_exempt
+def auth_dual(request):
+    # If user has a SSO cookie, do a normal auth check.
+    if request.user.is_authenticated():
+        return auth(request)
+
+    # else return an empty response
+    response = HttpResponse('{}', content_type='application/json')
+    return response
+
+    
 @csrf_exempt
 def auth_ip(request):
     # Get the IP of the current user, try and match it up to a session.
@@ -97,7 +110,7 @@ def auth_ip(request):
             response["X-client-logon-ip"] = current_ip
             return response
 
-    # If user is using SSO, do a normal auth check.
+    # If user has a SSO cookie, do a normal auth check.
     if request.user.is_authenticated():
         return auth(request)
 
@@ -128,9 +141,11 @@ def auth_ip(request):
 
 @csrf_exempt
 def auth(request):
+    # grab the basic auth data from the request
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
     basic_hash = hashlib.sha1(basic_auth.encode('utf-8')).hexdigest() if basic_auth else None
 
+    # store the access IP in the current user session 
     if request.user.is_authenticated():
         usersession = UserSession.objects.get(
             session_id=request.session.session_key)
@@ -138,9 +153,28 @@ def auth(request):
         if usersession.ip != current_ip:
             usersession.ip = current_ip
             usersession.save()
-    cachekey = "auth_cache_{}".format(basic_hash or request.session.session_key)
+
+    # check the cache for a match for the basic auth hash
+    cachekey = "auth_cache_{}".format(basic_hash)
     content = cache.get(cachekey)
     if content:
+        response = HttpResponse(content[0], content_type='application/json')
+        for key, val in content[1].items():
+            response[key] = val
+        response["X-auth-cache-hit"] = "success"
+
+        # for a new session using cached basic auth, reauthenticate
+        if not request.user.is_authenticated():
+            user = User.objects.get(email__iexact=content[1]['X-email'])
+            user.backend = "django.contrib.auth.backends.ModelBackend"
+            login(request, user)
+        return response
+
+    # check the cache for a match for the current session key
+    cachekey = "auth_cache_{}".format(request.session.session_key)
+    content = cache.get(cachekey)
+    # return a cached response ONLY if the current session has an authenticated user
+    if content and request.user.is_authenticated():
         response = HttpResponse(content[0], content_type='application/json')
         for key, val in content[1].items():
             response[key] = val
@@ -150,7 +184,8 @@ def auth(request):
     if not request.user.is_authenticated():
         # Check basic auth against Azure AD as an alternative to SSO.
         try:
-            assert basic_auth is not None
+            if basic_auth is None:
+                raise Exception('Missing credentials')
             username, password = base64.b64decode(
                 basic_auth.split(" ", 1)[1].strip()).decode('utf-8').split(":", 1)
             username = force_email(username)
@@ -172,7 +207,7 @@ def auth(request):
             response = HttpResponse(status=401)
             response[
                 "WWW-Authenticate"] = 'Basic realm="Please login with your username or email address"'
-            response.content = repr(e)
+            response.content = str(e)
             return response
     response_data = WhoAmIResource.as_detail()(request).content
     response = HttpResponse(response_data, content_type='application/json')
@@ -193,7 +228,9 @@ def auth(request):
     for key, val in headers.items():
         key = "X-" + key.replace("_", "-")
         cache_headers[key], response[key] = val, val
-    cache.set(cachekey, (response.content, cache_headers), 3600)
+    # cache authentication entries
+    cache.set("auth_cache_{}".format(basic_hash), (response.content, cache_headers), 3600)
+    cache.set("auth_cache_{}".format(request.session.session_key), (response.content, cache_headers), 3600)
     return response
 
 
