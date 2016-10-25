@@ -7,6 +7,7 @@ from django.utils.timezone import make_aware
 from django.views.decorators.csrf import csrf_exempt
 import json
 from restless.dj import DjangoResource
+from restless.exceptions import BadRequest
 from restless.resources import skip_prepare
 from restless.utils import MoreTypesJSONEncoder
 from oim_cms.utils import FieldsFormatter, CSVDjangoResource
@@ -154,7 +155,7 @@ class DepartmentUserResource(DjangoResource):
             # Always return an object by UUID.
             users = DepartmentUser.objects.filter(ad_guid=self.request.GET['ad_guid'])
         elif 'cost_centre' in self.request.GET:
-            # Always return all objects by cost centre.
+            # Always return all objects by cost centre (inc inactive & contractors).
             users = DepartmentUser.objects.filter(cost_centre__code=self.request.GET['cost_centre'])
         else:
             # No other filtering:
@@ -221,6 +222,8 @@ class DepartmentUserResource(DjangoResource):
         """
         user = self.get_user()
         if not user:
+            if not self.data.get('ObjectGUID'):
+                raise BadRequest('Missing ObjectGUID parameter')
             try:
                 # For creation, we require the AD GUID.
                 user = DepartmentUser(ad_guid=self.data['ObjectGUID'])
@@ -232,6 +235,7 @@ class DepartmentUserResource(DjangoResource):
                 data = self.data
                 data['Error'] = repr(e)
                 logger.error(repr(e))
+                return self.formatters.format(self.request, {"Error": repr(e)})
         else:
             old_user_data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
             updated_user_data = self.updateUser(user)
@@ -241,35 +245,41 @@ class DepartmentUserResource(DjangoResource):
                 'updated_user_data': updated_user_data.ad_data
             }
             logger.info("Updated user {}\n{}".format(user.name, self.formatters.format(self.request, log_data)))
-
             return self.formatters.format(self.request, data)
-        logger.error("User already exists")
-        return self.formatters.format(self.request, {"Error": "User already exists"})
 
     def updateUser(self, user):
         """Method to update a DepartmentUser object from AD data.
+        The request parameters below reference the field name for AD objects.
         """
         try:
-            user.email = self.data['EmailAddress']
-            user.ad_guid = self.data['ObjectGUID']
-            user.ad_dn = self.data['DistinguishedName']
-            user.username = self.data['SamAccountName']
-            user.expiry_date = self.data.get('AccountExpirationDate')
-            user.active = self.data['Enabled']
-            user.o365_licence = self.data['o365_licence']
-            user.ad_data = self.data
-            if not user.name:
+            if self.data.get('ObjectGUID'):
+                user.ad_guid = self.data['ObjectGUID']
+            if self.data.get('EmailAddress'):
+                user.email = self.data['EmailAddress']
+            if self.data.get('DistinguishedName'):
+                user.ad_dn = self.data['DistinguishedName']
+            if self.data.get('SamAccountName'):
+                user.username = self.data['SamAccountName']
+            if self.data.get('AccountExpirationDate'):
+                user.expiry_date = self.data['AccountExpirationDate']
+            if self.data.get('Enabled'):
+                user.active = self.data['Enabled']
+            if self.data.get('Name'):
                 user.name = self.data['Name']
-            if self.data['Title']:
+            if self.data.get('Title'):
                 user.title = self.data['Title']
-            if not user.given_name:
+            if self.data.get('GivenName'):
                 user.given_name = self.data['GivenName']
-            if not user.surname:
+            if self.data.get('Surname'):
                 user.surname = self.data['Surname']
-            user.date_ad_updated = self.data['Modified']
+            if self.data.get('Modified'):
+                user.date_ad_updated = self.data['Modified']
+            if self.data.get('o365_licence'):
+                user.o365_licence = self.data['o365_licence']
+            user.ad_data = self.data  # Store the raw request data.
             user.ad_updated = True
             # If the AD account has been deleted, update accordingly.
-            if self.data.get('Deleted', None):
+            if self.data.get('Deleted'):
                 user.active = False
                 user.ad_deleted = True
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
