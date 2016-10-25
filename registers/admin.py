@@ -138,6 +138,7 @@ class ITSystemAdmin(VersionAdmin):
         'system_creation_date',
         'backup_info',
         'risks',
+        'sla',
         'critical_period',
         'alt_processing',
         'technical_recov',
