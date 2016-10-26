@@ -197,7 +197,7 @@ class DepartmentUser(MPTTModel):
             return
 
         from PIL import Image
-        from cStringIO import StringIO
+        from six import BytesIO
         from django.core.files.base import ContentFile
 
         if hasattr(self.photo.file, 'content_type'):
@@ -217,12 +217,12 @@ class DepartmentUser(MPTTModel):
         # remote file size limit
         PHOTO_AD_FILESIZE = 10000
 
-        image = Image.open(StringIO(self.photo.read()))
+        image = Image.open(BytesIO(self.photo.read()))
         image.thumbnail(PHOTO_AD_SIZE, Image.LANCZOS)
 
         # in case we miss 10kb, drop the quality and recompress
         for i in range(12):
-            temp_buffer = StringIO()
+            temp_buffer = BytesIO()
             image.save(temp_buffer, PIL_TYPE,
                        quality=PIL_QUALITY, optimize=True)
             length = temp_buffer.tell()

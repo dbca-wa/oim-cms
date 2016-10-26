@@ -1,14 +1,14 @@
 import traceback
 from rest_framework import serializers, viewsets, status, filters
-from models import Record, Style
 from rest_framework.response import Response
 import base64
 from django.core.files.base import ContentFile
-import md5
+import hashlib
 import json
 from django.conf import settings
-from pycsw import util
+from pycsw.core import util
 
+from .models import Record, Style
 
 # Ows Resource Serializer
 class OwsResourceSerializer(serializers.Serializer):
@@ -173,7 +173,7 @@ class RecordViewSet(viewsets.ModelViewSet):
         return uploaded_style
 
     def calculate_checksum(self, content):
-        checksum = md5.new()
+        checksum = hashlib.md5()
         checksum.update(content)
         return base64.b64encode(checksum.digest())
 

@@ -28,7 +28,7 @@ def freshdesk(request):
     Freshdesk API.
     """
     lines = []
-    for key, val in request.POST.iteritems():
+    for key, val in request.POST.items():
         if not val:
             val = '(blank)'
         lines.append('<li><b>{}</b>: {}</li>'.format(key, val))

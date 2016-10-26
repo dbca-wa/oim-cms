@@ -370,4 +370,5 @@ def profile(request):
         user.save()
         data = DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS)[0]
     return HttpResponse(json.dumps(
-        {'objects': [self.formatters.format(request, data)]}, cls=MoreTypesJSONEncoder))
+        {'objects': [self.formatters.format(request, data)]}, cls=MoreTypesJSONEncoder),
+        content_type='application/json')

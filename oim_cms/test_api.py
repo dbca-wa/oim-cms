@@ -1,9 +1,9 @@
 from django.contrib.auth.models import User
 from django.test import TestCase, Client
-import json
 from mixer.backend.django import mixer
 import random
 import string
+import json
 from uuid import uuid1
 
 from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
@@ -100,13 +100,13 @@ class ProfileTestCase(ApiTestCase):
         """Test the profile API endpoint GET response
         """
         response = self.client.get(self.url)
-        j = json.loads(response.content)
+        j = response.json()
         obj = j['objects'][0]
         self.assertFalse(obj['telephone'])
         tel = '9111 1111'
         response = self.client.post(self.url, {'telephone': tel})
         self.assertEqual(response.status_code, 200)
-        j = json.loads(response.content)
+        j = response.json()
         obj = j['objects'][0]
         self.assertEqual(obj['telephone'], tel)
 
@@ -129,7 +129,7 @@ class OptionResourceTestCase(ApiTestCase):
         # Division 1 will be present in the response.
         self.assertContains(response, self.div1.name)
         # Response can be deserialised into a dict.
-        r = json.loads(response.content)
+        r = response.json()
         self.assertTrue(isinstance(r, dict))
         # Deserialised response contains a list.
         self.assertTrue(isinstance(r['objects'], list))
@@ -197,7 +197,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         url = '/api/users/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        r = json.loads(response.content)
+        r = response.json()
         self.assertTrue(isinstance(r['objects'], list))
         # Response should not contain inactive, contractors or shared accounts.
         self.assertContains(response, self.user1.email)
@@ -238,7 +238,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         url = '/api/users/?email={}'.format(self.user1.email)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        j = json.loads(response.content)
+        j = response.json()
         self.assertEqual(len(j['objects']), 1)
         self.assertContains(response, self.user1.email)
         self.assertNotContains(response, self.user2.email)
@@ -246,7 +246,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         url = '/api/users/?ad_guid={}'.format(self.user1.ad_guid)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        j = json.loads(response.content)
+        j = response.json()
         self.assertEqual(len(j['objects']), 1)
         self.assertContains(response, self.user1.email)
         self.assertNotContains(response, self.user2.email)

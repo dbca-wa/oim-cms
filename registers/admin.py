@@ -5,7 +5,7 @@ from django.contrib.admin import register, ModelAdmin
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from reversion.admin import VersionAdmin
-from StringIO import StringIO
+from six import BytesIO
 import unicodecsv
 from .models import (
     Software, Hardware, UserGroup, DocumentApproval, ITSystemHardware,
@@ -72,7 +72,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
             'it_system_name', 'itsystem_availability', 'itsystem_criticality']
 
         # Write data for ITSystemHardware objects to the CSV.
-        stream = StringIO()
+        stream = BytesIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
         for i in ITSystemHardware.objects.all():
@@ -196,7 +196,7 @@ class ITSystemAdmin(VersionAdmin):
             'workaround', 'recovery_docs', 'date_updated']
 
         # Write data for ITSystem objects to the CSV:
-        stream = StringIO()
+        stream = BytesIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)
         for i in ITSystem.objects.all().order_by(
