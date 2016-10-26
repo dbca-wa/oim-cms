@@ -23,7 +23,16 @@ class ITSystemResource(CSVDjangoResource):
         cost_centre__name = ''
         cost_centre__code = ''
         # Every damn field is nullable!
-        if data.owner:
+        if data.cost_centre:  # Use this field first.
+            cost_centre__name = data.cost_centre.name
+            cost_centre__code = data.cost_centre.code
+            if data.cost_centre.division:
+                cost_centre__division__name = data.cost_centre.division.name
+                if data.cost_centre.division.manager:
+                    cost_centre__division__manager__name = data.cost_centre.division.manager.name
+                    cost_centre__division__manager__email = data.cost_centre.division.manager.email
+                    cost_centre__division__manager__title = data.cost_centre.division.manager.title
+        elif data.owner:  # Use this second.
             if data.owner.cost_centre:
                 cost_centre__name = data.owner.cost_centre.name
                 cost_centre__code = data.owner.cost_centre.code
