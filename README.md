@@ -34,3 +34,4 @@ For local development, minimum required settings are as follows:
     FRESHDESK_ENDPOINT="https://dpaw.freshdesk.com/api/v2"
     FRESHDESK_KEY="SecretAPIKeyValue"
     PDQ_INV_PATH="/path/to/pdq_inventory/mount"
+    AZUREAD_AUTHORITY="https://login.microsoftonline.com/thisisnotarealazureaudauthorityurl"
