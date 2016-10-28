@@ -155,20 +155,21 @@ def auth(request):
             usersession.save()
 
     # check the cache for a match for the basic auth hash
-    cachekey = "auth_cache_{}".format(basic_hash)
-    content = cache.get(cachekey)
-    if content:
-        response = HttpResponse(content[0], content_type='application/json')
-        for key, val in content[1].items():
-            response[key] = val
-        response["X-auth-cache-hit"] = "success"
+    if basic_hash:
+        cachekey = "auth_cache_{}".format(basic_hash)
+        content = cache.get(cachekey)
+        if content:
+            response = HttpResponse(content[0], content_type='application/json')
+            for key, val in content[1].items():
+                response[key] = val
+            response["X-auth-cache-hit"] = "success"
 
-        # for a new session using cached basic auth, reauthenticate
-        if not request.user.is_authenticated():
-            user = User.objects.get(email__iexact=content[1]['X-email'])
-            user.backend = "django.contrib.auth.backends.ModelBackend"
-            login(request, user)
-        return response
+            # for a new session using cached basic auth, reauthenticate
+            if not request.user.is_authenticated():
+                user = User.objects.get(email__iexact=content[1]['X-email'])
+                user.backend = "django.contrib.auth.backends.ModelBackend"
+                login(request, user)
+            return response
 
     # check the cache for a match for the current session key
     cachekey = "auth_cache_{}".format(request.session.session_key)
@@ -239,7 +240,8 @@ def auth(request):
         key = "X-" + key.replace("_", "-")
         cache_headers[key], response[key] = val, val
     # cache authentication entries
-    cache.set("auth_cache_{}".format(basic_hash), (response.content, cache_headers), 3600)
+    if basic_hash:
+        cache.set("auth_cache_{}".format(basic_hash), (response.content, cache_headers), 3600)
     cache.set("auth_cache_{}".format(request.session.session_key), (response.content, cache_headers), 3600)
 
     return response
