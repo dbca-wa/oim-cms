@@ -8,7 +8,7 @@ from reversion.admin import VersionAdmin
 from six import BytesIO
 import unicodecsv
 from .models import (
-    Software, Hardware, UserGroup, DocumentApproval, ITSystemHardware,
+    Software, Hardware, UserGroup, ITSystemHardware,
     ITSystem, ITSystemDependency, ITSystemVendor, Backup, BusinessService,
     BusinessFunction, BusinessProcess, ProcessITSystemRelationship)
 
@@ -34,12 +34,6 @@ class HardwareAdmin(VersionAdmin):
 class UserGroupAdmin(VersionAdmin):
     list_display = ('name', 'user_count')
     search_fields = ('name',)
-
-
-@register(DocumentApproval)
-class DocumentApprovalAdmin(ModelAdmin):
-    list_diplay = ('department_user', 'approval_role', 'date_created')
-    raw_id_fields = ('department_user',)
 
 
 @register(ITSystemHardware)
@@ -106,7 +100,6 @@ class ITSystemAdmin(VersionAdmin):
         'owner', 'custodian', 'data_custodian', 'preferred_contact', 'cost_centre',
         'bh_support', 'ah_support')
     readonly_fields = ('extra_data_pretty', 'description_html')
-    filter_horizontal = ('contingency_plan_approvals',)
     fields = [
         ('system_id', 'acronym'),
         ('name', 'status'),
@@ -132,7 +125,6 @@ class ITSystemAdmin(VersionAdmin):
         'workaround',
         ('mtd', 'rto', 'rpo'),
         ('contingency_plan', 'contingency_plan_status'),
-        'contingency_plan_approvals',
         'contingency_plan_last_tested',
         'system_health',
         'system_creation_date',
@@ -156,22 +148,6 @@ class ITSystemAdmin(VersionAdmin):
     ]
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystem/change_list.html'
-
-    def save_model(self, request, obj, form, change):
-        """Override save_model in order to log any changes to the
-        contingency_plan field.
-        """
-        # If contingency_plan changes, delete any associated DocumentApproval
-        # objects.
-        if obj._ITSystem__original_contingency_plan != obj.contingency_plan:
-            # Clear the selected approvals from the modeladmin form.
-            form.cleaned_data['contingency_plan_approvals'] = []
-            approvals = [i for i in obj.contingency_plan_approvals.all()]
-            obj.contingency_plan_approvals.clear()  # Remove M2M relationships
-            obj.save()
-            for i in approvals:
-                i.delete()  # Delete each approval object.
-        super(ITSystemAdmin, self).save_model(request, obj, form, change)
 
     def get_urls(self):
         urls = super(ITSystemAdmin, self).get_urls()
