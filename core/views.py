@@ -182,6 +182,7 @@ def auth(request):
         response["X-auth-cache-hit"] = "success"
         return response
 
+    cache_basic = False
     if not request.user.is_authenticated():
         # Check basic auth against Azure AD as an alternative to SSO.
         try:
@@ -209,6 +210,7 @@ def auth(request):
             if user:
                 user.backend = "django.contrib.auth.backends.ModelBackend"
                 login(request, user)
+                cache_basic = True
             else:
                 raise Exception('Authentication failed')
         except Exception as e:
@@ -240,7 +242,7 @@ def auth(request):
         key = "X-" + key.replace("_", "-")
         cache_headers[key], response[key] = val, val
     # cache authentication entries
-    if basic_hash:
+    if basic_hash and cache_basic:
         cache.set("auth_cache_{}".format(basic_hash), (response.content, cache_headers), 3600)
     cache.set("auth_cache_{}".format(request.session.session_key), (response.content, cache_headers), 3600)
 
