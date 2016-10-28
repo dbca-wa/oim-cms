@@ -1,11 +1,6 @@
 from __future__ import unicode_literals, absolute_import
-from django.conf import settings
 from django.conf.urls import include, url
-from django.http import HttpResponseRedirect
-from django.views.decorators.csrf import csrf_exempt
-import json
 from mptt.templatetags.mptt_tags import cache_tree_children
-import requests
 from restless.dj import DjangoResource
 from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
@@ -20,35 +15,6 @@ from registers.models import ITSystem
 from tracking.api import EC2InstanceResource
 from forms.api import ITSystemObj, PeopleObj, SaveITSystemRequest
 from .utils import CSVDjangoResource
-
-
-@csrf_exempt
-def freshdesk(request):
-    """An API view to create a new Freshdesk ticket via a POST to the
-    Freshdesk API.
-    """
-    lines = []
-    for key, val in request.POST.items():
-        if not val:
-            val = '(blank)'
-        lines.append('<li><b>{}</b>: {}</li>'.format(key, val))
-    lines.sort()
-    description = '<ul>{}</ul>'.format(''.join(lines))
-    ticket = {'helpdesk_ticket': {
-        'subject': request.POST.get('subject', 'Form submitted'),
-        'email': request.user.email,
-        'priority': int(request.POST.get('priority', 1)),
-        'status': int(request.POST.get('status', 2)),
-        'description_html': description,
-        'source': 4
-    }}
-    r = requests.post(settings.FRESHDESK_ENDPOINT + '/helpdesk/tickets.json',
-                      auth=settings.FRESHDESK_AUTH, headers={
-                          'Content-Type': 'application/json'},
-                      data=json.dumps(ticket))
-    ticket_id = json.loads(r.content)['helpdesk_ticket']['display_id']
-    return HttpResponseRedirect(
-        settings.FRESHDESK_ENDPOINT + '/support/tickets/{}'.format(ticket_id))
 
 
 def recursive_node_to_dict(node):
@@ -197,7 +163,6 @@ class MudMapResource(CSVDjangoResource):
 
 api_urlpatterns = [
     url(r'^approvals/', include(ApprovalResource.urls())),
-    url(r'^freshdesk', freshdesk, name='api_freshdesk'),
     url(r'^ec2_instances/', include(EC2InstanceResource.urls())),
     url(r'^itsystems/', include(ITSystemResource.urls())),
     url(r'^itsystems.csv', ITSystemResource.as_csv),
