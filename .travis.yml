@@ -3,6 +3,7 @@ language: python
 cache: pip
 python:
     - "2.7"
+    - "3.5"
 addons:
     postgresql: "9.4"
 services:
@@ -14,12 +15,16 @@ env:
     global:
         - SECRET_KEY="SecretKeyForTravisCI"
         - DATABASE_URL="postgis://postgres@localhost:5432/travis_ci_test"
+        - AZUREAD_AUTHORITY="https://login.microsoftonline.com/thisisnotarealazureaudauthorityurl"
 install:
     - psql -U postgres -c "create extension postgis"
     - psql -U postgres -c "create role postgrest"
+    - pip install --upgrade setuptools
     - pip install -r requirements.txt
 before_script:
     - psql -c 'create database travis_ci_test;' -U postgres
     - python manage.py migrate --noinput
 script:
-    - python manage.py test
+    - coverage run --source="." manage.py test
+after_success:
+    - coveralls

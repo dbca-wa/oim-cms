@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 import logging
 from openpyxl import load_workbook
 import os
-from StringIO import StringIO
+from six import BytesIO
 import subprocess
 import unicodecsv
 
@@ -92,7 +92,7 @@ def alesco_data_import(filepath):
 def departmentuser_csv_report():
     """Output data from all DepartmentUser objects to a CSV, unpacking the
     various JSONField values.
-    Returns a StringIO object that can be written to a response or file.
+    Returns a BytesIO object that can be written to a response or file.
     """
     from .models import DepartmentUser
     FIELDS = [
@@ -136,7 +136,7 @@ def departmentuser_csv_report():
     header += ['ad_{}'.format(k) for k in ad_keys]
 
     # Write data for all DepartmentUser objects to the CSV
-    stream = StringIO()
+    stream = BytesIO()
     wr = unicodecsv.writer(stream, encoding='utf-8')
     wr.writerow(header)
     for u in DepartmentUser.objects.filter(active=True):

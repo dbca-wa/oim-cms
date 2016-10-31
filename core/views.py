@@ -1,49 +1,116 @@
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.contrib.auth import login, logout
 from django.core.cache import cache
 from django.shortcuts import render
+from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from django_auth_ldap.backend import LDAPBackend
 from ipware.ip import get_ip
 import json
+import base64
+import hashlib
+import adal
 from wagtail.wagtailcore.models import PageRevision
 from wagtail.wagtailsearch.models import Query
 
 from core.models import Content, UserSession
 from oim_cms.api import WhoAmIResource
+from django.contrib.auth.models import User
 from tracking.models import DepartmentUser
 from forms.api import ITSystemPermssionCheck
 
+def force_email(username):
+    if username.find("@") == -1:
+        candidates = User.objects.filter(
+            username__iexact=username)
+        if not candidates:
+            return None
+        return candidates[0].email
+    return username
+
+
+def adal_authenticate(email, password):
+    try:
+        context = adal.AuthenticationContext(settings.AZUREAD_AUTHORITY)
+        token = context.acquire_token_with_username_password(
+            settings.AZUREAD_RESOURCE, email, password,
+            settings.SOCIAL_AUTH_AZUREAD_OAUTH2_KEY,
+            settings.SOCIAL_AUTH_AZUREAD_OAUTH2_SECRET
+        )
+
+    except adal.adal_error.AdalError:
+        return None
+
+    candidates = User.objects.filter(email__iexact=token['userId'])
+    if candidates.exists():
+        return candidates[0]
+    else:
+        return None
+
+
+def shared_id_authenticate(email, shared_id):
+    us = UserSession.objects.filter(user__email__iexact=email).order_by('-session__expire_date')
+    if (not us.exists()) or (us[0].shared_id != shared_id):
+        return None
+    return us[0].user
+
+
+@csrf_exempt
+def auth_get(request):
+    # If user is using SSO, do a normal auth check.
+    if request.user.is_authenticated():
+        return auth(request)
+
+    if 'sso_user' in request.GET and 'sso_shared_id' in request.GET:
+        user = shared_id_authenticate(request.GET.get('sso_user'), 
+            request.GET.get('sso_shared_id'))
+        if user:
+            response = HttpResponse(json.dumps(
+                {'email': user.email, 'shared_id': request.GET.get('sso_shared_id')
+                }), content_type='application/json')
+            response["X-email"] = user.email
+            response["X-shared-id"] = request.GET.get('sso_shared_id')
+            return response
+
+    return HttpResponseForbidden()
+
+
+@csrf_exempt
+def auth_dual(request):
+    # If user has a SSO cookie, do a normal auth check.
+    if request.user.is_authenticated():
+        return auth(request)
+
+    # else return an empty response
+    response = HttpResponse('{}', content_type='application/json')
+    return response
+
+    
 @csrf_exempt
 def auth_ip(request):
     # Get the IP of the current user, try and match it up to a session.
     current_ip = get_ip(request)
 
+
     # If there's a basic auth header, perform a check.
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
     if basic_auth:
-        # Check basic auth against LDAP as an alternative to SSO.
-        username, password = request.META["HTTP_AUTHORIZATION"].split(
-            " ", 1)[1].strip().decode('base64').split(":", 1)
-        ldapauth = LDAPBackend()
-        if username.find("@") > -1:
-            username = DepartmentUser.objects.get(
-                email__iexact=username).username
-        user = ldapauth.authenticate(username=username,
-                                     password=password)
+        # Check basic auth against Azure AD as an alternative to SSO.
+        username, password = base64.b64decode(
+            basic_auth.split(" ", 1)[1].strip()).decode('utf-8').split(":", 1)
+        username = force_email(username)
+        user = shared_id_authenticate(username, password)
+        
         if not user:
-            us = UserSession.objects.filter(user__username=username)[0]
-            assert us.shared_id == password
-            user = us.user
+            user = adal_authenticate(username, password)
 
         if user:
             response = HttpResponse(json.dumps(
-                {'email': user.email, 'client_logon_ip': current_ip}))
+                {'email': user.email, 'client_logon_ip': current_ip}), content_type='application/json')
             response["X-email"] = user.email
             response["X-client-logon-ip"] = current_ip
             return response
 
-    # If user is using SSO, do a normal auth check.
+    # If user has a SSO cookie, do a normal auth check.
     if request.user.is_authenticated():
         return auth(request)
 
@@ -64,8 +131,8 @@ def auth_ip(request):
         except:
             headers["kmi_roles"] = ''
 
-    response = HttpResponse(json.dumps(headers))
-    for key, val in headers.iteritems():
+    response = HttpResponse(json.dumps(headers), content_type='application/json')
+    for key, val in headers.items():
         key = "X-" + key.replace("_", "-")
         response[key] = val
 
@@ -74,6 +141,11 @@ def auth_ip(request):
 
 @csrf_exempt
 def auth(request):
+    # grab the basic auth data from the request
+    basic_auth = request.META.get("HTTP_AUTHORIZATION")
+    basic_hash = hashlib.sha1(basic_auth.encode('utf-8')).hexdigest() if basic_auth else None
+
+    # store the access IP in the current user session 
     if request.user.is_authenticated():
         usersession = UserSession.objects.get(
             session_id=request.session.session_key)
@@ -81,41 +153,76 @@ def auth(request):
         if usersession.ip != current_ip:
             usersession.ip = current_ip
             usersession.save()
-    cachekey = "auth_cache_{}".format(request.META.get(
-        "HTTP_AUTHORIZATION") or request.session.session_key)
+
+    # check the cache for a match for the basic auth hash
+    if basic_hash:
+        cachekey = "auth_cache_{}".format(basic_hash)
+        content = cache.get(cachekey)
+        if content:
+            response = HttpResponse(content[0], content_type='application/json')
+            for key, val in content[1].items():
+                response[key] = val
+            response["X-auth-cache-hit"] = "success"
+
+            # for a new session using cached basic auth, reauthenticate
+            if not request.user.is_authenticated():
+                user = User.objects.get(email__iexact=content[1]['X-email'])
+                user.backend = "django.contrib.auth.backends.ModelBackend"
+                login(request, user)
+            return response
+
+    # check the cache for a match for the current session key
+    cachekey = "auth_cache_{}".format(request.session.session_key)
     content = cache.get(cachekey)
-    if content:
-        response = HttpResponse(content[0])
-        for key, val in content[1].iteritems():
+    # return a cached response ONLY if the current session has an authenticated user
+    if content and request.user.is_authenticated():
+        response = HttpResponse(content[0], content_type='application/json')
+        for key, val in content[1].items():
             response[key] = val
         response["X-auth-cache-hit"] = "success"
         return response
+
+    cache_basic = False
     if not request.user.is_authenticated():
-        # Check basic auth against LDAP as an alternative to SSO.
+        # Check basic auth against Azure AD as an alternative to SSO.
         try:
-            assert request.META.get("HTTP_AUTHORIZATION") is not None
-            username, password = request.META["HTTP_AUTHORIZATION"].split(
-                " ", 1)[1].strip().decode('base64').split(":", 1)
-            ldapauth = LDAPBackend()
-            if username.find("@") > -1:
-                username = DepartmentUser.objects.get(
-                    email__iexact=username).username
-            user = ldapauth.authenticate(username=username,
-                                         password=password)
-            if not user:
-                us = UserSession.objects.filter(user__username=username)[0]
-                assert us.shared_id == password
-                user = us.user
-            user.backend = "django.contrib.auth.backends.ModelBackend"
-            login(request, user)
+            if basic_auth is None:
+                raise Exception('Missing credentials')
+            username, password = base64.b64decode(
+                basic_auth.split(" ", 1)[1].strip()).decode('utf-8').split(":", 1)
+            username = force_email(username)
+
+            # first check for a shared_id match
+            # if yes, provide a response, but no session cookie
+            # (hence it'll only work against certain endpoints)
+            user = shared_id_authenticate(username, password)
+            if user:
+                response = HttpResponse(json.dumps(
+                    {'email': user.email, 'shared_id': password
+                    }), content_type='application/json')
+                response["X-email"] = user.email
+                response["X-shared-id"] = password
+                return response
+
+            # after that, check against Azure AD
+            user = adal_authenticate(username, password)
+            # basic auth using username/password will generate a session cookie
+            if user:
+                user.backend = "django.contrib.auth.backends.ModelBackend"
+                login(request, user)
+                cache_basic = True
+            else:
+                raise Exception('Authentication failed')
         except Exception as e:
             response = HttpResponse(status=401)
             response[
                 "WWW-Authenticate"] = 'Basic realm="Please login with your username or email address"'
-            response.content = repr(e)
+            response.content = str(e)
             return response
-    response = HttpResponse(WhoAmIResource.as_detail()(request).content)
-    headers, cache_headers = json.loads(response.content), dict()
+
+    response_data = WhoAmIResource.as_detail()(request).content
+    response = HttpResponse(response_data, content_type='application/json')
+    headers = json.loads(response_data.decode('utf-8'))
     headers["full_name"] = u"{}, {}".format(
         headers.get(
             "last_name", ""), headers.get(
@@ -128,10 +235,17 @@ def auth(request):
             "KMIRoles", '')
     except Exception as e:
         headers["kmi_roles"] = ''
-    for key, val in headers.iteritems():
+   
+    # cache response
+    cache_headers = dict()
+    for key, val in headers.items():
         key = "X-" + key.replace("_", "-")
         cache_headers[key], response[key] = val, val
-    cache.set(cachekey, (response.content, cache_headers), 3600)
+    # cache authentication entries
+    if basic_hash and cache_basic:
+        cache.set("auth_cache_{}".format(basic_hash), (response.content, cache_headers), 3600)
+    cache.set("auth_cache_{}".format(request.session.session_key), (response.content, cache_headers), 3600)
+
     return response
 
 

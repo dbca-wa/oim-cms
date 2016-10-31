@@ -189,7 +189,7 @@ class RecordAdmin(VersionAdmin):
             if result["status"]:
                 messages.success(request, "All selected records are published successfully")
             else:
-                for layer, status in result.iteritems():
+                for layer, status in result.items():
                     if layer == "status": continue
                     if status["status"]: continue
                     failed_objects.append((layer, status["message"]))

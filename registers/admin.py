@@ -5,13 +5,12 @@ from django.contrib.admin import register, ModelAdmin
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from reversion.admin import VersionAdmin
-from StringIO import StringIO
+from six import BytesIO
 import unicodecsv
-
 from .models import (
     Software, Hardware, UserGroup, DocumentApproval, ITSystemHardware,
-    ITSystem, ITSystemDependency, Backup, BusinessService, BusinessFunction,
-    BusinessProcess, ProcessITSystemRelationship)
+    ITSystem, ITSystemDependency, ITSystemVendor, Backup, BusinessService,
+    BusinessFunction, BusinessProcess, ProcessITSystemRelationship)
 
 
 @register(Software)
@@ -25,7 +24,7 @@ class SoftwareAdmin(VersionAdmin):
 class HardwareAdmin(VersionAdmin):
     list_display = (
         'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4',
-        'ports', 'serials', 'os')
+        'os', 'location')
     list_filter = ('device_type', 'os', 'cost_centre')
     search_fields = (
         'name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')
@@ -73,7 +72,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
             'it_system_name', 'itsystem_availability', 'itsystem_criticality']
 
         # Write data for ITSystemHardware objects to the CSV.
-        stream = StringIO()
+        stream = BytesIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
         for i in ITSystemHardware.objects.all():
@@ -139,12 +138,14 @@ class ITSystemAdmin(VersionAdmin):
         'system_creation_date',
         'backup_info',
         'risks',
+        'sla',
         'critical_period',
         'alt_processing',
         'technical_recov',
         'post_recovery',
         'variation_iscp',
         'user_notification',
+        'other_projects',
         'function',
         'use',
         'capability',
@@ -195,7 +196,7 @@ class ITSystemAdmin(VersionAdmin):
             'workaround', 'recovery_docs', 'date_updated']
 
         # Write data for ITSystem objects to the CSV:
-        stream = StringIO()
+        stream = BytesIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)
         for i in ITSystem.objects.all().order_by(
@@ -212,6 +213,12 @@ class ITSystemDependencyAdmin(VersionAdmin):
     list_display = ('itsystem', 'dependency', 'criticality')
     list_filter = ('criticality',)
     search_fields = ('itsystem__name', 'dependency__name')
+
+
+@register(ITSystemVendor)
+class ITSystemVendorAdmin(VersionAdmin):
+    list_display = ('itsystem', 'vendor')
+    search_fields = ('itsystem__name', 'vendor__name')
 
 
 @register(Backup)

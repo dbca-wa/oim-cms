@@ -28,9 +28,9 @@ class PycswAdminHandler(object):
         if isinstance(config, str):
             self.config.readfp(open(config))
         elif isinstance(config, dict):
-            for section, options in config.iteritems():
+            for section, options in config.items():
                 self.config.add_section(section)
-                for k, v in options.iteritems():
+                for k, v in options.items():
                     self.config.set(section, k, v)
         self.context = context
         self.context.md_core_model = mappings.MD_CORE_MODEL
@@ -130,7 +130,7 @@ class PycswAdminHandler(object):
                       ],
                       )
         }
-        for cmd, info in subsubs.iteritems():
+        for cmd, info in subsubs.items():
             help_text, description, arguments = info
             p = subsubparsers.add_parser(cmd, help=help_text,
                                          description=description)

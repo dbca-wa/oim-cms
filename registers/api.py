@@ -7,7 +7,7 @@ from oim_cms.utils import CSVDjangoResource
 from restless.dj import DjangoResource
 from restless.resources import skip_prepare
 
-from .models import ITSystem, Hardware, ITSystemDependency
+from .models import ITSystem, Hardware, ITSystemDependency, ITSystemVendor
 
 
 class ITSystemResource(CSVDjangoResource):
@@ -23,7 +23,16 @@ class ITSystemResource(CSVDjangoResource):
         cost_centre__name = ''
         cost_centre__code = ''
         # Every damn field is nullable!
-        if data.owner:
+        if data.cost_centre:  # Use this field first.
+            cost_centre__name = data.cost_centre.name
+            cost_centre__code = data.cost_centre.code
+            if data.cost_centre.division:
+                cost_centre__division__name = data.cost_centre.division.name
+                if data.cost_centre.division.manager:
+                    cost_centre__division__manager__name = data.cost_centre.division.manager.name
+                    cost_centre__division__manager__email = data.cost_centre.division.manager.email
+                    cost_centre__division__manager__title = data.cost_centre.division.manager.title
+        elif data.owner:  # Use this second.
             if data.owner.cost_centre:
                 cost_centre__name = data.owner.cost_centre.name
                 cost_centre__code = data.owner.cost_centre.code
@@ -111,13 +120,17 @@ class ITSystemResource(CSVDjangoResource):
             'dependencies': [{
                 'dependency__system_id': i.dependency.system_id,
                 'dependency__name': i.dependency.name,
-                'criticality': i.get_criticality_display()
+                'criticality': i.get_criticality_display(),
+                'custodian__name': i.dependency.custodian.name if i.dependency.custodian else '',
+                'custodian__email': i.dependency.custodian.email if i.dependency.custodian else '',
             } for i in data.itsystemdependency_set.all()],
             'dependants': [{
                 'dependant__system_id': i.itsystem.system_id,
                 'dependant__name': i.itsystem.name,
-                'criticality': i.get_criticality_display()
-                } for i in ITSystemDependency.objects.filter(dependency=data)],
+                'criticality': i.get_criticality_display(),
+                'custodian__name': i.itsystem.custodian.name if i.itsystem.custodian else '',
+                'custodian__email': i.itsystem.custodian.email if i.itsystem.custodian else '',
+            } for i in ITSystemDependency.objects.filter(dependency=data)],
             'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
             'contingency_plan_url': domain + settings.MEDIA_URL + data.contingency_plan.name if data.contingency_plan else '',
             'contingency_plan_status': data.get_contingency_plan_status_display(),
@@ -144,6 +157,12 @@ class ITSystemResource(CSVDjangoResource):
             'unique_evidence': 'Unknown' if data.unique_evidence is None else data.unique_evidence,
             'point_of_truth': 'Unknown' if data.point_of_truth is None else data.point_of_truth,
             'legal_need_to_retain': 'Unknown' if data.legal_need_to_retain is None else data.legal_need_to_retain,
+            'other_projects': data.other_projects,
+            'sla': data.sla,
+            'vendors': [{
+                'vendor__name': i.vendor.name,
+                'description': i.description,
+            } for i in ITSystemVendor.objects.filter(itsystem=data)],
         }
         return prepped
 

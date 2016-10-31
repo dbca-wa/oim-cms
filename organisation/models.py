@@ -58,7 +58,10 @@ class DepartmentUser(MPTTModel):
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
         help_text="HR Employee ID, use 'n/a' if a contractor")
-    username = models.CharField(max_length=128, editable=False, unique=True)
+    email = models.EmailField(unique=True, editable=False)
+    username = models.CharField(
+        max_length=128, editable=False, unique=True,
+        help_text='Pre-Windows 2000 login username.')
     name = models.CharField(max_length=128, help_text='Format: Surname, Given name')
     given_name = models.CharField(
         max_length=128, null=True,
@@ -78,7 +81,6 @@ class DepartmentUser(MPTTModel):
     position_type = models.PositiveSmallIntegerField(
         choices=POSITION_TYPE_CHOICES, null=True, blank=True, default=0,
         help_text='Employee position working arrangement (should match Alesco status)')
-    email = models.EmailField(unique=True, editable=False)
     parent = TreeForeignKey(
         'self', on_delete=models.PROTECT, null=True, blank=True,
         related_name='children', editable=True, verbose_name='Reports to',
@@ -125,6 +127,12 @@ class DepartmentUser(MPTTModel):
         default=False, verbose_name='security clearance granted',
         help_text='''Security clearance approved by CC Manager (confidentiality
         agreement, referee check, police clearance, etc.''')
+    o365_licence = models.NullBooleanField(
+        default=None, editable=False,
+        help_text='Account consumes an Office 365 licence.')
+    shared_account = models.BooleanField(
+        default=False, editable=False,
+        help_text='Automatically set from account type.')
 
     class MPTTMeta:
         order_insertion_by = ['name']
@@ -146,6 +154,8 @@ class DepartmentUser(MPTTModel):
         return self.email
 
     def save(self, *args, **kwargs):
+        """Override the save method with additional business logic.
+        """
         if self.employee_id and self.employee_id.lower() == "n/a":
             self.employee_id = None
         if self.employee_id:
@@ -175,6 +185,8 @@ class DepartmentUser(MPTTModel):
                 "tech_contact": str(self.cost_centre.tech_contact),
             }
         self.update_photo_ad()
+        if self.account_type in [5, 9]:  # Shared/role-based account types.
+            self.shared_account = True
         super(DepartmentUser, self).save(*args, **kwargs)
 
     def update_photo_ad(self):
@@ -185,7 +197,7 @@ class DepartmentUser(MPTTModel):
             return
 
         from PIL import Image
-        from cStringIO import StringIO
+        from six import BytesIO
         from django.core.files.base import ContentFile
 
         if hasattr(self.photo.file, 'content_type'):
@@ -205,12 +217,12 @@ class DepartmentUser(MPTTModel):
         # remote file size limit
         PHOTO_AD_FILESIZE = 10000
 
-        image = Image.open(StringIO(self.photo.read()))
+        image = Image.open(BytesIO(self.photo.read()))
         image.thumbnail(PHOTO_AD_SIZE, Image.LANCZOS)
 
         # in case we miss 10kb, drop the quality and recompress
         for i in range(12):
-            temp_buffer = StringIO()
+            temp_buffer = BytesIO()
             image.save(temp_buffer, PIL_TYPE,
                        quality=PIL_QUALITY, optimize=True)
             length = temp_buffer.tell()

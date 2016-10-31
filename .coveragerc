@@ -1,0 +1,12 @@
+[report]
+omit =
+    venv/*
+    venv2/*
+    approvals/migrations/*
+    assets/migrations/*
+    catalogue/migrations/*
+    core/migrations/*
+    mudmap/migrations/*
+    organisation/migrations/*
+    registers/migrations/*
+    tracking/migrations/*

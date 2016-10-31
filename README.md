@@ -1,3 +1,6 @@
+[![Build
+status](https://travis-ci.org/parksandwildlife/oim-cms.svg?branch=master)](https://travis-ci.org/parksandwildlife/oim-cms/builds) [![Coverage Status](https://coveralls.io/repos/github/parksandwildlife/oim-cms/badge.svg?branch=master)](https://coveralls.io/github/parksandwildlife/oim-cms?branch=master)
+
 OIM Extranet
 ============
 
@@ -31,3 +34,4 @@ For local development, minimum required settings are as follows:
     FRESHDESK_ENDPOINT="https://dpaw.freshdesk.com/api/v2"
     FRESHDESK_KEY="SecretAPIKeyValue"
     PDQ_INV_PATH="/path/to/pdq_inventory/mount"
+    AZUREAD_AUTHORITY="https://login.microsoftonline.com/thisisnotarealazureaudauthorityurl"

@@ -18,7 +18,7 @@ from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
 from registers.api import ITSystemResource, HardwareResource
 from registers.models import ITSystem
 from tracking.api import EC2InstanceResource
-from forms.api import ITSystemObj, PeopleObj, SaveITSystemRequest 
+from forms.api import ITSystemObj, PeopleObj, SaveITSystemRequest
 from .utils import CSVDjangoResource
 
 
@@ -28,7 +28,7 @@ def freshdesk(request):
     Freshdesk API.
     """
     lines = []
-    for key, val in request.POST.iteritems():
+    for key, val in request.POST.items():
         if not val:
             val = '(blank)'
         lines.append('<li><b>{}</b>: {}</li>'.format(key, val))
@@ -210,9 +210,7 @@ api_urlpatterns = [
     url(r'^profile/', profile, name='api_profile'),
     url(r'^options', include(OptionResource.urls())),
     url(r'^whoami', WhoAmIResource.as_detail(), name='api_whoami'),
-    #url(r'^itsystemreq/', ITSystemObj, name='api_itsystemreq' )
     url(r'^itsystemreq/', ITSystemObj, name='api_itsystemreq'),
     url(r'^peoplelist/', PeopleObj, name='api_peoplelist'),
     url(r'^saveitreq/', SaveITSystemRequest, name='api_saveitreq')
 ]
-
