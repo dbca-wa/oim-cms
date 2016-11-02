@@ -270,14 +270,9 @@ class PycswConfigAdmin(admin.ModelAdmin):
         return False
 
 
-class ApplicationLayerInline(admin.TabularInline):
-    model = models.ApplicationLayer
-    extra = 3
-    
 @admin.register(models.Application)
 class ApplicationAdmin(VersionAdmin):
     list_display = ("name", "description", "last_modify_time", "create_time")
-    inlines = [ApplicationLayerInline, ]
     readonly_fields = ('last_modify_time', 'create_time')
     form = ApplicationForm
     search_fields = ["name"]
