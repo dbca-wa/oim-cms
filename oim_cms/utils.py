@@ -20,13 +20,14 @@ class CSVDjangoResource(DjangoResource):
 
 class FieldsFormatter(object):
     """
-    A formatter object to format specified fields with cofigured formatter object.
-    This takes a
+    A formatter object to format specified fields with a configured formatter
+    object. This takes a
         ``request`` parameter , a http request object
         ``formatters`` parameter: a dictionary of keys (a dotted lookup path to
         the desired attribute/key on the object) and values(a formatter object).
 
-    for propertis without a configed formatter method, return the raw value directly.
+    For properties without a configured formatter method, return the raw value
+    directly.
 
     This method will replace the old value with formatted value.
 

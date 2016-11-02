@@ -117,32 +117,6 @@ class UserGroup(models.Model):
 
 
 @python_2_unicode_compatible
-class DocumentApproval(models.Model):
-    """A model to represent an approval/endorsement by a DepartmentUser for an
-    uploaded file.
-    """
-    department_user = models.ForeignKey(
-        DepartmentUser,
-        on_delete=models.PROTECT)
-    approval_role = models.CharField(
-        max_length=256, blank=True, null=True,
-        help_text='The role in which the user is approving the document.')
-    evidence = models.FileField(
-        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d',
-        help_text='Optional evidence to support the document approval (email, etc.)')
-    date_created = models.DateTimeField(auto_now_add=True, editable=False)
-
-    def __str__(self):
-        if self.approval_role:
-            return '{}, {} ({})'.format(
-                self.department_user, self.approval_role,
-                datetime.strftime(self.date_created, '%d-%b-%Y'))
-        else:
-            return '{} ({})'.format(
-                self.department_user, datetime.strftime(self.date_created, '%d-%b-%Y'))
-
-
-@python_2_unicode_compatible
 class ITSystemHardware(models.Model):
     """A model to represent the relationship between an IT System and a
     Hardware entity.
@@ -340,12 +314,9 @@ class ITSystem(CommonFields):
         help_text='Recovery Point Objective/Data Loss Interval (days hh:mm:ss)',
         default=timedelta(hours=24))
     contingency_plan = models.FileField(
-        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d',
-        help_text='NOTE: changes to this field will delete current contingency plan approvals.')
+        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d')
     contingency_plan_status = models.PositiveIntegerField(
         choices=DOC_STATUS_CHOICES, null=True, blank=True)
-    contingency_plan_approvals = models.ManyToManyField(
-        DocumentApproval, blank=True)
     contingency_plan_last_tested = models.DateField(
         null=True, blank=True, help_text='Date that the plan was last tested.')
     notes = models.TextField(blank=True, null=True)
