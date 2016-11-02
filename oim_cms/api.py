@@ -12,7 +12,7 @@ from organisation.api import DepartmentUserResource, LocationResource, profile
 from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
 from registers.api import ITSystemResource, HardwareResource
 from registers.models import ITSystem
-from tracking.api import EC2InstanceResource
+from tracking.api import EC2InstanceResource, FreshdeskTicketResource
 from forms.api import ITSystemObj, PeopleObj, SaveITSystemRequest
 from .utils import CSVDjangoResource
 
@@ -164,6 +164,7 @@ class MudMapResource(CSVDjangoResource):
 api_urlpatterns = [
     url(r'^approvals/', include(ApprovalResource.urls())),
     url(r'^ec2_instances/', include(EC2InstanceResource.urls())),
+    url(r'^freshdesk_tickets/', include(FreshdeskTicketResource.urls())),
     url(r'^itsystems/', include(ITSystemResource.urls())),
     url(r'^itsystems.csv', ITSystemResource.as_csv),
     url(r'^mudmaps', include(MudMapResource.urls())),
