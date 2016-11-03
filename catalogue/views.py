@@ -22,7 +22,8 @@ import logging
 import traceback
 from lxml import etree
 from pycsw.core import util
-from pycsw.ogc.csw.csw3 import write_boundingbox, Csw3 as PyCsw
+from pycsw.ogc.csw.csw3 import write_boundingbox
+from pycsw.server import Csw as PyCsw
 
 
 logger = logging.getLogger(__name__)

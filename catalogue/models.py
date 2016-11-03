@@ -475,13 +475,13 @@ class Record(models.Model):
             if not bbox:
                 #bbox is null, use australian bbox
                 bbox = [108.0000, -45.0000, 155.0000, -10.0000]
-                p1 = pyproj.Proj(init="EPSG:4283")
+                p1 = pyproj.Proj(init="EPSG:4326")
                 p2 = pyproj.Proj(init=target_crs)
                 bbox[0], bbox[1] = pyproj.transform(p1, p2, bbox[0], bbox[1])
                 bbox[2], bbox[3] = pyproj.transform(p1, p2, bbox[2], bbox[3])
 
             if not hasattr(PreviewTile, target_crs.replace(":", "_")):
-                raise Exception("GWC service don't support crs({}) ").format(target_crs)
+                raise Exception("GWC service don't support crs({}) ".format(target_crs))
 
             tile_bbox = getattr(PreviewTile, target_crs.replace(":", "_"))(bbox)
 
