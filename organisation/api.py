@@ -87,23 +87,41 @@ class DepartmentUserResource(DjangoResource):
         slocations = SecondaryLocation.objects.all()
         defaultowner = 'support@dpaw.wa.gov.au'
         for obj in orgunits:
+            members = [d[0] for d in qs.filter(org_unit__in=obj.get_descendants(include_self=True)).values_list('email')]
+            # We also need to iterate through DepartmentUsers to add those with
+            # secondary OrgUnits to each OrgUnit.
+            for i in DepartmentUser.objects.filter(org_units_secondary__isnull=False):
+                if obj in i.org_units_secondary.all():
+                    members.append(i.email)
             structure.append({'id': 'db-org_{}'.format(obj.pk),
                               'name': str(obj),
                               'email': slugify(obj.name),
                               'owner': getattr(obj.manager, 'email', defaultowner),
-                              'members': [d[0] for d in qs.filter(org_unit__in=obj.get_descendants(include_self=True)).values_list('email')]})
+                              'members': members})
         for obj in costcentres:
+            members = [d[0] for d in qs.filter(cost_centre=obj).values_list('email')]
+            # We also need to iterate through DepartmentUsers to add those with
+            # secondary CCs as members to each CostCentre.
+            for i in DepartmentUser.objects.filter(cost_centres_secondary__isnull=False):
+                if obj in i.cost_centres_secondary.all():
+                    members.append(i.email)
             structure.append({'id': 'db-cc_{}'.format(obj.pk),
                               'name': str(obj),
                               'email': slugify(obj.name),
                               'owner': getattr(obj.manager, 'email', defaultowner),
-                              'members': [d[0] for d in qs.filter(cost_centre=obj).values_list('email')]})
+                              'members': members})
         for obj in locations:
+            members = [d[0] for d in qs.filter(org_unit__location=obj).values_list('email')]
+            # We also need to iterate through DepartmentUsers to add those with
+            # secondary locations as members to each Location.
+            for i in DepartmentUser.objects.filter(secondary_locations__isnull=False):
+                if obj in i.secondary_locations.all():
+                    members.append(i.email)
             structure.append({'id': 'db-loc_{}'.format(obj.pk),
                               'name': str(obj),
                               'email': slugify(obj.name) + '-location',
                               'owner': getattr(obj.manager, 'email', defaultowner),
-                              'members': [d[0] for d in qs.filter(org_unit__location=obj).values_list('email')]})
+                              'members': members})
         for obj in slocations:
             structure.append({'id': 'db-locs_{}'.format(obj.pk),
                               'name': str(obj),
