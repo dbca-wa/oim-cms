@@ -23,7 +23,8 @@ class DepartmentUserAdmin(ModelAdmin):
     list_filter = ['account_type', 'active', 'vip', 'executive', 'shared_account']
     search_fields = ['name', 'email', 'username', 'employee_id', 'preferred_name']
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
-    filter_horizontal = ['cost_centres_secondary', 'org_units_secondary']
+    filter_horizontal = [
+        'cost_centres_secondary', 'org_units_secondary', 'secondary_locations']
     readonly_fields = [
         'username', 'email', 'org_data_pretty', 'ad_data_pretty',
         'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',

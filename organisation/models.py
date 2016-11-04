@@ -199,7 +199,7 @@ class DepartmentUser(MPTTModel):
                 "admin": str(self.cost_centre.admin),
                 "tech_contact": str(self.cost_centre.tech_contact),
             }
-            if self.cost_centres_secondary:
+            if self.cost_centres_secondary.exists():
                 self.org_data['cost_centres_secondary'] = [{
                     'name': i.name,
                     'code': i.code,
