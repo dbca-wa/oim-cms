@@ -9,7 +9,7 @@ from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils.html import format_html
 from leaflet.admin import LeafletGeoAdmin
-from mptt.admin import MPTTModelAdmin
+from django_mptt_admin.admin import DjangoMpttAdmin
 
 from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
 from .utils import logger_setup, alesco_data_import, departmentuser_csv_report
@@ -161,7 +161,7 @@ class SecondaryLocationAdmin(ModelAdmin):
 
 
 @register(OrgUnit)
-class OrgUnitAdmin(MPTTModelAdmin):
+class OrgUnitAdmin(DjangoMpttAdmin):
     list_display = (
         'name', 'unit_type', 'users', 'members', 'it_systems', 'cc', 'acronym',
         'manager')

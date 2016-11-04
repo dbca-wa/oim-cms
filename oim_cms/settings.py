@@ -33,6 +33,7 @@ INSTALLED_APPS = (
     'django_extensions',
     'reversion',
     'mptt',
+    'django_mptt_admin',
     'leaflet',
     'django_cron',
 
