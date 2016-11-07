@@ -210,7 +210,10 @@ class DepartmentUser(MPTTModel):
                     'acronym': i.name,
                     'unit_type': i.get_unit_type_display(),
                 } for i in self.org_units_secondary.all()]
-        self.update_photo_ad()
+        try:
+            self.update_photo_ad()
+        except:  # Don't bomb out of saving for update_photo_ad errors.
+            pass
         if self.account_type in [5, 9]:  # Shared/role-based account types.
             self.shared_account = True
         super(DepartmentUser, self).save(*args, **kwargs)
