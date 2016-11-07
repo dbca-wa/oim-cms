@@ -32,7 +32,7 @@ class FieldsFormatter(object):
     This method will replace the old value with formatted value.
 
     Example::
-        preparer = FieldsFormatter(request,fields={
+        preparer = FieldsFormatter(request, fields={
             # ``user`` is the key the client will see.
             # ``author.pk`` is the dotted path lookup ``FieldsPreparer``
             # will traverse on the data to return a value.
