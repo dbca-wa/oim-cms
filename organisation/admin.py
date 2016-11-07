@@ -8,11 +8,20 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils.html import format_html
-from leaflet.admin import LeafletGeoAdmin
 from django_mptt_admin.admin import DjangoMpttAdmin
+from leaflet.admin import LeafletGeoAdmin
+from threading import Thread
+import time
 
 from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
 from .utils import logger_setup, alesco_data_import, departmentuser_csv_report
+
+
+def delayed_save(obj):
+    """Wait one second, then call save() for the passed-in object.
+    """
+    time.sleep(1)
+    obj.save()
 
 
 @register(DepartmentUser)
@@ -98,6 +107,11 @@ class DepartmentUserAdmin(ModelAdmin):
                 request.user.username, obj.name_update_reference
             ))
         obj.save()
+        # NOTE: following a change to a DepartmentUser object, we need to call
+        # save a second time so that the org_data field is correct. The lines
+        # below will do so in a separate thread.
+        t = Thread(target=delayed_save, args=(obj,))
+        t.start()
 
     def get_urls(self):
         urls = super(DepartmentUserAdmin, self).get_urls()
