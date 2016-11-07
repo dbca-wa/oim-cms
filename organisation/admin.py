@@ -163,6 +163,8 @@ class SecondaryLocationAdmin(ModelAdmin):
 
 @register(OrgUnit)
 class OrgUnitAdmin(DjangoMpttAdmin):
+    tree_auto_open = True
+    tree_load_on_demand = False
     list_display = (
         'name', 'unit_type', 'users', 'members', 'it_systems', 'cc', 'acronym',
         'manager')
