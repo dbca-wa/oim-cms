@@ -324,7 +324,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         url = '/api/users/'
         data = {
             'EmailAddress': self.user1.email,
-            'Deleted': 'true',
+            'Deleted': True,
         }
         response = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(response.status_code, 201)

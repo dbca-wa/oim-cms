@@ -212,7 +212,8 @@ class DepartmentUserResource(DjangoResource):
                 user.ad_updated = True
                 user.save()
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info("Set user {} as deleted in AD\n{}".format(user.name,self.formatters.format(self.request, data)))
+                logger.info('Set user {} as deleted in AD'.format(user.name))
+                logger.info('{}'.format(self.formatters.format(self.request, data)))
                 return self.formatters.format(self.request, data)
             modified = make_aware(user._meta.get_field_by_name('date_updated')[0].clean(self.data['Modified'], user))
             if user.date_ad_updated or modified < user.date_updated:
@@ -223,13 +224,14 @@ class DepartmentUserResource(DjangoResource):
                     'old_user': old_user['ad_data'],
                     'updated_user_data': updated_user_data.ad_data
                 }
-                logger.info("Updated user {}\n{}".format(user.name, self.formatters.format(self.request, log_data)))
+                logger.info('Updated user {}'.format(user.name))
+                logger.info('{}'.format(self.formatters.format(self.request, log_data)))
 
             return self.formatters.format(self.request, data)
         else:
-            logger.error("User does not exist")
+            logger.error('User does not exist')
             logger.info(self.data)
-            return self.formatters.format(self.request, {"Error": "User does not exist"})
+            return self.formatters.format(self.request, {'Error': 'User does not exist'})
 
     @skip_prepare
     def create(self):
@@ -247,13 +249,14 @@ class DepartmentUserResource(DjangoResource):
                 user = DepartmentUser(ad_guid=self.data['ObjectGUID'])
                 user = self.updateUser(user)
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info("Created User {} \n{} ".format(user.name, self.formatters.format(self.request, data)))
+                logger.info('Created user {}'.format(user.name))
+                logger.info('{} '.format(self.formatters.format(self.request, data)))
                 return self.formatters.format(self.request, data)
             except Exception as e:
                 data = self.data
                 data['Error'] = repr(e)
                 logger.error(repr(e))
-                return self.formatters.format(self.request, {"Error": repr(e)})
+                return self.formatters.format(self.request, {'Error': repr(e)})
         else:
             old_user_data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
             updated_user_data = self.updateUser(user)
@@ -262,7 +265,8 @@ class DepartmentUserResource(DjangoResource):
                 'old_user_data': old_user_data['ad_data'],
                 'updated_user_data': updated_user_data.ad_data
             }
-            logger.info("Updated user {}\n{}".format(user.name, self.formatters.format(self.request, log_data)))
+            logger.info('Updated user {}'.format(user.name))
+            logger.info('{}'.format(self.formatters.format(self.request, log_data)))
             return self.formatters.format(self.request, data)
 
     def updateUser(self, user):
@@ -270,38 +274,39 @@ class DepartmentUserResource(DjangoResource):
         The request parameters below reference the field name for AD objects.
         """
         try:
-            if self.data.get('ObjectGUID'):
+            if 'ObjectGUID' in self.data and self.data['ObjectGUID']:
                 user.ad_guid = self.data['ObjectGUID']
-            if self.data.get('EmailAddress'):
+            if 'EmailAddress' in self.data and self.data['EmailAddress']:
                 user.email = self.data['EmailAddress']
-            if self.data.get('DistinguishedName'):
+            if 'DistinguishedName' in self.data and self.data['DistinguishedName']:
                 user.ad_dn = self.data['DistinguishedName']
-            if self.data.get('SamAccountName'):
+            if 'SamAccountName' in self.data and self.data['SamAccountName']:
                 user.username = self.data['SamAccountName']
-            if self.data.get('AccountExpirationDate'):
+            if 'AccountExpirationDate' in self.data and self.data['AccountExpirationDate']:
                 user.expiry_date = self.data['AccountExpirationDate']
-            if self.data.get('Enabled'):
+            if 'Enabled' in self.data and self.data['Enabled']:
                 user.active = self.data['Enabled']
-            if self.data.get('Name'):
+            if 'Name' in self.data and self.data['Name']:
                 user.name = self.data['Name']
-            if self.data.get('Title'):
+            if 'Title' in self.data and self.data['Title']:
                 user.title = self.data['Title']
-            if self.data.get('GivenName'):
+            if 'GivenName' in self.data and self.data['GivenName']:
                 user.given_name = self.data['GivenName']
-            if self.data.get('Surname'):
+            if 'Surname' in self.data and self.data['Surname']:
                 user.surname = self.data['Surname']
-            if self.data.get('Modified'):
+            if 'Modified' in self.data and self.data['Modified']:
                 user.date_ad_updated = self.data['Modified']
-            if self.data.get('o365_licence'):
+            if 'o365_licence' in self.data and self.data['o365_licence']:
                 user.o365_licence = self.data['o365_licence']
             user.ad_data = self.data  # Store the raw request data.
             user.ad_updated = True
             # If the AD account has been deleted, update accordingly.
-            if self.data.get('Deleted'):
+            if 'Deleted' in self.data and self.data['Deleted']:
                 user.active = False
                 user.ad_deleted = True
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info("Set user {} as deleted in AD\n{}".format(user.name,self.formatters.format(self.request, data)))
+                logger.info('Set user {} as deleted in AD'.format(user.name))
+                logger.info('{}'.format(self.formatters.format(self.request, data)))
             user.save()
             return user
         except Exception as e:
