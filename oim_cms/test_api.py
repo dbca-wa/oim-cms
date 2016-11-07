@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from mixer.backend.django import mixer
@@ -26,7 +27,7 @@ class ApiTestCase(TestCase):
         mixer.cycle(5).blend(
             DepartmentUser, photo=None, active=True,
             email=random_dpaw_email, org_unit=None,
-            cost_centre=None)
+            cost_centre=None, ad_guid=uuid1, o365_licence=False, in_sync=False)
         # Generate some locations.
         self.loc1 = mixer.blend(Location, manager=None)
         self.loc2 = mixer.blend(Location, manager=None)
@@ -83,7 +84,7 @@ class ApiTestCase(TestCase):
         # Create a DepartmentUser object for testuser.
         mixer.blend(
             DepartmentUser, photo=None, active=True, email=self.testuser.email,
-            org_unit=None, cost_centre=None)
+            org_unit=None, cost_centre=None, ad_guid=uuid1)
         # Log in testuser by default.
         self.client.login(username='testuser', password='pass')
 
@@ -192,7 +193,7 @@ class OptionResourceTestCase(ApiTestCase):
 
 class DepartmentUserResourceTestCase(ApiTestCase):
 
-    def test_user_list(self):
+    def test_list(self):
         """Test the DepartmentUserResource list responses
         """
         url = '/api/users/'
@@ -214,7 +215,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-    def test_user_list_filtering(self):
+    def test_list_filtering(self):
         """Test the DepartmentUserResource filtered list responses
         """
         # Test the "all" response.
@@ -261,6 +262,11 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         self.assertNotContains(response, self.user1.email)
         self.assertNotContains(response, self.shared.email)  # Belongs to CC1.
 
+    def test_detail(self):
+        url = '/api/users/{}/'.format(self.user1.ad_guid)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
     def test_org_structure(self):
         """Test the DepartmentUserResource org_structure response
         """
@@ -295,42 +301,73 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         response = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(response.status_code, 400)
         # Try again with valid data.
+        username = str(uuid1())[:8]
         data = {
             'ObjectGUID': str(uuid1()),
-            'EmailAddress': 'testemail@dpaw.wa.gov.au',
+            'EmailAddress': '{}@dpaw.wa.gov.au'.format(username),
+            'DistinguishedName': 'CN={},OU=Users,DC=domain'.format(username),
+            'SamAccountName': username,
+            'AccountExpirationDate': datetime.now().isoformat(),
+            'Enabled': True,
+            'Name': 'Doe, John',
+            'GivenName': 'John',
+            'Surname': 'Doe',
+            'Title': 'Social Media Creative',
+            'Modified': datetime.now().isoformat(),
         }
         response = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(response.status_code, 201)  # Created
         # A DepartmentUser with that email should now exist.
-        self.assertTrue(DepartmentUser.objects.filter(email='testemail@dpaw.wa.gov.au').exists())
+        self.assertTrue(DepartmentUser.objects.filter(email=data['EmailAddress']).exists())
 
     def test_update(self):
         """Test the DepartmentUserResource update response
         """
-        url = '/api/users/'
+        self.assertFalse(self.user1.o365_licence)
+        surname = str(uuid1())[:8]
+        url = '/api/users/{}/'.format(self.user1.ad_guid)
         data = {
-            'EmailAddress': self.user1.email,
-            'GivenName': 'John',
-            'Surname': 'Doe',
+            'Surname': surname,
+            'o365_licence': True,
         }
-        response = self.client.post(url, json.dumps(data), content_type='application/json')
-        self.assertEqual(response.status_code, 201)
+        response = self.client.put(url, json.dumps(data), content_type='application/json')
+        self.assertEqual(response.status_code, 202)
+        user = DepartmentUser.objects.get(pk=self.user1.pk)  # Refresh from db
+        self.assertEqual(user.surname, surname)
+        self.assertTrue(user.o365_licence)
+        self.assertTrue(user.in_sync)
+
+    def test_disable(self):
+        """Test the DepartmentUserResource update response (set user as inactive)
+        """
+        self.assertTrue(self.user1.active)
+        self.assertFalse(self.user1.ad_deleted)
+        url = '/api/users/{}/'.format(self.user1.ad_guid)
+        data = {
+            'Enabled': False,
+        }
+        response = self.client.put(url, json.dumps(data), content_type='application/json')
+        self.assertEqual(response.status_code, 202)
+        user = DepartmentUser.objects.get(pk=self.user1.pk)  # Refresh from db
+        self.assertFalse(user.ad_deleted)
+        self.assertFalse(user.active)
+        self.assertTrue(user.in_sync)
 
     def test_delete(self):
         """Test the DepartmentUserResource update response (set user as 'AD deleted')
         """
         self.assertFalse(self.user1.ad_deleted)
         self.assertTrue(self.user1.active)
-        url = '/api/users/'
+        url = '/api/users/{}/'.format(self.user1.ad_guid)
         data = {
-            'EmailAddress': self.user1.email,
-            'Deleted': 'true',
+            'Deleted': True,
         }
-        response = self.client.post(url, json.dumps(data), content_type='application/json')
-        self.assertEqual(response.status_code, 201)
+        response = self.client.put(url, json.dumps(data), content_type='application/json')
+        self.assertEqual(response.status_code, 202)
         user = DepartmentUser.objects.get(pk=self.user1.pk)  # Refresh from db
         self.assertTrue(user.ad_deleted)
         self.assertFalse(user.active)
+        self.assertTrue(user.in_sync)
 
 
 class LocationResourceTestCase(ApiTestCase):
