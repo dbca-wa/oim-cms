@@ -8,11 +8,20 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils.html import format_html
+from django_mptt_admin.admin import DjangoMpttAdmin
 from leaflet.admin import LeafletGeoAdmin
-from mptt.admin import MPTTModelAdmin
+from threading import Thread
+import time
 
 from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
 from .utils import logger_setup, alesco_data_import, departmentuser_csv_report
+
+
+def delayed_save(obj):
+    """Wait one second, then call save() for the passed-in object.
+    """
+    time.sleep(1)
+    obj.save()
 
 
 @register(DepartmentUser)
@@ -23,6 +32,8 @@ class DepartmentUserAdmin(ModelAdmin):
     list_filter = ['account_type', 'active', 'vip', 'executive', 'shared_account']
     search_fields = ['name', 'email', 'username', 'employee_id', 'preferred_name']
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
+    filter_horizontal = [
+        'cost_centres_secondary', 'org_units_secondary', 'secondary_locations']
     readonly_fields = [
         'username', 'email', 'org_data_pretty', 'ad_data_pretty',
         'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
@@ -96,6 +107,11 @@ class DepartmentUserAdmin(ModelAdmin):
                 request.user.username, obj.name_update_reference
             ))
         obj.save()
+        # NOTE: following a change to a DepartmentUser object, we need to call
+        # save a second time so that the org_data field is correct. The lines
+        # below will do so in a separate thread.
+        t = Thread(target=delayed_save, args=(obj,))
+        t.start()
 
     def get_urls(self):
         urls = super(DepartmentUserAdmin, self).get_urls()
@@ -160,7 +176,9 @@ class SecondaryLocationAdmin(ModelAdmin):
 
 
 @register(OrgUnit)
-class OrgUnitAdmin(MPTTModelAdmin):
+class OrgUnitAdmin(DjangoMpttAdmin):
+    tree_auto_open = True
+    tree_load_on_demand = False
     list_display = (
         'name', 'unit_type', 'users', 'members', 'it_systems', 'cc', 'acronym',
         'manager')

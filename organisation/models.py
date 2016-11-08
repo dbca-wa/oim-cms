@@ -44,12 +44,15 @@ class DepartmentUser(MPTTModel):
         "organisation.CostCentre", on_delete=models.PROTECT, null=True)
     cost_centres_secondary = models.ManyToManyField(
         "organisation.CostCentre", related_name="cost_centres_secondary",
-        blank=True)
+        blank=True, help_text='NOTE: this provides security group access (e.g. T drives).')
     org_unit = models.ForeignKey(
         "organisation.OrgUnit", on_delete=models.PROTECT, null=True, blank=True,
-        verbose_name='organisational unit')
+        verbose_name='organisational unit',
+        help_text="""The organisational unit that represents the user's"""
+        """ primary physical location (also set their distribution group).""")
     org_units_secondary = models.ManyToManyField(
-        "organisation.OrgUnit", related_name="org_units_secondary", blank=True)
+        "organisation.OrgUnit", related_name="org_units_secondary", blank=True,
+        help_text='NOTE: this provides email distribution group access.')
     extra_data = JSONField(null=True, blank=True)
     ad_guid = models.CharField(max_length=48, unique=True, editable=False)
     ad_dn = models.CharField(max_length=512, unique=True, editable=False)
@@ -85,17 +88,27 @@ class DepartmentUser(MPTTModel):
         'self', on_delete=models.PROTECT, null=True, blank=True,
         related_name='children', editable=True, verbose_name='Reports to',
         help_text='Person that this employee reports to')
-    expiry_date = models.DateTimeField(null=True, editable=False)
+    expiry_date = models.DateTimeField(
+        null=True, editable=False,
+        help_text='Date that the AD account is set to expire.')
     date_ad_updated = models.DateTimeField(
-        null=True, editable=False, verbose_name='Date AD updated')
+        null=True, editable=False, verbose_name='Date AD updated',
+        help_text='The date when the AD account was last updated.')
     telephone = models.CharField(max_length=128, null=True, blank=True)
     mobile_phone = models.CharField(max_length=128, null=True, blank=True)
-    extension = models.CharField(max_length=128, null=True, blank=True)
+    extension = models.CharField(
+        max_length=128, null=True, blank=True, verbose_name='VoIP extension')
     home_phone = models.CharField(max_length=128, null=True, blank=True)
     other_phone = models.CharField(max_length=128, null=True, blank=True)
-    active = models.BooleanField(default=True, editable=False)
-    ad_deleted = models.BooleanField(default=False, editable=False)
-    in_sync = models.BooleanField(default=False, editable=False)
+    active = models.BooleanField(
+        default=True, editable=False,
+        help_text='Account is active within Active Directory.')
+    ad_deleted = models.BooleanField(
+        default=False, editable=False,
+        help_text='Account has been deleted in Active Directory.')
+    in_sync = models.BooleanField(
+        default=False, editable=False,
+        help_text='CMS data has been synchronised from AD data.')
     vip = models.BooleanField(
         default=False,
         help_text="An individual who carries out a critical role for the department")
@@ -161,12 +174,14 @@ class DepartmentUser(MPTTModel):
         if self.employee_id:
             self.employee_id = "{0:06d}".format(int(self.employee_id))
         self.in_sync = True if self.date_ad_updated else False
+        # If the CC is set but not the OrgUnit, use the CC's OrgUnit.
         if self.cost_centre and not self.org_unit:
             self.org_unit = self.cost_centre.org_position
         if self.cost_centre and self.org_unit:
             self.org_data = self.org_data or {}
             self.org_data["units"] = list(self.org_unit.get_ancestors(include_self=True).values(
-                "id", "name", "acronym", "unit_type", "costcentre__code", "costcentre__name", "location__name"))
+                "id", "name", "acronym", "unit_type", "costcentre__code",
+                "costcentre__name", "location__name"))
             self.org_data["unit"] = self.org_data["units"][-1]
             if self.org_unit.location:
                 self.org_data["location"] = self.org_unit.location.as_dict()
@@ -184,7 +199,21 @@ class DepartmentUser(MPTTModel):
                 "admin": str(self.cost_centre.admin),
                 "tech_contact": str(self.cost_centre.tech_contact),
             }
-        self.update_photo_ad()
+            if self.cost_centres_secondary.exists():
+                self.org_data['cost_centres_secondary'] = [{
+                    'name': i.name,
+                    'code': i.code,
+                } for i in self.cost_centres_secondary.all()]
+            if self.org_units_secondary:
+                self.org_data['org_units_secondary'] = [{
+                    'name': i.name,
+                    'acronym': i.name,
+                    'unit_type': i.get_unit_type_display(),
+                } for i in self.org_units_secondary.all()]
+        try:
+            self.update_photo_ad()
+        except:  # Don't bomb out of saving for update_photo_ad errors.
+            pass
         if self.account_type in [5, 9]:  # Shared/role-based account types.
             self.shared_account = True
         super(DepartmentUser, self).save(*args, **kwargs)
@@ -323,11 +352,6 @@ class Location(models.Model):
         return {k: getattr(self, k) for k in (
             'name', 'address', 'pobox', 'phone', 'fax', 'email') if getattr(self, k)}
 
-    def save(self, *args, **kwargs):
-        for orgunit in self.orgunit_set.all():
-            orgunit.save()
-        super(Location, self).save(*args, **kwargs)
-
 
 @python_2_unicode_compatible
 class SecondaryLocation(models.Model):
@@ -425,8 +449,6 @@ class OrgUnit(MPTTModel):
         self.details.update({
             'type': self.get_unit_type_display(),
         })
-        if self.secondary_location:
-            self.location = self.secondary_location.location
         if not getattr(self, 'cheap_save', False):
             for user in self.departmentuser_set.all():
                 user.save()

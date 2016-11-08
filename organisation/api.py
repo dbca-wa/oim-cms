@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, absolute_import
 from django.conf import settings
+from django.conf.urls import patterns, url
 from django.http import (
     HttpResponse, HttpResponseForbidden, HttpResponseBadRequest)
 from django.utils.text import slugify
@@ -44,6 +45,12 @@ def format_account_type(request, value):
 
 
 class DepartmentUserResource(DjangoResource):
+    """An API Resource class to represent DepartmentUser objects.
+    This class is used to create & update synchronised user account data from
+    Active Directory.
+    It also includes custom endpoints to return the P&W organisation
+    structure membership.
+    """
     COMPACT_ARGS = (
         'pk', 'name', 'title', 'employee_id', 'email', 'telephone',
         'mobile_phone', 'extension', 'photo', 'photo_ad', 'org_data', 'parent__email',
@@ -69,52 +76,22 @@ class DepartmentUserResource(DjangoResource):
         'account_type': format_account_type,
     })
 
-    def org_structure(self, sync_o365=False, exclude_populate_groups=False):
-        """A custom API endpoint to return the organisation structure: a list
-        of each organisational unit's metadata (name, manager, members).
-        Includes OrgUnits, cost centres, locations and secondary locations.
+    @classmethod
+    def urls(self, name_prefix=None):
+        """Override the DjangoResource ``urls`` class method so the detail view
+        accepts a GUID parameter instead of PK.
         """
-        qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
-        if exclude_populate_groups:  # Exclude objects where populate_primary_group == False
-            qs = qs.exclude(populate_primary_group=False)
-        structure = []
-        if sync_o365:
-            orgunits = OrgUnit.objects.filter(sync_o365=True)
-        else:
-            orgunits = OrgUnit.objects.all()
-        costcentres = CostCentre.objects.all()
-        locations = Location.objects.all()
-        slocations = SecondaryLocation.objects.all()
-        defaultowner = 'support@dpaw.wa.gov.au'
-        for obj in orgunits:
-            structure.append({'id': 'db-org_{}'.format(obj.pk),
-                              'name': str(obj),
-                              'email': slugify(obj.name),
-                              'owner': getattr(obj.manager, 'email', defaultowner),
-                              'members': [d[0] for d in qs.filter(org_unit__in=obj.get_descendants(include_self=True)).values_list('email')]})
-        for obj in costcentres:
-            structure.append({'id': 'db-cc_{}'.format(obj.pk),
-                              'name': str(obj),
-                              'email': slugify(obj.name),
-                              'owner': getattr(obj.manager, 'email', defaultowner),
-                              'members': [d[0] for d in qs.filter(cost_centre=obj).values_list('email')]})
-        for obj in locations:
-            structure.append({'id': 'db-loc_{}'.format(obj.pk),
-                              'name': str(obj),
-                              'email': slugify(obj.name) + '-location',
-                              'owner': getattr(obj.manager, 'email', defaultowner),
-                              'members': [d[0] for d in qs.filter(org_unit__location=obj).values_list('email')]})
-        for obj in slocations:
-            structure.append({'id': 'db-locs_{}'.format(obj.pk),
-                              'name': str(obj),
-                              'email': slugify(obj.name) + '-location',
-                              'owner': getattr(obj.manager, 'email', defaultowner),
-                              'members': [d[0] for d in qs.filter(org_unit__secondary_location=obj).values_list('email')]})
-        for row in structure:
-            if row['members']:
-                row['email'] = '{}@{}'.format(
-                    row['email'], row['members'][0].split('@', 1)[1])
-        return structure
+        return [
+            url(r'^$', self.as_list(), name=self.build_url_name('list', name_prefix)),
+            url(r'^(?P<guid>[0-9a-z-]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
+        ]
+
+    def is_authenticated(self):
+        """This method is currently required for create/update to work via the
+        AD sync scripts.
+        TODO: implement optional token-based auth to secure this.
+        """
+        return True
 
     def list(self):
         """Pass query params to modify the API output.
@@ -174,138 +151,162 @@ class DepartmentUserResource(DjangoResource):
         user_values = list(users.values(*self.VALUES_ARGS))
         return self.formatters.format(self.request, user_values)
 
-    def is_authenticated(self):
-        """This method os currently required for create/update to work via the
-        AD sync scripts.
-        TODO: implement optional token-based auth to secure this).
+    def detail(self, guid):
+        """Detail view for a single DepartmentUser object.
         """
-        return True
-
-    @csrf_exempt
-    def update(self, pk):
-        """TODO: consolidate/refactor this method to remove duplication with
-        the create method.
-        """
-        user = self.get_user()
-        if user:
-            if self.data.get('Deleted'):
-                user.active = False
-                user.ad_deleted = True
-                user.ad_updated = True
-                user.save()
-                data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info("Set user {} as deleted in AD\n{}".format(user.name,self.formatters.format(self.request, data)))
-                return self.formatters.format(self.request, data)
-            modified = make_aware(user._meta.get_field_by_name('date_updated')[0].clean(self.data['Modified'], user))
-            if user.date_ad_updated or modified < user.date_updated:
-                old_user = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                updated_user_data = self.updateUser(user)
-                data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                log_data = {
-                    'old_user': old_user['ad_data'],
-                    'updated_user_data': updated_user_data.ad_data
-                }
-                logger.info("Updated user {}\n{}".format(user.name, self.formatters.format(self.request, log_data)))
-
-            return self.formatters.format(self.request, data)
-        else:
-            logger.error("User does not exist")
-            logger.info(self.data)
-            return self.formatters.format(self.request, {"Error": "User does not exist"})
+        user = DepartmentUser.objects.filter(ad_guid=guid)
+        user_values = list(user.values(*self.VALUES_ARGS))
+        return self.formatters.format(self.request, user_values)[0]
 
     @skip_prepare
     def create(self):
-        """BUSINESS RULE: we allow POST requests for both create and update
-        operations, because we will typically be calling this endpoint from
-        systems where the DepartmentUser PK is unknown (we match existing
-        objects by GUID or email).
+        """Create view for a new DepartmentUserObject.
+        BUSINESS RULE: we call this endpoint from AD, and require a
+        complete request body that includes a GUID.
         """
-        user = self.get_user()
-        if not user:
-            if not self.data.get('ObjectGUID'):
-                raise BadRequest('Missing ObjectGUID parameter')
-            try:
-                # For creation, we require the AD GUID.
-                user = DepartmentUser(ad_guid=self.data['ObjectGUID'])
-                user = self.updateUser(user)
-                data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info("Created User {} \n{} ".format(user.name, self.formatters.format(self.request, data)))
-                return self.formatters.format(self.request, data)
-            except Exception as e:
-                data = self.data
-                data['Error'] = repr(e)
-                logger.error(repr(e))
-                return self.formatters.format(self.request, {"Error": repr(e)})
-        else:
-            old_user_data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-            updated_user_data = self.updateUser(user)
-            data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-            log_data = {
-                'old_user_data': old_user_data['ad_data'],
-                'updated_user_data': updated_user_data.ad_data
-            }
-            logger.info("Updated user {}\n{}".format(user.name, self.formatters.format(self.request, log_data)))
-            return self.formatters.format(self.request, data)
+        if 'ObjectGUID' not in self.data:
+            raise BadRequest('Missing ObjectGUID parameter')
+        try:
+            user = DepartmentUser.objects.create(
+                ad_guid=self.data['ObjectGUID'],
+                email=self.data['EmailAddress'],
+                ad_dn=self.data['DistinguishedName'],
+                username=self.data['SamAccountName'],
+                expiry_date=self.data['AccountExpirationDate'],
+                active=self.data['Enabled'],
+                name=self.data['Name'],
+                title=self.data['Title'],
+                given_name=self.data['GivenName'],
+                surname=self.data['Surname'],
+                date_ad_updated=self.data['Modified'],
+            )
+        except Exception as e:
+            data = self.data
+            data['Error'] = repr(e)
+            logger.error(repr(e))
+            return self.formatters.format(self.request, {'Error': repr(e)})
 
-    def updateUser(self, user):
-        """Method to update a DepartmentUser object from AD data.
-        The request parameters below reference the field name for AD objects.
+        # Serialise the newly-created DepartmentUser.
+        data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+        logger.info('Created user {}'.format(user.email))
+        logger.info('{} '.format(self.formatters.format(self.request, data)))
+
+        return self.formatters.format(self.request, data)
+
+    def update(self, guid):
+        """Update view to handle changes to a DepartmentUser object.
+        This view also handles marking users as 'Inactive' or 'Deleted'
+        within AD.
         """
         try:
-            if self.data.get('ObjectGUID'):
-                user.ad_guid = self.data['ObjectGUID']
-            if self.data.get('EmailAddress'):
-                user.email = self.data['EmailAddress']
-            if self.data.get('DistinguishedName'):
-                user.ad_dn = self.data['DistinguishedName']
-            if self.data.get('SamAccountName'):
-                user.username = self.data['SamAccountName']
-            if self.data.get('AccountExpirationDate'):
-                user.expiry_date = self.data['AccountExpirationDate']
-            if self.data.get('Enabled'):
-                user.active = self.data['Enabled']
-            if self.data.get('Name'):
-                user.name = self.data['Name']
-            if self.data.get('Title'):
-                user.title = self.data['Title']
-            if self.data.get('GivenName'):
-                user.given_name = self.data['GivenName']
-            if self.data.get('Surname'):
-                user.surname = self.data['Surname']
-            if self.data.get('Modified'):
-                user.date_ad_updated = self.data['Modified']
-            if self.data.get('o365_licence'):
-                user.o365_licence = self.data['o365_licence']
-            user.ad_data = self.data  # Store the raw request data.
-            user.ad_updated = True
-            # If the AD account has been deleted, update accordingly.
-            if self.data.get('Deleted'):
-                user.active = False
-                user.ad_deleted = True
-                data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info("Set user {} as deleted in AD\n{}".format(user.name,self.formatters.format(self.request, data)))
-            user.save()
-            return user
-        except Exception as e:
-            raise e
+            user = DepartmentUser.objects.get(ad_guid=guid)
+        except DepartmentUser.DoesNotExist:
+            raise BadRequest('Object not found')
 
-    def get_user(self):
-        '''Return a DepartmentUser if it exists, else return None.
-        Matches by AD GUID, then email, then DistinguishedName.
-        '''
-        if 'ObjectGUID' in self.data and \
-                DepartmentUser.objects.filter(ad_guid=self.data['ObjectGUID']).exists():
-            return DepartmentUser.objects.get(ad_guid=self.data['ObjectGUID'])
-        if 'EmailAddress' in self.data and \
-                DepartmentUser.objects.filter(email__iexact=self.data['EmailAddress']).exists():
-            return DepartmentUser.objects.get(email__iexact=self.data['EmailAddress'])
-        if 'email' in self.data and \
-                DepartmentUser.objects.filter(email__iexact=self.data['email']).exists():
-            return DepartmentUser.objects.get(email__iexact=self.data['email'])
-        if 'DistinguishedName' in self.data and \
-                DepartmentUser.objects.filter(ad_dn=self.data['DistinguishedName']).exists():
-            return DepartmentUser.objects.get(ad_dn=self.data['DistinguishedName'])
-        return None
+        if 'ObjectGUID' in self.data and self.data['ObjectGUID']:
+            user.ad_guid = self.data['ObjectGUID']
+        if 'EmailAddress' in self.data and self.data['EmailAddress']:
+            user.email = self.data['EmailAddress']
+        if 'DistinguishedName' in self.data and self.data['DistinguishedName']:
+            user.ad_dn = self.data['DistinguishedName']
+        if 'SamAccountName' in self.data and self.data['SamAccountName']:
+            user.username = self.data['SamAccountName']
+        if 'AccountExpirationDate' in self.data and self.data['AccountExpirationDate']:
+            user.expiry_date = self.data['AccountExpirationDate']
+        if 'Enabled' in self.data:  # Boolean; don't only work on True!
+            user.active = self.data['Enabled']
+        if 'Name' in self.data and self.data['Name']:
+            user.name = self.data['Name']
+        if 'Title' in self.data and self.data['Title']:
+            user.title = self.data['Title']
+        if 'GivenName' in self.data and self.data['GivenName']:
+            user.given_name = self.data['GivenName']
+        if 'Surname' in self.data and self.data['Surname']:
+            user.surname = self.data['Surname']
+        if 'Modified' in self.data and self.data['Modified']:
+            user.date_ad_updated = self.data['Modified']
+        if 'o365_licence' in self.data and self.data['o365_licence']:
+            user.o365_licence = self.data['o365_licence']
+        if 'Deleted' in self.data and self.data['Deleted']:
+            user.active = False
+            user.ad_deleted = True
+            data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+            logger.info('Set user {} as deleted in AD'.format(user.name))
+            logger.info('{}'.format(self.formatters.format(self.request, data)))
+        user.ad_data = self.data  # Store the raw request data.
+        user.ad_updated = True
+        user.save()
+
+        data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+        logger.info('Updated user {}'.format(user.email))
+        logger.info('{}'.format(self.formatters.format(self.request, data)))
+
+        return self.formatters.format(self.request, data)
+
+    def org_structure(self, sync_o365=False, exclude_populate_groups=False):
+        """A custom API endpoint to return the organisation structure: a list
+        of each organisational unit's metadata (name, manager, members).
+        Includes OrgUnits, cost centres, locations and secondary locations.
+        """
+        qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
+        if exclude_populate_groups:  # Exclude objects where populate_primary_group == False
+            qs = qs.exclude(populate_primary_group=False)
+        structure = []
+        if sync_o365:
+            orgunits = OrgUnit.objects.filter(sync_o365=True)
+        else:
+            orgunits = OrgUnit.objects.all()
+        costcentres = CostCentre.objects.all()
+        locations = Location.objects.all()
+        slocations = SecondaryLocation.objects.all()
+        defaultowner = 'support@dpaw.wa.gov.au'
+        for obj in orgunits:
+            members = [d[0] for d in qs.filter(org_unit__in=obj.get_descendants(include_self=True)).values_list('email')]
+            # We also need to iterate through DepartmentUsers to add those with
+            # secondary OrgUnits to each OrgUnit.
+            for i in DepartmentUser.objects.filter(org_units_secondary__isnull=False):
+                if obj in i.org_units_secondary.all():
+                    members.append(i.email)
+            structure.append({'id': 'db-org_{}'.format(obj.pk),
+                              'name': str(obj),
+                              'email': slugify(obj.name),
+                              'owner': getattr(obj.manager, 'email', defaultowner),
+                              'members': members})
+        for obj in costcentres:
+            members = [d[0] for d in qs.filter(cost_centre=obj).values_list('email')]
+            # We also need to iterate through DepartmentUsers to add those with
+            # secondary CCs as members to each CostCentre.
+            for i in DepartmentUser.objects.filter(cost_centres_secondary__isnull=False):
+                if obj in i.cost_centres_secondary.all():
+                    members.append(i.email)
+            structure.append({'id': 'db-cc_{}'.format(obj.pk),
+                              'name': str(obj),
+                              'email': slugify(obj.name),
+                              'owner': getattr(obj.manager, 'email', defaultowner),
+                              'members': members})
+        for obj in locations:
+            members = [d[0] for d in qs.filter(org_unit__location=obj).values_list('email')]
+            # We also need to iterate through DepartmentUsers to add those with
+            # secondary locations as members to each Location.
+            for i in DepartmentUser.objects.filter(secondary_locations__isnull=False):
+                if obj in i.secondary_locations.all():
+                    members.append(i.email)
+            structure.append({'id': 'db-loc_{}'.format(obj.pk),
+                              'name': str(obj),
+                              'email': slugify(obj.name) + '-location',
+                              'owner': getattr(obj.manager, 'email', defaultowner),
+                              'members': members})
+        for obj in slocations:
+            structure.append({'id': 'db-locs_{}'.format(obj.pk),
+                              'name': str(obj),
+                              'email': slugify(obj.name) + '-location',
+                              'owner': getattr(obj.manager, 'email', defaultowner),
+                              'members': [d[0] for d in qs.filter(org_unit__secondary_location=obj).values_list('email')]})
+        for row in structure:
+            if row['members']:
+                row['email'] = '{}@{}'.format(
+                    row['email'], row['members'][0].split('@', 1)[1])
+        return structure
 
 
 class LocationResource(CSVDjangoResource):
