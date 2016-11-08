@@ -1,10 +1,9 @@
 from __future__ import unicode_literals, absolute_import
 from django.conf import settings
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from django.http import (
     HttpResponse, HttpResponseForbidden, HttpResponseBadRequest)
 from django.utils.text import slugify
-from django.utils.timezone import make_aware
 from django.views.decorators.csrf import csrf_exempt
 import json
 from restless.dj import DjangoResource
@@ -203,39 +202,44 @@ class DepartmentUserResource(DjangoResource):
         except DepartmentUser.DoesNotExist:
             raise BadRequest('Object not found')
 
-        if 'ObjectGUID' in self.data and self.data['ObjectGUID']:
-            user.ad_guid = self.data['ObjectGUID']
-        if 'EmailAddress' in self.data and self.data['EmailAddress']:
-            user.email = self.data['EmailAddress']
-        if 'DistinguishedName' in self.data and self.data['DistinguishedName']:
-            user.ad_dn = self.data['DistinguishedName']
-        if 'SamAccountName' in self.data and self.data['SamAccountName']:
-            user.username = self.data['SamAccountName']
-        if 'AccountExpirationDate' in self.data and self.data['AccountExpirationDate']:
-            user.expiry_date = self.data['AccountExpirationDate']
-        if 'Enabled' in self.data:  # Boolean; don't only work on True!
-            user.active = self.data['Enabled']
-        if 'Name' in self.data and self.data['Name']:
-            user.name = self.data['Name']
-        if 'Title' in self.data and self.data['Title']:
-            user.title = self.data['Title']
-        if 'GivenName' in self.data and self.data['GivenName']:
-            user.given_name = self.data['GivenName']
-        if 'Surname' in self.data and self.data['Surname']:
-            user.surname = self.data['Surname']
-        if 'Modified' in self.data and self.data['Modified']:
-            user.date_ad_updated = self.data['Modified']
-        if 'o365_licence' in self.data and self.data['o365_licence']:
-            user.o365_licence = self.data['o365_licence']
-        if 'Deleted' in self.data and self.data['Deleted']:
-            user.active = False
-            user.ad_deleted = True
-            data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-            logger.info('Set user {} as deleted in AD'.format(user.name))
-            logger.info('{}'.format(self.formatters.format(self.request, data)))
-        user.ad_data = self.data  # Store the raw request data.
-        user.ad_updated = True
-        user.save()
+        try:
+            if 'ObjectGUID' in self.data and self.data['ObjectGUID']:
+                user.ad_guid = self.data['ObjectGUID']
+            if 'EmailAddress' in self.data and self.data['EmailAddress']:
+                user.email = self.data['EmailAddress']
+            if 'DistinguishedName' in self.data and self.data['DistinguishedName']:
+                user.ad_dn = self.data['DistinguishedName']
+            if 'SamAccountName' in self.data and self.data['SamAccountName']:
+                user.username = self.data['SamAccountName']
+            if 'AccountExpirationDate' in self.data and self.data['AccountExpirationDate']:
+                user.expiry_date = self.data['AccountExpirationDate']
+            if 'Enabled' in self.data:  # Boolean; don't only work on True!
+                user.active = self.data['Enabled']
+            if 'Name' in self.data and self.data['Name']:
+                user.name = self.data['Name']
+            if 'Title' in self.data and self.data['Title']:
+                user.title = self.data['Title']
+            if 'GivenName' in self.data and self.data['GivenName']:
+                user.given_name = self.data['GivenName']
+            if 'Surname' in self.data and self.data['Surname']:
+                user.surname = self.data['Surname']
+            if 'Modified' in self.data and self.data['Modified']:
+                user.date_ad_updated = self.data['Modified']
+            if 'o365_licence' in self.data:  # Boolean; don't only work on True!
+                user.o365_licence = self.data['o365_licence']
+            if 'Deleted' in self.data and self.data['Deleted']:
+                user.active = False
+                user.ad_deleted = True
+                data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
+                logger.info('Set user {} as deleted in AD'.format(user.name))
+            user.ad_data = self.data  # Store the raw request data.
+            user.ad_updated = True
+            user.save()
+        except Exception as e:
+            data = self.data
+            data['Error'] = repr(e)
+            logger.error(repr(e))
+            return self.formatters.format(self.request, {'Error': repr(e)})
 
         data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
         logger.info('Updated user {}'.format(user.email))
@@ -271,7 +275,7 @@ class DepartmentUserResource(DjangoResource):
                               'name': str(obj),
                               'email': slugify(obj.name),
                               'owner': getattr(obj.manager, 'email', defaultowner),
-                              'members': members})
+                              'members': list(set(members))})
         for obj in costcentres:
             members = [d[0] for d in qs.filter(cost_centre=obj).values_list('email')]
             # We also need to iterate through DepartmentUsers to add those with
@@ -283,7 +287,7 @@ class DepartmentUserResource(DjangoResource):
                               'name': str(obj),
                               'email': slugify(obj.name),
                               'owner': getattr(obj.manager, 'email', defaultowner),
-                              'members': members})
+                              'members': list(set(members))})
         for obj in locations:
             members = [d[0] for d in qs.filter(org_unit__location=obj).values_list('email')]
             # We also need to iterate through DepartmentUsers to add those with
