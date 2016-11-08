@@ -19,11 +19,11 @@ def ITSystemObj(self):
     # Get It system Request Data and Custdian Basic Info and return a json response.
     reqid = self.GET["reqid"]
     if not self.user.is_authenticated():
-           return HttpResponseForbidden()
+        return HttpResponseForbidden()
 
     PermsResp = ITSystemPermssionCheck(self,reqid)
     if PermsResp == False:
-       return HttpResponseForbidden()
+        return HttpResponseForbidden()
 
     itrequest = []
     itsobj = { 
@@ -76,7 +76,7 @@ def ITSystemObj(self):
             itsobj['reqlegal_need_to_retain'] = value.legal_need_to_retain
 
             if value.system_creation_date:
-				itsobj['reqsystem_creation_date'] = value.system_creation_date.strftime('%d/%m/%Y')
+                itsobj['reqsystem_creation_date'] = value.system_creation_date.strftime('%d/%m/%Y')
             else:
                 itsobj['reqsystem_creation_date'] = ""
 
@@ -139,7 +139,7 @@ def SaveITSystemRequest(self):
     itsystemreq = ITSystem.objects.get(id=reqid)   
     reqnotes =  self.POST["reqnotes"]
     reqdocumentation =  self.POST["reqdocumentation"]
-    reqtechnical_documentation	= self.POST["reqtechnical_documentation"]
+    reqtechnical_documentation = self.POST["reqtechnical_documentation"]
     reqsystem_reqs = self.POST["reqsystem_reqs"]
     reqworkaround = self.POST["reqworkaround"]
     reqrecovery_docs = self.POST["reqrecovery_docs"]
@@ -183,13 +183,13 @@ def SaveITSystemRequest(self):
     return HttpResponse('Saved')
 
 def str2bool(v):
-	if v.lower() in ("yes", "true", "t", "1"): 
-		return True
+    if v.lower() in ("yes", "true", "t", "1"): 
+        return True
 
-	if v.lower() in ("no", "false", "f", "0"): 
-		return False
-	else:
-		return 
+    if v.lower() in ("no", "false", "f", "0"): 
+        return False
+    else:
+        return 
 
 
 def ITSystemPermssionCheck(self,reqid):
