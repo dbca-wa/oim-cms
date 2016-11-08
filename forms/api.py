@@ -10,7 +10,7 @@ from django.http import HttpResponse, HttpResponseForbidden
 from django.utils.html import format_html
 from json2html import json2html
 from registers.models import ITSystem
-from organisation.models import DepartmentUser 
+from organisation.models import DepartmentUser
 from django.core import serializers
 from datetime import datetime
 from organisation.Groups import groupCheck
@@ -26,7 +26,7 @@ def ITSystemObj(self):
         return HttpResponseForbidden()
 
     itrequest = []
-    itsobj = { 
+    itsobj = {
             'reqid': '',
             'reqname': '',
             'surname': '',
@@ -80,7 +80,7 @@ def ITSystemObj(self):
             else:
                 itsobj['reqsystem_creation_date'] = ""
 
-    if itsobj['reqcustodianid']: 
+    if itsobj['reqcustodianid']:
         DepartmentUser.objects.only('id','given_name','surname', 'title','org_unit')
         rows = DepartmentUser.objects.filter(id=itsobj['reqcustodianid'])
         for value in rows:
@@ -89,7 +89,7 @@ def ITSystemObj(self):
             itsobj['surname'] = value.surname
             itsobj['title'] = value.title
             itsobj['labelfield'] =  value.given_name + ' ' + value.surname + ' - ' + value.title
-            itsobj['searchfield'] = value.given_name + ' ' + value.surname + ' ' + value.title 
+            itsobj['searchfield'] = value.given_name + ' ' + value.surname + ' ' + value.title
 
 
     itrequest.append(itsobj)
@@ -104,8 +104,8 @@ def PeopleObj(self):
     stringval = ''
     OrgPeople = []
     keyword = self.GET["keyword"]
-    if keyword: 
-        rows = DepartmentUser.objects.filter(name__contains=keyword) | DepartmentUser.objects.filter(title__contains=keyword) 
+    if keyword:
+        rows = DepartmentUser.objects.filter(name__contains=keyword) | DepartmentUser.objects.filter(title__contains=keyword)
         for value in rows:
             stringval = stringval + value.name
             stringval = stringval + "<BR>"
@@ -121,11 +121,11 @@ def PeopleObj(self):
             OrgPeople.append(row)
 
         data =    json.dumps(OrgPeople)
-        if data: 
-            return HttpResponse( data ) 
-        else: 
+        if data:
+            return HttpResponse( data )
+        else:
             return HttpResponse( "" )
-    else: 
+    else:
         return HttpResponse( "" )
 
 
@@ -136,7 +136,7 @@ def SaveITSystemRequest(self):
     reqcustodian = self.POST["reqcustodian"]
     reqname = self.POST["reqname"]
     reqdescription = self.POST["reqdescription"]
-    itsystemreq = ITSystem.objects.get(id=reqid)   
+    itsystemreq = ITSystem.objects.get(id=reqid)
     reqnotes =  self.POST["reqnotes"]
     reqdocumentation =  self.POST["reqdocumentation"]
     reqtechnical_documentation = self.POST["reqtechnical_documentation"]
@@ -153,7 +153,7 @@ def SaveITSystemRequest(self):
     reqpoint_of_truth = self.POST["reqpoint_of_truth"]
     reqlegal_need_to_retain = self.POST["reqlegal_need_to_retain"]
     reqsystem_creation_date = self.POST["reqsystem_creation_date"]
-   
+
     PermsResp = ITSystemPermssionCheck(self,reqid)
     if PermsResp == False:
         return HttpResponseForbidden()
@@ -179,17 +179,17 @@ def SaveITSystemRequest(self):
     itsystemreq.system_creation_date = datetime.strptime(reqsystem_creation_date, '%d/%m/%Y')
 
     itsystemreq.save()
-   
+
     return HttpResponse('Saved')
 
 def str2bool(v):
-    if v.lower() in ("yes", "true", "t", "1"): 
+    if v.lower() in ("yes", "true", "t", "1"):
         return True
 
-    if v.lower() in ("no", "false", "f", "0"): 
+    if v.lower() in ("no", "false", "f", "0"):
         return False
     else:
-        return 
+        return
 
 
 def ITSystemPermssionCheck(self,reqid):
@@ -198,11 +198,10 @@ def ITSystemPermssionCheck(self,reqid):
     permObj['groupcheck'] = False
     permObj['custodiancheck'] = False
     permObj['superUserCheck'] = self.user.is_superuser
-    permObj['superUserCheck'] = False
     PermUserInfo['userid'] = 0
 
     # Check Logged in User is in Group
-    permObj['groupcheck'] = groupCheck(self, 'OIM Staff') 
+    permObj['groupcheck'] = groupCheck(self, 'OIM Staff')
 
     # Get custonian id from IT System Req
     itsystemreq = ITSystem.objects.filter(id=reqid)
@@ -220,7 +219,7 @@ def ITSystemPermssionCheck(self,reqid):
         return True
     elif permObj['custodiancheck'] == True:
         return True
-    elif permObj['superUserCheck'] == True: 
+    elif permObj['superUserCheck'] == True:
         return True
     else:
         return False

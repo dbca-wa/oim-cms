@@ -3,10 +3,8 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase, Client
 from mixer.backend.django import mixer
 from organisation.models import DepartmentUser
-from forms.api import ITSystemObj, PeopleObj, SaveITSystemRequest
 from registers.models import ITSystem
 
-#from .models import Approval
 
 User = get_user_model()
 
@@ -19,6 +17,7 @@ class ITSystemFormsViewsTestCase(TestCase):
         self.du1 = mixer.blend(DepartmentUser, photo=None)
         self.user1 = User.objects.create_user(
             username=self.du1.username, email=self.du1.email)
+        self.user1.is_superuser = True
         self.user1.set_password('pass')
         self.user1.save()
         # Log in user1 by default.
@@ -34,7 +33,7 @@ class ITSystemFormsViewsTestCase(TestCase):
     def test_api_itsystemreq(self):
         """Test the api_itsystemreq GET response
         """
-        
+
         url = reverse('api_itsystemreq')
         response = self.client.get(url, data={'reqid': self.itsystem.pk})
         self.assertEqual(response.status_code, 200)
@@ -46,4 +45,3 @@ class ITSystemFormsViewsTestCase(TestCase):
         url = reverse('api_peoplelist')
         response = self.client.get(url, data={'keyword': '%'})
         self.assertEqual(response.status_code, 200)
-
