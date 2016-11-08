@@ -16,7 +16,7 @@ from core.models import Content, UserSession
 from oim_cms.api import WhoAmIResource
 from django.contrib.auth.models import User
 from tracking.models import DepartmentUser
-
+from forms.api import ITSystemPermssionCheck
 
 def force_email(username):
     if username.find("@") == -1:
@@ -302,7 +302,10 @@ def search(request):
     })
 
 def forms(request):
+    reqid = request.GET['reqid']
+    PermsResp = ITSystemPermssionCheck(request,reqid)
     return render(request, 'itsystemform.html', {
+                'PermCheck': PermsResp
     })
 
 def error404(request):

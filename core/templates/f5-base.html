@@ -16,16 +16,23 @@
         <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation/5.5.3/js/foundation.min.js"></script>
         <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js"></script>
         <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/js/egg.js"></script>
+		<script type="text/javascript" src="{% static 'js/notification.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/validation.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/utils.js' %}"></script>
+
+
         <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon.png' %}">
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/font-awesome/4.5.0/css/font-awesome.min.css" />
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css" />
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/css/foundation/stylesheets/oim_cms_v1.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/dpawforms.css' %}" />
         <link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/selectsize.default.css' %}" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/notification.css' %}" />
 
         {% block extra_css %}{% endblock %}
     </head>
-
+	<div id='notification-topbar'></div>
     <body class="{% block body_class %}{% endblock %}">
         {% if 'fullscreen' not in request.GET %}
         {% wagtailuserbar %}
