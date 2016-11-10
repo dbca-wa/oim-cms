@@ -66,6 +66,9 @@ class Computer(CommonFields):
     cpu_count = models.PositiveSmallIntegerField(default=0)
     cpu_cores = models.PositiveSmallIntegerField(default=0)
     memory = models.BigIntegerField(default=0)
+    last_ad_login_username = models.CharField(
+        max_length=256, null=True, blank=True)
+    last_ad_login_date = models.DateField(null=True, blank=True)
     probable_owner = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
         related_name='computers_probably_owned',
