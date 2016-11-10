@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from datetime import datetime
 from django.utils import timezone
 import os
 import unicodecsv
@@ -63,13 +64,6 @@ def pdq_load_computers():
                     num_updated += 1
                 except Computer.DoesNotExist:
                     pass
-            # Third, try to match via pdq_id value.
-            if computer is None and row[0]:
-                try:
-                    computer = Computer.objects.get(pdq_id=row[0])
-                    num_updated += 1
-                except Computer.DoesNotExist:
-                    pass
             # Last, try to match via sAMAccountName. If no match, skip the record.
             if computer is None:
                 sam = '{}$'.format(row[1].upper())
@@ -120,3 +114,32 @@ def pdq_load_computers():
             continue
 
     logger.info('Created {}, updated {}, skipped {}, errors {}'.format(num_created, num_updated, num_skipped, num_errors))
+
+
+def pdq_load_logins():
+    """Update Computers with 'last login' information from PDQ Inventory.
+    """
+    logger = logger_setup('pdq_load_logins')
+    csv_path = os.path.join(os.environ.get('PDQ_INV_PATH'), 'pdq_logins.csv')
+    data = csv_data(csv_path)
+    num_updated = 0
+    num_skipped = 0
+
+    for row in data:
+        # Match on sAMAccountName only.
+        if Computer.objects.filter(sam_account_name__istartswith=row[3]).exists():
+            computer = Computer.objects.filter(sam_account_name__istartswith=row[3])[0]
+            if row[2]:
+                computer.last_ad_login_username = row[2]
+            if row[1]:
+                ts = datetime.strptime(row[1], '%Y-%m-%d %H:%M:%S')
+                computer.last_ad_login_date = ts.date()
+            computer.save()
+            logger.info('Computer {} login data updated'.format(computer))
+            num_updated += 1
+        else:
+            logger.warning('Hostname {} did not match any Computer'.format(row[3]))
+            logger.info(row)
+            num_skipped += 1
+
+    logger.info('Updated {}, skipped {}'.format(num_updated, num_skipped))
