@@ -139,6 +139,12 @@ class DepartmentUserResource(DjangoResource):
             # and contractors.
             FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
             users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[5, 9])
+        # Non-mutually-exclusive filters:
+        if 'o365_licence' in self.request.GET:
+            if self.request.GET['o365_licence'].lower() == 'true':
+                users = users.filter(o365_licence=True)
+            elif self.request.GET['o365_licence'].lower() == 'false':
+                users = users.filter(o365_licence=False)
 
         users = users.order_by('name')
         # Parameters to modify the API output.

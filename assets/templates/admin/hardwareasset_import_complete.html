@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h2>Import complete</h2>
+<p>You have successfully imported {{ record_count }} assets.
+A list of asset tags are shown below.</p>
+<p>
+<table width="25%">
+    <tr><td><b>Asset</b></td><td><b>Model</b></td><td><b>Serial</b></td></tr>
+    {% for asset in assets_created %}
+    <tr><td>{{ asset.asset_tag }}</td><td>{{ asset.model }}</td><td>{{ asset.serial }}</td></tr>
+    {% endfor %}
+</table>
+</p>
+{% endblock %}
