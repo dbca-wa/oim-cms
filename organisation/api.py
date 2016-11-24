@@ -179,7 +179,7 @@ class DepartmentUserResource(DjangoResource):
                 username=self.data['SamAccountName'],
                 expiry_date=self.data['AccountExpirationDate'],
                 active=self.data['Enabled'],
-                name=self.data['Name'],
+                name=self.data['DisplayName'],
                 title=self.data['Title'],
                 given_name=self.data['GivenName'],
                 surname=self.data['Surname'],
@@ -221,8 +221,8 @@ class DepartmentUserResource(DjangoResource):
                 user.expiry_date = self.data['AccountExpirationDate']
             if 'Enabled' in self.data:  # Boolean; don't only work on True!
                 user.active = self.data['Enabled']
-            if 'Name' in self.data and self.data['Name']:
-                user.name = self.data['Name']
+            if 'DisplayName' in self.data and self.data['DisplayName']:
+                user.name = self.data['DisplayName']
             if 'Title' in self.data and self.data['Title']:
                 user.title = self.data['Title']
             if 'GivenName' in self.data and self.data['GivenName']:
@@ -238,6 +238,8 @@ class DepartmentUserResource(DjangoResource):
                 user.ad_deleted = True
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
                 logger.info('Set user {} as deleted in AD'.format(user.name))
+            else:
+                user.ad_deleted = False
             user.ad_data = self.data  # Store the raw request data.
             user.ad_updated = True
             user.save()
