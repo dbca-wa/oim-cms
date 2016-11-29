@@ -317,7 +317,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
             'SamAccountName': username,
             'AccountExpirationDate': datetime.now().isoformat(),
             'Enabled': True,
-            'Name': 'Doe, John',
+            'DisplayName': 'Doe, John',
             'GivenName': 'John',
             'Surname': 'Doe',
             'Title': 'Social Media Creative',
