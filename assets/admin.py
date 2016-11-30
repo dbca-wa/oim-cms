@@ -37,7 +37,11 @@ class HardwareModelAdmin(VersionAdmin):
 
 @register(HardwareAsset)
 class HardwareAssetAdmin(VersionAdmin):
-    list_display = ('asset_tag', 'vendor', 'hardware_model')
+    date_hierarchy = 'date_purchased'
+    list_display = (
+        'asset_tag', 'vendor', 'hardware_model', 'serial', 'status',
+        'location', 'assigned_user')
+    list_filter = ('status', 'vendor')
     search_fields = (
         'asset_tag', 'vendor__name', 'hardware_model__model_type',
         'hardware_model__model_no')
