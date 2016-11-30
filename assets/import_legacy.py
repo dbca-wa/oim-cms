@@ -23,7 +23,7 @@ for line in f.readlines():
     if len(newid) > 0:
         locmap[oldid] = int(newid)
     else:
-        locmap[oldid] = 200
+        locmap[oldid] = 0
 
 # New Database Connection
 newdbconn = psycopg2.connect(database=env("NEW_DB"), user=env("NEW_DB_USER"), password=env("NEW_DB_PASS"), host=env("NEW_DB_HOST"), port="5432")
@@ -339,7 +339,8 @@ for row in rows:
     sqlcommand = sqlcommand + "null,"
     sqlcommand = sqlcommand + str(row[tablemap['model_id']])+","
     sqlcommand = sqlcommand + invoice_id+","
-    sqlcommand = sqlcommand + str(locmap.get(row[tablemap['location_id']],'0'))+","
+    sqlcommand = sqlcommand + str(locmap.get(str(row[tablemap['location_id']]),'0'))+","
+#    sqlcommand = sqlcommand + str(locmap.get(row[tablemap['location_id']],'0'))+","
     sqlcommand = sqlcommand + "null,"
     sqlcommand = sqlcommand + str(suppliermap.get(row[tablemap['model_id']],'null'))+"" # use model_id to 
     
