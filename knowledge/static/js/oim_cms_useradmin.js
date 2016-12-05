@@ -1,5 +1,5 @@
-var useradminforms = { 
-	var: { 
+var useradminforms = {
+	var: {
 		'given_name': '',
 		'surname': '',
 		'title' : '',
@@ -18,7 +18,7 @@ var useradminforms = {
 		$.ajax
 			({
 				type: "GET",
-				url: "/api/itsystemreq/",
+				url: "/knowledge/itsystemreq/",
 				//json object to sent to the authentication url
 				data:'reqid='+reqid ,
 				success: function (resp) {
@@ -45,7 +45,7 @@ var useradminforms = {
 					$('#reqpoint_of_truth').val(data[0]['reqpoint_of_truth']);
 					$('#reqlegal_need_to_retain').val(data[0]['reqlegal_need_to_retain']);
 					//alert(data[0]['reqsystem_creation_date']);
-					// $('#reqcustodian').val(data[0]['fields']['custodian']); 
+					// $('#reqcustodian').val(data[0]['fields']['custodian']);
 					//				 $('#reqcustodian').html("<option value='"+escape(data[0]['reqcustodianid'])+"' selected>"+data[0]['labelfield']+"</option>");
 					$('#reqcustodian').html("<option value='"+data[0]['reqcustodianid']+"' selected='selected'>"+data[0]['labelfield']+"</option>");
 					useradminforms.var.given_name = data[0]['given_name'];
@@ -153,10 +153,10 @@ var useradminforms = {
 
 
 
-		//		  $.ajax({ "/api/itsystemreq/", 
+		//		  $.ajax({ "/knowledge/itsystemreq/",
 
 		//			 success: function( data ) {
-		//		  $('#reqid').val(data[0]['pk']); 
+		//		  $('#reqid').val(data[0]['pk']);
 		//
 		//		$('#reqlabval').html(data[0]['pk']);
 		//			alert('test');
@@ -223,7 +223,7 @@ var useradminforms = {
 			utils.scrollToFocus('reqrecovery_docs');
 			return;
 		}
-		// Check form values... 
+		// Check form values...
 		//		validation.validateURL(
 
 
@@ -260,12 +260,12 @@ var useradminforms = {
 		},
 		success: function() {
 			notification.topbar('success','Successfully Saved Changes');
-			//				$('#formnotify').html('<div style="width:50%; padding: 5px; background-color: #1ed925;">Successfully Saved</div>'); 
+			//				$('#formnotify').html('<div style="width:50%; padding: 5px; background-color: #1ed925;">Successfully Saved</div>');
 		}
 		});
 
 	},
-	loadITSystemReq: function() { 
+	loadITSystemReq: function() {
 		useradminforms.ITSystemReq();
 
 		window.onload = function () {

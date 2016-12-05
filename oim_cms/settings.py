@@ -60,7 +60,7 @@ INSTALLED_APPS = (
     'mudmap',
     'catalogue',
     'approvals',
-    'forms'
+    'knowledge',
 )
 
 AUTHENTICATION_BACKENDS = (

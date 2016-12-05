@@ -30,18 +30,16 @@ class ITSystemFormsViewsTestCase(TestCase):
 
         self.itsystem = mixer.blend(ITSystem)
 
-    def test_api_itsystemreq(self):
-        """Test the api_itsystemreq GET response
+    def test_km_itsystemreq(self):
+        """Test the km_itsystem GET response
         """
-
-        url = reverse('api_itsystemreq')
+        url = reverse('km_itsystem')
         response = self.client.get(url, data={'reqid': self.itsystem.pk})
         self.assertEqual(response.status_code, 200)
 
-    def test_api_peoplelist(self):
-        """Test the api_peoplelist GET response
+    def test_km_peoplelist(self):
+        """Test the km_peoplelist GET response
         """
-
-        url = reverse('api_peoplelist')
+        url = reverse('km_peoplelist')
         response = self.client.get(url, data={'keyword': '%'})
         self.assertEqual(response.status_code, 200)
