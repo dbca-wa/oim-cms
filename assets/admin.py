@@ -38,10 +38,22 @@ class HardwareModelAdmin(VersionAdmin):
 @register(HardwareAsset)
 class HardwareAssetAdmin(VersionAdmin):
     date_hierarchy = 'date_purchased'
+    fieldsets = (
+        ('Asset details', {
+            'fields': (
+                'asset_tag', 'finance_asset_tag', 'serial', 'vendor',
+                'hardware_model', 'status', 'date_purchased', 'invoice',
+                'purchased_value', 'notes')
+        }),
+        ('Location & ownership details', {
+            'fields': ('assigned_user', 'location', 'cost_centre')
+        }),
+    )
     list_display = (
         'asset_tag', 'vendor', 'hardware_model', 'serial', 'status',
         'location', 'assigned_user')
     list_filter = ('status', 'vendor')
+    raw_id_fields = ('assigned_user',)
     search_fields = (
         'asset_tag', 'vendor__name', 'hardware_model__model_type',
         'hardware_model__model_no')
