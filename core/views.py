@@ -16,7 +16,7 @@ from core.models import Content, UserSession
 from oim_cms.api import WhoAmIResource
 from django.contrib.auth.models import User
 from tracking.models import DepartmentUser
-from forms.api import ITSystemPermssionCheck
+
 
 def force_email(username):
     if username.find("@") == -1:
@@ -61,7 +61,7 @@ def auth_get(request):
         return auth(request)
 
     if 'sso_user' in request.GET and 'sso_shared_id' in request.GET:
-        user = shared_id_authenticate(request.GET.get('sso_user'), 
+        user = shared_id_authenticate(request.GET.get('sso_user'),
             request.GET.get('sso_shared_id'))
         if user:
             response = HttpResponse(json.dumps(
@@ -84,12 +84,11 @@ def auth_dual(request):
     response = HttpResponse('{}', content_type='application/json')
     return response
 
-    
+
 @csrf_exempt
 def auth_ip(request):
     # Get the IP of the current user, try and match it up to a session.
     current_ip = get_ip(request)
-
 
     # If there's a basic auth header, perform a check.
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
@@ -99,7 +98,7 @@ def auth_ip(request):
             basic_auth.split(" ", 1)[1].strip()).decode('utf-8').split(":", 1)
         username = force_email(username)
         user = shared_id_authenticate(username, password)
-        
+
         if not user:
             user = adal_authenticate(username, password)
 
@@ -145,7 +144,7 @@ def auth(request):
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
     basic_hash = hashlib.sha1(basic_auth.encode('utf-8')).hexdigest() if basic_auth else None
 
-    # store the access IP in the current user session 
+    # store the access IP in the current user session
     if request.user.is_authenticated():
         usersession = UserSession.objects.get(
             session_id=request.session.session_key)
@@ -235,7 +234,7 @@ def auth(request):
             "KMIRoles", '')
     except Exception as e:
         headers["kmi_roles"] = ''
-   
+
     # cache response
     cache_headers = dict()
     for key, val in headers.items():
@@ -301,12 +300,6 @@ def search(request):
         'search_results': search_results,
     })
 
-def forms(request):
-    reqid = request.GET['reqid']
-    PermsResp = ITSystemPermssionCheck(request,reqid)
-    return render(request, 'itsystemform.html', {
-                'PermCheck': PermsResp
-    })
 
 def error404(request):
     search_query = " ".join(request.get_full_path().split("/"))
