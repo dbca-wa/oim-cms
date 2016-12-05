@@ -310,13 +310,13 @@ for row in rows:
         # Locate Assigned User
         assigned_user = string.replace(assigned_user,"'","''")
         q="select id from organisation_departmentuser where concat(given_name,' ',surname) = '"+assigned_user+"';"
-        print q
+ #       print q
         newcur.execute(q)
         result=newcur.fetchone()
         if isinstance(result, NoneType) is True:
             assigned_user_id = "null"
         else:
-            print "ASSIGNED USER ID:"+str(result[0])
+            #          print "ASSIGNED USER ID:"+str(result[0])
             if result[0] > 0:
                 assigned_user_id = str(result[0])
             else:
@@ -327,11 +327,11 @@ for row in rows:
     sqlcommand = sqlcommand + "('"+str(row[tablemap['id']])+"',"
     sqlcommand = sqlcommand + "'"+str(row[tablemap['created']])+"',"
     sqlcommand = sqlcommand + "'"+str(row[tablemap['modified']])+"',"
-    sqlcommand = sqlcommand + "'"+rowjsonstring+"',"
+    sqlcommand = sqlcommand + "'"+string.replace(rowjsonstring,"'","''")+"',"
     sqlcommand = sqlcommand + "'"+str(row[tablemap['date_purchased']])+"',"
     sqlcommand = sqlcommand + ""+purchased_value+","
-    sqlcommand = sqlcommand + "'"+row[tablemap['notes']]+"',"
-    sqlcommand = sqlcommand + "'"+row[tablemap['asset_tag']]+"',"
+    sqlcommand = sqlcommand + "'"+string.replace(row[tablemap['notes']],"'","''")+"',"
+    sqlcommand = sqlcommand + "'"+string.replace(row[tablemap['asset_tag']],"'","''")+"',"
     sqlcommand = sqlcommand + "'"+row[tablemap['finance_asset_tag']]+"',"
     sqlcommand = sqlcommand + "'"+row[tablemap['status']]+"',"
     sqlcommand = sqlcommand + "'"+row[tablemap['serial']]+"',"
@@ -347,13 +347,13 @@ for row in rows:
     
     sqlcommand = sqlcommand + ");"
 
-    print sqlcommand
+#    print sqlcommand
 
     try:
         newcur.execute(sqlcommand)
     except Exception, e:
         print "ERROR: ",e[0]
-
+        print sqlcommand
     newdbconn.commit()
 
 newdbconn.close()
