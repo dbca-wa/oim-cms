@@ -78,7 +78,7 @@ class StyleAdmin(admin.ModelAdmin):
 class RecordAdmin(VersionAdmin):
     list_display = ("identifier", "service_type", "crs", "title", "active", "_publish_required", "modified", "publication_date")
     inlines = [StyleInline, ]
-    readonly_fields = ('service_type', 'service_type_version', 'crs', '_bounding_box', "_ows_resources", 'active', 'publication_date', 'modified', 'insert_date')
+    readonly_fields = ('service_type', 'service_type_version', 'crs', '_bounding_box','source_legend', "_ows_resources", 'active', 'publication_date', 'modified', 'insert_date')
     search_fields = ["identifier", 'service_type']
     form = RecordForm
     filter_horizontal = ["tags"]

@@ -6,6 +6,7 @@ from django.core.files.base import ContentFile
 import hashlib
 import json
 from django.conf import settings
+from django.db.models.fields.files import FieldFile
 from pycsw.core import util
 
 from .models import Record, Style
@@ -91,6 +92,9 @@ class StyleSerializer(serializers.ModelSerializer):
             'content',
         )
 
+class LegendSerializer(serializers.Serializer):
+    content = serializers.CharField(write_only=True, allow_null=False)
+    ext = serializers.CharField(write_only=True,allow_null=False)
 
 # Record Serializer
 class RecordSerializer(serializers.ModelSerializer):
@@ -103,6 +107,8 @@ class RecordSerializer(serializers.ModelSerializer):
     modified = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f', allow_null=True, default=None)
     metadata_link = serializers.SerializerMethodField(read_only=True)
     tags = serializers.SerializerMethodField(read_only=True)
+    source_legend = LegendSerializer(write_only=True, allow_null=True,required=False)
+    legend = serializers.SerializerMethodField(read_only=True)
 
     def get_tags(self, obj):
         return obj.tags.values("name", "description")
@@ -112,6 +118,9 @@ class RecordSerializer(serializers.ModelSerializer):
 
     def get_metadata_link(self, obj):
         return obj.metadata_link
+
+    def get_legend(self,obj):
+        return (obj.legend or obj.source_legend).url if obj.legend or obj.source_legend else None
 
     def __init__(self, *args, **kwargs):
         try:
@@ -132,7 +141,32 @@ class RecordSerializer(serializers.ModelSerializer):
 
     def get_url(self, obj):
         return '{0}/catalogue/api/records/{1}.json'.format(settings.BASE_URL, obj.identifier)
+    
+    def legend_file_name(self,source_legend):
+        return "{}{}".format(self.instance.identifier.replace(":","_"),source_legend.get('ext') or "")
 
+    def create(self, validated_data):
+        source_legend = validated_data.pop("source_legend") if "source_legend" in validated_data else None
+        instance = super(RecordSerializer,self).create(validated_data)
+        self.instance = instance
+        if source_legend:
+            instance.source_legend = FieldFile(self.instance,Record._meta.get_field("source_legend"),self.legend_file_name(source_legend))
+            instance.source_legend.save(self.legend_file_name(source_legend),source_legend['content'],save=False)
+        return instance
+
+    def update(self, instance, validated_data):
+        source_legend = validated_data.pop("source_legend") if "source_legend" in validated_data else None
+        if source_legend:
+            if instance.source_legend:
+                instance.source_legend.delete(save=False)
+            instance.source_legend = FieldFile(instance,Record._meta.get_field("source_legend"),self.legend_file_name(source_legend))
+            instance.source_legend.save(self.legend_file_name(source_legend),source_legend['content'],save=False)
+        elif instance.source_legend:
+            instance.source_legend.delete(save=False)
+
+        return super(RecordSerializer,self).update(instance,validated_data)
+
+        
     class Meta:
         model = Record
         fields = (
@@ -155,6 +189,7 @@ class RecordSerializer(serializers.ModelSerializer):
             'styles',
             'workspace',
             'legend',
+            'source_legend',
             'name',
             'tags'
         )
@@ -167,10 +202,6 @@ class RecordViewSet(viewsets.ModelViewSet):
     lookup_field = "identifier"
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ("tags__name", "application__name")
-
-    def createStyle(self, content):
-        uploaded_style = ContentFile(content)
-        return uploaded_style
 
     def calculate_checksum(self, content):
         checksum = hashlib.md5()
@@ -218,6 +249,10 @@ class RecordViewSet(viewsets.ModelViewSet):
                 except:
                     traceback.print_exc()
                     raise serializers.ValidationError("Incorrect bounding box dataformat.")
+
+            if serializer.validated_data.get("source_legend"):
+                serializer.validated_data["source_legend"]["content"] = ContentFile(serializer.validated_data["source_legend"]["content"].decode("base64"))
+
             try:
                 serializer.instance = Record.objects.get(identifier=identifier)
                 serializer.instance.active = True
@@ -246,7 +281,7 @@ class RecordViewSet(viewsets.ModelViewSet):
                 for style_serializer in style_serializers:
                     uploaded_style = style_serializer.validated_data
                     uploaded_style["record"] = record
-                    uploaded_style["content"] = self.createStyle(uploaded_style["content"].decode("base64"))
+                    uploaded_style["content"] = ContentFile(uploaded_style["content"].decode("base64"))
 
                 # set default style
                 origin_default_style = {

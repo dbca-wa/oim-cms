@@ -239,6 +239,7 @@ class Record(models.Model):
 
     bbox_re = re.compile('POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)')
     legend = models.FileField(upload_to='catalogue/legends', null=True, blank=True)
+    source_legend = models.FileField(upload_to='catalogue/legends/source', null=True, blank=True,editable=False)
 
     @property 
     def bbox(self):
