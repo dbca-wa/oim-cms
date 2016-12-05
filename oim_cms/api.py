@@ -14,7 +14,6 @@ from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
 from registers.api import ITSystemResource, HardwareResource
 from registers.models import ITSystem
 from tracking.api import EC2InstanceResource, FreshdeskTicketResource
-from forms.api import ITSystemObj, PeopleObj, SaveITSystemRequest
 from .utils import CSVDjangoResource
 
 
