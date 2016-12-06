@@ -239,6 +239,7 @@ class Record(models.Model):
 
     bbox_re = re.compile('POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)')
     legend = models.FileField(upload_to='catalogue/legends', null=True, blank=True)
+    source_legend = models.FileField(upload_to='catalogue/legends/source', null=True, blank=True,editable=False)
 
     @property 
     def bbox(self):
@@ -358,23 +359,22 @@ class Record(models.Model):
         endpoint_parameters = endpoint_parameters.split("&") if endpoint_parameters else None
         endpoint_parameters = dict([(p.split("=", 1)[0].upper(), p.split("=", 1)) for p in endpoint_parameters] if endpoint_parameters else [])
 
+        #get target_crs
+        target_crs = None
+        if service_type == "WFS":
+            target_crs = [endpoint_parameters.get(k)[1] for k in ["SRSNAME"] if k in endpoint_parameters]
+        elif service_type in ["WMS", "GWC"]:
+            target_crs = [endpoint_parameters.get(k)[1] for k in ["SRS","CRS"] if k in endpoint_parameters]
+
+        if target_crs:
+            target_crs = target_crs[0].upper()
+        else:
+            target_crs = self.crs.upper() if self.crs else None
+
         #transform the bbox between coordinate systems, if required
         bbox = self.bbox or []
         if bbox:
-            if service_type == "WFS":
-                if any([ k in endpoint_parameters for k in ["SRSNAME"]]) :
-                    target_crs = endpoint_parameters.get("SRSNAME")[1]
-                else:
-                    target_crs = None
-            elif service_type in ["WMS", "GWC"]:
-                if any([ k in endpoint_parameters for k in ["SRS", "CRS"]]) :
-                    target_crs = (endpoint_parameters.get("SRS") or endpoint_parameters.get("CRS"))[1].upper()
-                else:
-                    target_crs = None
-            else:
-                target_crs = None
-
-            if target_crs and target_crs != self.crs:
+            if target_crs != self.crs:
                 try:
                     if self.crs.upper() in epsg_extra:
                         p1 = pyproj.Proj(epsg_extra[self.crs.upper()])
@@ -390,8 +390,6 @@ class Record(models.Model):
                     bbox[2], bbox[3] = pyproj.transform(p1, p2, bbox[2], bbox[3])
                 except Exception as e:
                     raise ValidationError("Transform the bbox of layer({0}) from crs({1}) to crs({2}) failed.{3}".format(self.identifier, self.crs, target_crs, str(e)))
-            else:
-                target_crs = self.crs.upper()
 
             if service_type == "WFS":
                 #to limit the returned features, shrink the original bbox to 10 percent
@@ -401,7 +399,6 @@ class Record(models.Model):
                 shrinked_bbox = [shrinked_min(bbox[0], bbox[2]), shrinked_min(bbox[1], bbox[3]), shrinked_max(bbox[0], bbox[2]), shrinked_max(bbox[1], bbox[3])]
         else:
             shrinked_bbox = None
-            target_crs = self.crs.upper() if self.crs else None
 
         bbox2str = lambda bbox, service, version: ', '.join(str(c) for c in bbox) if service != "WFS" or version == "1.0.0" else ", ".join([str(c) for c in [bbox[1], bbox[0], bbox[3], bbox[2]]])
 
