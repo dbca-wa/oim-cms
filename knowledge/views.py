@@ -2,10 +2,19 @@ from __future__ import unicode_literals, absolute_import
 from datetime import datetime
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
+from django.views.generic import TemplateView
 import json
 from registers.models import ITSystem
 from organisation.models import DepartmentUser
 from organisation.Groups import groupCheck
+
+
+class AddressBook(TemplateView):
+    template_name = 'address_book.html'
+
+# ==================================================
+# Legacy views below.
+# ==================================================
 
 
 def itsystemreq(request):
