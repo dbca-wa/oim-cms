@@ -1,5 +1,6 @@
 import os
 from confy import env, database, cache
+from dj_database_url import parse
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -62,6 +63,7 @@ INSTALLED_APPS = (
     'catalogue',
     'approvals',
     'knowledge',
+    'rcs_assets',
 )
 
 AUTHENTICATION_BACKENDS = (
@@ -116,7 +118,13 @@ CRON_CLASSES = (
 )
 ROOT_URLCONF = 'oim_cms.urls'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
-DATABASES = {'default': database.config()}
+DATABASES = {
+    'default': database.config(),
+    'rcs_assets': parse(env('DATABASE_URL_RCS', 'oracle://scott:tiger@/tnsname'))
+}
+# The Oracle db port needs to be a string :/
+DATABASES['rcs_assets']['PORT'] = str(DATABASES['rcs_assets']['PORT'])
+DATABASE_ROUTERS = ['rcs_assets.router.RCSAssetsRouter']
 APPLICATION_VERSION = '1.2.3'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
