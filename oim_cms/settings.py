@@ -122,7 +122,7 @@ APPLICATION_VERSION = '1.2.3'
 STATIC_CONTEXT_VARS = {}
 
 # Internationalization
-LANGUAGE_CODE = 'en-gb'
+LANGUAGE_CODE = 'en-AU'
 TIME_ZONE = 'Australia/Perth'
 USE_I18N = True
 USE_L10N = True
@@ -219,7 +219,8 @@ WAGTAILSEARCH_RESULTS_TEMPLATE = 'core/search_results.html'
 
 WAGTAILADMIN_RICH_TEXT_EDITORS = {
     'default': {
-        'WIDGET': 'wagtailtinymce.rich_text.TinyMCERichTextArea'
+        #'WIDGET': 'wagtailtinymce.rich_text.TinyMCERichTextArea'
+        'WIDGET': 'core.rich_text.CustomTinyMCERichTextArea'
     },
 }
 
