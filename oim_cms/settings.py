@@ -48,6 +48,7 @@ INSTALLED_APPS = (
     'wagtail.wagtailsearch',
     'wagtail.wagtailredirects',
     'wagtail.wagtailforms',
+    'wagtailtinymce',
     'django_uwsgi',
 
     'social.apps.django_app.default',
@@ -194,7 +195,6 @@ else:
     EMAIL_INCREDIBUS_LIST = EMAIL_INCREDIBUS_LIST.split(',')
 
 # Wagtail settings
-
 WAGTAIL_SITE_NAME = "OIM Content Management System"
 
 # Use Elasticsearch as the search backend for extra performance and better search results:
@@ -208,7 +208,6 @@ WAGTAIL_SITE_NAME = "OIM Content Management System"
 #     },
 # }
 
-
 # Whether to use face/feature detection to improve image cropping - requires OpenCV
 WAGTAILIMAGES_FEATURE_DETECTION_ENABLED = False
 
@@ -217,6 +216,13 @@ WAGTAIL_USAGE_COUNT_ENABLED = True
 
 # we want a custom search result template
 WAGTAILSEARCH_RESULTS_TEMPLATE = 'core/search_results.html'
+
+WAGTAILADMIN_RICH_TEXT_EDITORS = {
+    'default': {
+        'WIDGET': 'wagtailtinymce.rich_text.TinyMCERichTextArea'
+    },
+}
+
 
 # Logging settings
 # Ensure that the logs directory exists:
