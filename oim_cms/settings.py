@@ -63,7 +63,6 @@ INSTALLED_APPS = (
     'catalogue',
     'approvals',
     'knowledge',
-    'rcs_assets',
 )
 
 AUTHENTICATION_BACKENDS = (
@@ -118,13 +117,17 @@ CRON_CLASSES = (
 )
 ROOT_URLCONF = 'oim_cms.urls'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
-DATABASES = {
-    'default': database.config(),
-    'rcs_assets': parse(env('DATABASE_URL_RCS', 'oracle://scott:tiger@/tnsname'))
-}
-# The Oracle db port needs to be a string :/
-DATABASES['rcs_assets']['PORT'] = str(DATABASES['rcs_assets']['PORT'])
-DATABASE_ROUTERS = ['rcs_assets.router.RCSAssetsRouter']
+DATABASES = {'default': database.config()}
+
+# Optional extra database for RCS Assets
+# NOTE: do not define this environment variable while running tests.
+if env('DATABASE_URL_RCS', None):
+    INSTALLED_APPS += ('rcs_assets',)
+    DATABASES['rcs_assets'] = parse(env('DATABASE_URL_RCS'))
+    # The Oracle db port needs to be a string :/
+    DATABASES['rcs_assets']['PORT'] = str(DATABASES['rcs_assets']['PORT'])
+    DATABASE_ROUTERS = ['rcs_assets.router.RCSAssetsRouter']
+
 APPLICATION_VERSION = '1.2.3'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
