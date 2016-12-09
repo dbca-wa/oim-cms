@@ -15,6 +15,8 @@ class RCSAssetsRouter(object):
         """
         No writes.
         """
+        if model._meta.app_label == 'rcs_assets':
+            return 'rcs_assets'
         return None
 
     def allow_relation(self, obj1, obj2, **hints):
@@ -29,4 +31,6 @@ class RCSAssetsRouter(object):
         """
         No migrations.
         """
+        if app_label == 'rcs_assets':
+            return 'rcs_assets'
         return None

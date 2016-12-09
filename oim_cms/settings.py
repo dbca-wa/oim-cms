@@ -116,19 +116,21 @@ CRON_CLASSES = (
     'organisation.cron.PasswordReminderCronJob',
 )
 ROOT_URLCONF = 'oim_cms.urls'
+APPLICATION_VERSION = '1.2.3'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
-DATABASES = {'default': database.config()}
 
-# Optional extra database for RCS Assets
-# NOTE: do not define this environment variable while running tests.
+# Database configuration
+DATABASES = {'default': database.config()}
+# Optional extra database for RCS Assets (read-only):
 if env('DATABASE_URL_RCS', None):
     INSTALLED_APPS += ('rcs_assets',)
     DATABASES['rcs_assets'] = parse(env('DATABASE_URL_RCS'))
     # The Oracle db port needs to be a string :/
     DATABASES['rcs_assets']['PORT'] = str(DATABASES['rcs_assets']['PORT'])
+    # When running tests, configure the rcs_assets db as a mirror of default.
+    DATABASES['rcs_assets']['TEST'] = {'MIRROR': 'default'}
     DATABASE_ROUTERS = ['rcs_assets.router.RCSAssetsRouter']
 
-APPLICATION_VERSION = '1.2.3'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 
