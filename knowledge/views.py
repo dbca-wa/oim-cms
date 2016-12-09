@@ -10,11 +10,11 @@ from organisation.Groups import groupCheck
 
 
 class AddressBook(TemplateView):
-    template_name = 'address_book.html'
+    template_name = 'knowledge/address_book.html'
 
 
 class UserAccounts(TemplateView):
-    template_name = 'user_accounts.html'
+    template_name = 'knowledge/user_accounts.html'
 
 # ==================================================
 # Legacy views below.

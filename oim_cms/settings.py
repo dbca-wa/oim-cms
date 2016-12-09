@@ -1,5 +1,6 @@
 import os
 from confy import env, database, cache
+from dj_database_url import parse
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -115,14 +116,26 @@ CRON_CLASSES = (
     'organisation.cron.PasswordReminderCronJob',
 )
 ROOT_URLCONF = 'oim_cms.urls'
-WSGI_APPLICATION = 'oim_cms.wsgi.application'
-DATABASES = {'default': database.config()}
 APPLICATION_VERSION = '1.2.3'
+WSGI_APPLICATION = 'oim_cms.wsgi.application'
+
+# Database configuration
+DATABASES = {'default': database.config()}
+# Optional extra database for RCS Assets (read-only):
+if env('DATABASE_URL_RCS', None):
+    INSTALLED_APPS += ('rcs_assets',)
+    DATABASES['rcs_assets'] = parse(env('DATABASE_URL_RCS'))
+    # The Oracle db port needs to be a string :/
+    DATABASES['rcs_assets']['PORT'] = str(DATABASES['rcs_assets']['PORT'])
+    # When running tests, configure the rcs_assets db as a mirror of default.
+    DATABASES['rcs_assets']['TEST'] = {'MIRROR': 'default'}
+    DATABASE_ROUTERS = ['rcs_assets.router.RCSAssetsRouter']
+
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 
 # Internationalization
-LANGUAGE_CODE = 'en-gb'
+LANGUAGE_CODE = 'en-AU'
 TIME_ZONE = 'Australia/Perth'
 USE_I18N = True
 USE_L10N = True
@@ -219,7 +232,8 @@ WAGTAILSEARCH_RESULTS_TEMPLATE = 'core/search_results.html'
 
 WAGTAILADMIN_RICH_TEXT_EDITORS = {
     'default': {
-        'WIDGET': 'wagtailtinymce.rich_text.TinyMCERichTextArea'
+        #'WIDGET': 'wagtailtinymce.rich_text.TinyMCERichTextArea'
+        'WIDGET': 'core.rich_text.CustomTinyMCERichTextArea'
     },
 }
 

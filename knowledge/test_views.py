@@ -9,7 +9,7 @@ from registers.models import ITSystem
 User = get_user_model()
 
 
-class ITSystemFormsViewsTestCase(TestCase):
+class KnowledgeViewsTestCase(TestCase):
     client = Client()
 
     def setUp(self):
@@ -29,6 +29,20 @@ class ITSystemFormsViewsTestCase(TestCase):
         self.user2.save()
 
         self.itsystem = mixer.blend(ITSystem)
+
+    def test_km_address_book(self):
+        """test the km_address_book GET response
+        """
+        url = reverse('km_address_book')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_km_user_accounts(self):
+        """test the km_user_accounts GET response
+        """
+        url = reverse('km_user_accounts')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
     def test_km_itsystemreq(self):
         """Test the km_itsystem GET response
