@@ -131,6 +131,8 @@ class ITSystemHardware(models.Model):
 
     class Meta:
         verbose_name_plural = 'IT System hardware'
+        unique_together = ('computer', 'role')
+        ordering = ('computer__hostname',)
 
     def __str__(self):
         return '{} ({})'.format(self.computer.hostname, self.role)
@@ -484,13 +486,9 @@ class Backup(CommonFields):
         (3, 'Daily, 30 day retention'),
         (4, 'Weekly, 1 month retention')
     )
-    system = models.OneToOneField(Hardware)
     computer = models.ForeignKey(
         Computer, on_delete=models.PROTECT, null=True, blank=True)
     operating_system = models.CharField(max_length=120)
-    parent_host = models.ForeignKey(
-        Hardware, on_delete=models.PROTECT, null=True, blank=True,
-        related_name='host')
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=0)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=0)

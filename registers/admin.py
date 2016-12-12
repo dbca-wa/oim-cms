@@ -1,9 +1,7 @@
 from __future__ import unicode_literals, absolute_import
-from django.conf import settings
 from django.conf.urls import url
 from django.contrib.admin import register
 from django.http import HttpResponse
-from django.template.loader import render_to_string
 from reversion.admin import VersionAdmin
 from six import BytesIO
 import unicodecsv
@@ -182,18 +180,13 @@ class ITSystemVendorAdmin(VersionAdmin):
 
 @register(Backup)
 class BackupAdmin(VersionAdmin):
-    raw_id_fields = ('computer', 'parent_host')
+    raw_id_fields = ('computer',)
     list_display = (
-        'host', 'operating_system', 'role', 'status', 'last_tested')
+        'computer', 'operating_system', 'role', 'status', 'last_tested')
     list_editable = ('operating_system', 'role', 'status', 'last_tested')
-    search_fields = ('computer__hostname', 'parent_host__name')
+    search_fields = ('computer__hostname',)
     list_filter = ('role', 'status', 'operating_system')
     date_hierarchy = 'last_tested'
-
-    def host(self, obj):
-        if not obj.parent_host:
-            return None
-        return obj.parent_host.name.split('.')[0]
 
 
 @register(BusinessService)

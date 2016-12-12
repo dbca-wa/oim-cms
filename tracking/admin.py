@@ -10,8 +10,7 @@ from .models import Computer, Mobile, EC2Instance, FreshdeskTicket
 
 @register(Computer)
 class ComputerAdmin(ModelAdmin):
-    list_display = ['sam_account_name',
-                    'hostname', 'managed_by', 'probable_owner']
+    list_display = ['hostname', 'managed_by', 'probable_owner']
     search_fields = ['sam_account_name', 'hostname']
 
 
