@@ -1,33 +1,16 @@
 from __future__ import unicode_literals, absolute_import
 from django.conf import settings
 from django.conf.urls import url
-from django.contrib.admin import register, ModelAdmin
+from django.contrib.admin import register
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from reversion.admin import VersionAdmin
 from six import BytesIO
 import unicodecsv
 from .models import (
-    Software, Hardware, UserGroup, ITSystemHardware,
+    UserGroup, ITSystemHardware,
     ITSystem, ITSystemDependency, ITSystemVendor, Backup, BusinessService,
     BusinessFunction, BusinessProcess, ProcessITSystemRelationship)
-
-
-@register(Software)
-class SoftwareAdmin(VersionAdmin):
-    list_display = ('name', 'url', 'os')
-    list_filter = ('os',)
-    search_fields = ('name', 'url',)
-
-
-@register(Hardware)
-class HardwareAdmin(VersionAdmin):
-    list_display = (
-        'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4',
-        'os', 'location')
-    list_filter = ('device_type', 'os', 'cost_centre')
-    search_fields = (
-        'name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')
 
 
 @register(UserGroup)
@@ -40,7 +23,7 @@ class UserGroupAdmin(VersionAdmin):
 class ITSystemHardwareAdmin(VersionAdmin):
     list_display = ('hostname', 'role', 'affected_itsystems')
     list_filter = ('role',)
-    raw_id_fields = ('host',)
+    raw_id_fields = ('host', 'computer')
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystemhardware/change_list.html'
 
@@ -199,26 +182,18 @@ class ITSystemVendorAdmin(VersionAdmin):
 
 @register(Backup)
 class BackupAdmin(VersionAdmin):
-    raw_id_fields = ('system', 'parent_host')
+    raw_id_fields = ('computer', 'parent_host')
     list_display = (
-        'name', 'host', 'operating_system', 'role', 'status', 'last_tested', 'backup_documentation')
+        'host', 'operating_system', 'role', 'status', 'last_tested')
     list_editable = ('operating_system', 'role', 'status', 'last_tested')
-    search_fields = ('system__name', 'parent_host__name')
+    search_fields = ('computer__hostname', 'parent_host__name')
     list_filter = ('role', 'status', 'operating_system')
     date_hierarchy = 'last_tested'
-
-    def name(self, obj):
-        return obj.system.name.split('.')[0]
 
     def host(self, obj):
         if not obj.parent_host:
             return None
         return obj.parent_host.name.split('.')[0]
-
-    def backup_documentation(self, obj):
-        return render_to_string('registers/backup_snippet.html', {
-            'obj': obj, 'settings': settings, 'name': self.name(obj)}
-        )
 
 
 @register(BusinessService)

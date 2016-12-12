@@ -1,5 +1,5 @@
 from __future__ import unicode_literals, absolute_import
-from datetime import timedelta, datetime
+from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib.postgres.fields import ArrayField
@@ -71,8 +71,7 @@ class Hardware(CommonFields):
     """
     device_type = models.PositiveSmallIntegerField(choices=(
         (1, 'Network'), (2, 'Mobile'), (3, 'Domain PC'), (4, 'Hostname')))
-    computer = models.OneToOneField(
-        Computer, null=True, editable=False)
+    computer = models.OneToOneField(Computer, null=True, editable=False)
     mobile = models.OneToOneField(Mobile, null=True, editable=False)
     username = models.CharField(max_length=128, null=True, editable=False)
     email = models.CharField(max_length=512, null=True, editable=False)
@@ -128,6 +127,7 @@ class ITSystemHardware(models.Model):
         (4, 'Reverse proxy'),
     )
     host = models.ForeignKey(Hardware, on_delete=models.PROTECT)
+    computer = models.ForeignKey(Computer, blank=True, null=True, on_delete=models.PROTECT)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
 
     class Meta:
@@ -277,9 +277,6 @@ class ITSystem(CommonFields):
         help_text='URL to schema diagram')
     user_groups = models.ManyToManyField(
         UserGroup, blank=True, help_text='User group(s) that use this IT System')
-    softwares = models.ManyToManyField(
-        Software, blank=True, verbose_name='software',
-        help_text='Software that is used to provide this IT System')
     hardwares = models.ManyToManyField(
         ITSystemHardware, blank=True, verbose_name='hardware',
         help_text='Hardware that is used to provide this IT System')
@@ -495,6 +492,8 @@ class Backup(CommonFields):
         (4, 'Weekly, 1 month retention')
     )
     system = models.OneToOneField(Hardware)
+    computer = models.ForeignKey(
+        Computer, on_delete=models.PROTECT, null=True, blank=True)
     operating_system = models.CharField(max_length=120)
     parent_host = models.ForeignKey(
         Hardware, on_delete=models.PROTECT, null=True, blank=True,
@@ -549,11 +548,14 @@ class Backup(CommonFields):
         return self.next_test_date() < timezone.now().date()
 
     def __str__(self):
-        return '{} ({})'.format(self.system.name.split(
-            '.')[0], self.get_status_display())
+        if self.computer:
+            return '{} ({})'.format(self.computer.hostname.split(
+                '.')[0], self.get_status_display())
+        else:
+            return self.get_status_display()
 
     class Meta:
-        ordering = ('system__name',)
+        ordering = ('computer__hostname',)
 
 
 @python_2_unicode_compatible

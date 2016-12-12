@@ -80,18 +80,20 @@ class ITSystemResource(CSVDjangoResource):
             'vulnerability_docs': data.vulnerability_docs,
             'workaround': data.workaround,
             'recovery_docs': data.recovery_docs,
-            'bh_support': {'name': data.bh_support.name, 'email': data.bh_support.email, 'telephone': data.bh_support.telephone} if data.bh_support else {},
-            'ah_support': {'name': data.ah_support.name, 'email': data.ah_support.email, 'telephone': data.ah_support.telephone} if data.ah_support else {},
+            'bh_support': {
+                'name': data.bh_support.name,
+                'email': data.bh_support.email,
+                'telephone': data.bh_support.telephone} if data.bh_support else {},
+            'ah_support': {
+                'name': data.ah_support.name,
+                'email': data.ah_support.email,
+                'telephone': data.ah_support.telephone} if data.ah_support else {},
             'availability': data.availability_display or '',
             'status_display': data.status_display or '',
             'criticality': data.criticality_display or '',
             'mtd': format_timedelta(data.mtd),
             'rto': format_timedelta(data.rto),
             'rpo': format_timedelta(data.rpo),
-            'softwares': [{
-                'name': i.name,
-                'url': i.url,
-            } for i in data.softwares.all()],
             'hardwares': [{
                 'host': i.host.name,
                 'role': i.get_role_display(),

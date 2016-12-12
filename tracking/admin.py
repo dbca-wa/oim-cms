@@ -88,7 +88,7 @@ class FreshdeskTicketAdmin(ModelAdmin):
         # Define fields to output.
         fields = ['month', 'category', 'subcategory', 'ticket_count']
 
-        # Write data for ITSystemHardware objects to the CSV.
+        # Write data for FreshdeskTicket objects to the CSV.
         stream = BytesIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
