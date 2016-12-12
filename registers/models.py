@@ -126,21 +126,14 @@ class ITSystemHardware(models.Model):
         (3, 'Network file storage'),
         (4, 'Reverse proxy'),
     )
-    host = models.ForeignKey(Hardware, on_delete=models.PROTECT)
     computer = models.ForeignKey(Computer, blank=True, null=True, on_delete=models.PROTECT)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
 
     class Meta:
         verbose_name_plural = 'IT System hardware'
-        unique_together = ('host', 'role')
-        ordering = ('host__name',)
 
     def __str__(self):
-        return '{} ({})'.format(self.host.name, self.role)
-
-    @property
-    def hostname(self):
-        return self.host.name.lower()
+        return '{} ({})'.format(self.computer.hostname, self.role)
 
 
 @python_2_unicode_compatible

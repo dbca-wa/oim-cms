@@ -90,7 +90,7 @@ class Computer(CommonFields):
         help_text='Physical location')
 
     def __str__(self):
-        return self.sam_account_name
+        return self.hostname
 
 
 @python_2_unicode_compatible

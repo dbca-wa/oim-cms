@@ -21,9 +21,9 @@ class UserGroupAdmin(VersionAdmin):
 
 @register(ITSystemHardware)
 class ITSystemHardwareAdmin(VersionAdmin):
-    list_display = ('hostname', 'role', 'affected_itsystems')
+    list_display = ('computer', 'role', 'affected_itsystems')
     list_filter = ('role',)
-    raw_id_fields = ('host', 'computer')
+    raw_id_fields = ('computer',)
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystemhardware/change_list.html'
 
@@ -56,7 +56,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
             # Write a row for each linked ITSystem (non-decommissioned).
             for it in i.itsystem_set.all().exclude(status=3):
                 wr.writerow([
-                    i.hostname, i.host.location, i.get_role_display(),
+                    i.computer.hostname, i.computer.location, i.get_role_display(),
                     it.system_id, it.name, it.get_availability_display(),
                     it.get_criticality_display()])
 
