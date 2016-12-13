@@ -6,9 +6,9 @@ from reversion.admin import VersionAdmin
 from six import BytesIO
 import unicodecsv
 from .models import (
-    UserGroup, ITSystemHardware,
-    ITSystem, ITSystemDependency, ITSystemVendor, Backup, BusinessService,
-    BusinessFunction, BusinessProcess, ProcessITSystemRelationship)
+    UserGroup, ITSystemHardware, ITSystem, ITSystemDependency,
+    ITSystemVendor, Backup, BusinessService, BusinessFunction,
+    BusinessProcess, ProcessITSystemRelationship)
 
 
 @register(UserGroup)

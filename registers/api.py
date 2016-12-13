@@ -2,12 +2,9 @@ from __future__ import unicode_literals, absolute_import
 from babel.dates import format_timedelta
 from django.conf import settings
 import itertools
-import json
 from oim_cms.utils import CSVDjangoResource
-from restless.dj import DjangoResource
-from restless.resources import skip_prepare
 
-from .models import ITSystem, Hardware, ITSystemDependency, ITSystemVendor
+from .models import ITSystem, ITSystemDependency, ITSystemVendor
 
 
 class ITSystemResource(CSVDjangoResource):
@@ -184,45 +181,3 @@ class ITSystemResource(CSVDjangoResource):
 
     def list(self):
         return list(self.list_qs())
-
-
-class HardwareResource(DjangoResource):
-    VALUES_ARGS = (
-        "email", "date_updated",
-        "computer__hostname",
-        "local_info",
-        "local_current")
-
-    def is_authenticated(self):
-        return True
-
-    @skip_prepare
-    def list(self):
-        FILTERS = {"computer__isnull": False, "local_info__isnull": False}
-        # Only return production apps
-        if "hostname" in self.request.GET:
-            FILTERS["computer__hostname__istartswith"] = self.request.GET[
-                "hostname"]
-        if self.request.GET.get("local_current", "").lower() == "false":
-            FILTERS["local_current"] = False
-        data = list(Hardware.objects.filter(
-            **FILTERS).values(*self.VALUES_ARGS))
-        for row in data:
-            row.update(json.loads(row["local_info"]))
-        return data
-
-    @skip_prepare
-    def create(self):
-        computer = Hardware.objects.get(
-            computer__hostname__istartswith=self.data["hostname"])
-        local_info = json.dumps(self.data)
-        computer.local_info = local_info
-        computer.local_current = self.data.get("local_current", False)
-        computer.save()
-        data = list(
-            Hardware.objects.filter(
-                pk=computer.pk).values(
-                *
-                self.VALUES_ARGS))[0]
-        data.update(json.loads(data["local_info"]))
-        return data

@@ -9,8 +9,8 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 
 from assets.models import Vendor
-from organisation.models import DepartmentUser, Location
-from tracking.models import CommonFields, Computer, Mobile
+from organisation.models import DepartmentUser
+from tracking.models import CommonFields, Computer
 
 
 CRITICALITY_CHOICES = (
@@ -65,42 +65,6 @@ class Software(models.Model):
 
 
 @python_2_unicode_compatible
-class Hardware(CommonFields):
-    """Represents additional metadata related to a unit of tracked computing
-    hardware.
-    """
-    device_type = models.PositiveSmallIntegerField(choices=(
-        (1, 'Network'), (2, 'Mobile'), (3, 'Domain PC'), (4, 'Hostname')))
-    computer = models.OneToOneField(Computer, null=True, editable=False)
-    mobile = models.OneToOneField(Mobile, null=True, editable=False)
-    username = models.CharField(max_length=128, null=True, editable=False)
-    email = models.CharField(max_length=512, null=True, editable=False)
-    ipv4 = models.TextField(default='', editable=False)
-    ports = models.TextField(default='', editable=False)
-    name = models.CharField(max_length=2048, unique=True, editable=False)
-    serials = models.TextField(null=True, editable=False)
-    local_info = models.TextField(null=True, editable=False)
-    local_current = models.BooleanField(
-        default=True, help_text='Does local state match central state?')
-    os = models.ForeignKey(
-        Software, on_delete=models.PROTECT, null=True, blank=True, limit_choices_to={
-            'os': True},
-        verbose_name='operating system')
-    location = models.ForeignKey(
-        Location, on_delete=models.PROTECT, null=True, blank=True,
-        help_text='Physical location')
-
-    def __str__(self):
-        return '{}:{} ({})'.format(
-            self.get_device_type_display(), self.name, self.cost_centre)
-
-    class Meta:
-        unique_together = ('computer', 'mobile')
-        ordering = ('name', '-device_type')
-        verbose_name_plural = 'hardware'
-
-
-@python_2_unicode_compatible
 class UserGroup(models.Model):
     """A model to represent an arbitrary group of users for an IT System.
     E.g. 'All department staff', 'External govt agency staff', etc.
@@ -118,7 +82,7 @@ class UserGroup(models.Model):
 @python_2_unicode_compatible
 class ITSystemHardware(models.Model):
     """A model to represent the relationship between an IT System and a
-    Hardware entity.
+    Computer.
     """
     ROLE_CHOICES = (
         (1, 'Application server'),
@@ -126,7 +90,8 @@ class ITSystemHardware(models.Model):
         (3, 'Network file storage'),
         (4, 'Reverse proxy'),
     )
-    computer = models.ForeignKey(Computer, blank=True, null=True, on_delete=models.PROTECT)
+    computer = models.ForeignKey(
+        Computer, blank=True, null=True, on_delete=models.PROTECT)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
 
     class Meta:
