@@ -7,8 +7,8 @@ from six import BytesIO
 import unicodecsv
 from .models import (
     UserGroup, ITSystemHardware, ITSystem, ITSystemDependency,
-    ITSystemVendor, Backup, BusinessService, BusinessFunction,
-    BusinessProcess, ProcessITSystemRelationship)
+    Backup, BusinessService, BusinessFunction, BusinessProcess,
+    ProcessITSystemRelationship)
 
 
 @register(UserGroup)
@@ -170,12 +170,6 @@ class ITSystemDependencyAdmin(VersionAdmin):
     list_display = ('itsystem', 'dependency', 'criticality')
     list_filter = ('criticality',)
     search_fields = ('itsystem__name', 'dependency__name')
-
-
-@register(ITSystemVendor)
-class ITSystemVendorAdmin(VersionAdmin):
-    list_display = ('itsystem', 'vendor')
-    search_fields = ('itsystem__name', 'vendor__name')
 
 
 @register(Backup)

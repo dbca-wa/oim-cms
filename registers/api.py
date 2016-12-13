@@ -4,7 +4,7 @@ from django.conf import settings
 import itertools
 from oim_cms.utils import CSVDjangoResource
 
-from .models import ITSystem, ITSystemDependency, ITSystemVendor
+from .models import ITSystem, ITSystemDependency
 
 
 class ITSystemResource(CSVDjangoResource):
@@ -158,10 +158,6 @@ class ITSystemResource(CSVDjangoResource):
             'legal_need_to_retain': 'Unknown' if data.legal_need_to_retain is None else data.legal_need_to_retain,
             'other_projects': data.other_projects,
             'sla': data.sla,
-            'vendors': [{
-                'vendor__name': i.vendor.name,
-                'description': i.description,
-            } for i in ITSystemVendor.objects.filter(itsystem=data)],
         }
         return prepped
 

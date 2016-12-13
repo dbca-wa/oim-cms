@@ -8,7 +8,6 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 
-from assets.models import Vendor
 from organisation.models import DepartmentUser
 from tracking.models import CommonFields, Computer
 
@@ -43,25 +42,6 @@ class ChoiceArrayField(ArrayField):
         }
         defaults.update(kwargs)
         return super(ArrayField, self).formfield(**defaults)
-
-
-@python_2_unicode_compatible
-class Software(models.Model):
-    """A model to represent a discrete unit of software (OS, runtime, etc.)
-    """
-    name = models.CharField(max_length=2048, unique=True)
-    url = models.CharField(max_length=2000, null=True, blank=True)
-    os = models.BooleanField(
-        default=False,
-        verbose_name='OS',
-        help_text='Software is an operating system?')
-
-    class Meta:
-        verbose_name_plural = 'software'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
 
 
 @python_2_unicode_compatible
@@ -393,32 +373,6 @@ class ITSystemDependency(models.Model):
     def __str__(self):
         return '{} - {} ({})'.format(
             self.itsystem.name, self.dependency.name, self.get_criticality_display())
-
-
-@python_2_unicode_compatible
-class ITSystemVendor(models.Model):
-    """A model to represent the vendor/SME who provides or supports an IT
-    System, as well as details of that vendor's support arrangements.
-    """
-    itsystem = models.ForeignKey(
-        ITSystem, on_delete=models.PROTECT, verbose_name='IT System',
-        help_text='The IT System')
-    vendor = models.ForeignKey(
-        Vendor, on_delete=models.PROTECT,
-        help_text='The vendor of the IT System')
-    description = models.TextField(
-        null=True, blank=True,
-        help_text='''A description of the support and service arrangements'''
-        ''' provided by this vendor for the IT System. This should include'''
-        ''' details of the procedure for obtaining support.''')
-
-    class Meta:
-        verbose_name = 'IT System vendor'
-        unique_together = ('itsystem', 'vendor')
-        ordering = ('itsystem__name', 'vendor__name')
-
-    def __str__(self):
-        return '{}: {}'.format(self.itsystem.name, self.vendor.name)
 
 
 @python_2_unicode_compatible

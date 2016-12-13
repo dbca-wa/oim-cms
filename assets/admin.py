@@ -13,19 +13,24 @@ from .models import Vendor, Invoice, SoftwareLicense, HardwareModel, HardwareAss
 
 @register(Vendor)
 class VendorAdmin(VersionAdmin):
-    pass
+    list_display = ('name', 'website')
+    search_fields = ('name', 'details', 'account_rep', 'website')
 
 
 @register(Invoice)
 class InvoiceAdmin(VersionAdmin):
-    pass
+    date_hierarchy = 'date'
+    list_display = ('job_number', 'vendor', 'vendor_ref', 'date', 'total_value')
+    list_filter = ('vendor',)
+    search_fields = (
+        'vendor__name', 'vendor_ref', 'job_number', 'etj_number', 'notes')
 
 
 @register(SoftwareLicense)
 class SoftwareLicenseAdmin(VersionAdmin):
     list_display = ('name', 'vendor', 'oss')
     list_filter = ('oss', 'vendor')
-    search_fields = ('name', 'url', 'support', 'support_url', 'vendor')
+    search_fields = ('name', 'url', 'support', 'support_url', 'vendor__name')
     raw_id_fields = ('org_unit', 'primary_user')
 
 
