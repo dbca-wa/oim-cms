@@ -75,7 +75,9 @@ class Asset(CommonFields):
 
 @python_2_unicode_compatible
 class SoftwareLicense(CommonFields):
-    """Represents a software licensing arrangement.
+    """Represents a software licensing arrangement. A licence for software may
+    be obtained from a separate vendor than the one that creates the software
+    (e.g. a supplier of COTS software).
     """
     name = models.CharField(max_length=256, unique=True)
     url = models.URLField(max_length=2000, null=True, blank=True)

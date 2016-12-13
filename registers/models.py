@@ -1,5 +1,5 @@
 from __future__ import unicode_literals, absolute_import
-from datetime import timedelta, datetime
+from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib.postgres.fields import ArrayField
@@ -8,9 +8,8 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 
-from assets.models import Vendor
-from organisation.models import DepartmentUser, Location
-from tracking.models import CommonFields, Computer, Mobile
+from organisation.models import DepartmentUser
+from tracking.models import CommonFields, Computer
 
 
 CRITICALITY_CHOICES = (
@@ -46,62 +45,6 @@ class ChoiceArrayField(ArrayField):
 
 
 @python_2_unicode_compatible
-class Software(models.Model):
-    """A model to represent a discrete unit of software (OS, runtime, etc.)
-    """
-    name = models.CharField(max_length=2048, unique=True)
-    url = models.CharField(max_length=2000, null=True, blank=True)
-    os = models.BooleanField(
-        default=False,
-        verbose_name='OS',
-        help_text='Software is an operating system?')
-
-    class Meta:
-        verbose_name_plural = 'software'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
-
-
-@python_2_unicode_compatible
-class Hardware(CommonFields):
-    """Represents additional metadata related to a unit of tracked computing
-    hardware.
-    """
-    device_type = models.PositiveSmallIntegerField(choices=(
-        (1, 'Network'), (2, 'Mobile'), (3, 'Domain PC'), (4, 'Hostname')))
-    computer = models.OneToOneField(
-        Computer, null=True, editable=False)
-    mobile = models.OneToOneField(Mobile, null=True, editable=False)
-    username = models.CharField(max_length=128, null=True, editable=False)
-    email = models.CharField(max_length=512, null=True, editable=False)
-    ipv4 = models.TextField(default='', editable=False)
-    ports = models.TextField(default='', editable=False)
-    name = models.CharField(max_length=2048, unique=True, editable=False)
-    serials = models.TextField(null=True, editable=False)
-    local_info = models.TextField(null=True, editable=False)
-    local_current = models.BooleanField(
-        default=True, help_text='Does local state match central state?')
-    os = models.ForeignKey(
-        Software, on_delete=models.PROTECT, null=True, blank=True, limit_choices_to={
-            'os': True},
-        verbose_name='operating system')
-    location = models.ForeignKey(
-        Location, on_delete=models.PROTECT, null=True, blank=True,
-        help_text='Physical location')
-
-    def __str__(self):
-        return '{}:{} ({})'.format(
-            self.get_device_type_display(), self.name, self.cost_centre)
-
-    class Meta:
-        unique_together = ('computer', 'mobile')
-        ordering = ('name', '-device_type')
-        verbose_name_plural = 'hardware'
-
-
-@python_2_unicode_compatible
 class UserGroup(models.Model):
     """A model to represent an arbitrary group of users for an IT System.
     E.g. 'All department staff', 'External govt agency staff', etc.
@@ -119,7 +62,7 @@ class UserGroup(models.Model):
 @python_2_unicode_compatible
 class ITSystemHardware(models.Model):
     """A model to represent the relationship between an IT System and a
-    Hardware entity.
+    Computer.
     """
     ROLE_CHOICES = (
         (1, 'Application server'),
@@ -127,20 +70,17 @@ class ITSystemHardware(models.Model):
         (3, 'Network file storage'),
         (4, 'Reverse proxy'),
     )
-    host = models.ForeignKey(Hardware, on_delete=models.PROTECT)
+    computer = models.ForeignKey(
+        Computer, blank=True, null=True, on_delete=models.PROTECT)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
 
     class Meta:
         verbose_name_plural = 'IT System hardware'
-        unique_together = ('host', 'role')
-        ordering = ('host__name',)
+        unique_together = ('computer', 'role')
+        ordering = ('computer__hostname',)
 
     def __str__(self):
-        return '{} ({})'.format(self.host.name, self.role)
-
-    @property
-    def hostname(self):
-        return self.host.name.lower()
+        return '{} ({})'.format(self.computer.hostname, self.role)
 
 
 @python_2_unicode_compatible
@@ -277,9 +217,6 @@ class ITSystem(CommonFields):
         help_text='URL to schema diagram')
     user_groups = models.ManyToManyField(
         UserGroup, blank=True, help_text='User group(s) that use this IT System')
-    softwares = models.ManyToManyField(
-        Software, blank=True, verbose_name='software',
-        help_text='Software that is used to provide this IT System')
     hardwares = models.ManyToManyField(
         ITSystemHardware, blank=True, verbose_name='hardware',
         help_text='Hardware that is used to provide this IT System')
@@ -439,32 +376,6 @@ class ITSystemDependency(models.Model):
 
 
 @python_2_unicode_compatible
-class ITSystemVendor(models.Model):
-    """A model to represent the vendor/SME who provides or supports an IT
-    System, as well as details of that vendor's support arrangements.
-    """
-    itsystem = models.ForeignKey(
-        ITSystem, on_delete=models.PROTECT, verbose_name='IT System',
-        help_text='The IT System')
-    vendor = models.ForeignKey(
-        Vendor, on_delete=models.PROTECT,
-        help_text='The vendor of the IT System')
-    description = models.TextField(
-        null=True, blank=True,
-        help_text='''A description of the support and service arrangements'''
-        ''' provided by this vendor for the IT System. This should include'''
-        ''' details of the procedure for obtaining support.''')
-
-    class Meta:
-        verbose_name = 'IT System vendor'
-        unique_together = ('itsystem', 'vendor')
-        ordering = ('itsystem__name', 'vendor__name')
-
-    def __str__(self):
-        return '{}: {}'.format(self.itsystem.name, self.vendor.name)
-
-
-@python_2_unicode_compatible
 class Backup(CommonFields):
     """Represents the details of backup & recovery arrangements for a single
     piece of computing hardware.
@@ -494,11 +405,9 @@ class Backup(CommonFields):
         (3, 'Daily, 30 day retention'),
         (4, 'Weekly, 1 month retention')
     )
-    system = models.OneToOneField(Hardware)
+    computer = models.ForeignKey(
+        Computer, on_delete=models.PROTECT, null=True, blank=True)
     operating_system = models.CharField(max_length=120)
-    parent_host = models.ForeignKey(
-        Hardware, on_delete=models.PROTECT, null=True, blank=True,
-        related_name='host')
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=0)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=0)
@@ -549,11 +458,14 @@ class Backup(CommonFields):
         return self.next_test_date() < timezone.now().date()
 
     def __str__(self):
-        return '{} ({})'.format(self.system.name.split(
-            '.')[0], self.get_status_display())
+        if self.computer:
+            return '{} ({})'.format(self.computer.hostname.split(
+                '.')[0], self.get_status_display())
+        else:
+            return self.get_status_display()
 
     class Meta:
-        ordering = ('system__name',)
+        ordering = ('computer__hostname',)
 
 
 @python_2_unicode_compatible
