@@ -5,7 +5,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import format_html
 from json2html import json2html
 
-from organisation.models import DepartmentUser, OrgUnit, CostCentre
+from organisation.models import DepartmentUser, OrgUnit, CostCentre, Location
 
 
 class CommonFields(models.Model):
@@ -85,9 +85,12 @@ class Computer(CommonFields):
     # Notes field to store validation results from synchronising
     # user-uploaded local property register spreadsheets.
     validation_notes = models.TextField(null=True, blank=True)
+    location = models.ForeignKey(
+        Location, on_delete=models.PROTECT, null=True, blank=True,
+        help_text='Physical location')
 
     def __str__(self):
-        return self.sam_account_name
+        return self.hostname
 
 
 @python_2_unicode_compatible

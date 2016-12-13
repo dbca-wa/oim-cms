@@ -2,12 +2,9 @@ from __future__ import unicode_literals, absolute_import
 from babel.dates import format_timedelta
 from django.conf import settings
 import itertools
-import json
 from oim_cms.utils import CSVDjangoResource
-from restless.dj import DjangoResource
-from restless.resources import skip_prepare
 
-from .models import ITSystem, Hardware, ITSystemDependency, ITSystemVendor
+from .models import ITSystem, ITSystemDependency
 
 
 class ITSystemResource(CSVDjangoResource):
@@ -80,18 +77,20 @@ class ITSystemResource(CSVDjangoResource):
             'vulnerability_docs': data.vulnerability_docs,
             'workaround': data.workaround,
             'recovery_docs': data.recovery_docs,
-            'bh_support': {'name': data.bh_support.name, 'email': data.bh_support.email, 'telephone': data.bh_support.telephone} if data.bh_support else {},
-            'ah_support': {'name': data.ah_support.name, 'email': data.ah_support.email, 'telephone': data.ah_support.telephone} if data.ah_support else {},
+            'bh_support': {
+                'name': data.bh_support.name,
+                'email': data.bh_support.email,
+                'telephone': data.bh_support.telephone} if data.bh_support else {},
+            'ah_support': {
+                'name': data.ah_support.name,
+                'email': data.ah_support.email,
+                'telephone': data.ah_support.telephone} if data.ah_support else {},
             'availability': data.availability_display or '',
             'status_display': data.status_display or '',
             'criticality': data.criticality_display or '',
             'mtd': format_timedelta(data.mtd),
             'rto': format_timedelta(data.rto),
             'rpo': format_timedelta(data.rpo),
-            'softwares': [{
-                'name': i.name,
-                'url': i.url,
-            } for i in data.softwares.all()],
             'hardwares': [{
                 'host': i.host.name,
                 'role': i.get_role_display(),
@@ -159,10 +158,6 @@ class ITSystemResource(CSVDjangoResource):
             'legal_need_to_retain': 'Unknown' if data.legal_need_to_retain is None else data.legal_need_to_retain,
             'other_projects': data.other_projects,
             'sla': data.sla,
-            'vendors': [{
-                'vendor__name': i.vendor.name,
-                'description': i.description,
-            } for i in ITSystemVendor.objects.filter(itsystem=data)],
         }
         return prepped
 
@@ -182,45 +177,3 @@ class ITSystemResource(CSVDjangoResource):
 
     def list(self):
         return list(self.list_qs())
-
-
-class HardwareResource(DjangoResource):
-    VALUES_ARGS = (
-        "email", "date_updated",
-        "computer__hostname",
-        "local_info",
-        "local_current")
-
-    def is_authenticated(self):
-        return True
-
-    @skip_prepare
-    def list(self):
-        FILTERS = {"computer__isnull": False, "local_info__isnull": False}
-        # Only return production apps
-        if "hostname" in self.request.GET:
-            FILTERS["computer__hostname__istartswith"] = self.request.GET[
-                "hostname"]
-        if self.request.GET.get("local_current", "").lower() == "false":
-            FILTERS["local_current"] = False
-        data = list(Hardware.objects.filter(
-            **FILTERS).values(*self.VALUES_ARGS))
-        for row in data:
-            row.update(json.loads(row["local_info"]))
-        return data
-
-    @skip_prepare
-    def create(self):
-        computer = Hardware.objects.get(
-            computer__hostname__istartswith=self.data["hostname"])
-        local_info = json.dumps(self.data)
-        computer.local_info = local_info
-        computer.local_current = self.data.get("local_current", False)
-        computer.save()
-        data = list(
-            Hardware.objects.filter(
-                pk=computer.pk).values(
-                *
-                self.VALUES_ARGS))[0]
-        data.update(json.loads(data["local_info"]))
-        return data

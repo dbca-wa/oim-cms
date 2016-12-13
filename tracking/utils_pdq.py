@@ -24,10 +24,7 @@ def csv_data(csv_path, skip_header=True):
 
 def pdq_load_computers():
     """Update the database with Computer information from PDQ Inventory.
-    Also create matching Hardware objects in the register application, if
-    required.
     """
-    from registers.models import Hardware
     logger = logger_setup('pdq_load_computers')
     logger_ex = logger_setup('exceptions_pdq_load_computers')
     update_time = timezone.now()
@@ -96,16 +93,6 @@ def pdq_load_computers():
             computer.date_pdq_updated = update_time
             computer.save()
             logger.info('Computer {} updated from PDQ Inventory scan data'.format(computer))
-            try:
-                hw = computer.hardware
-            except Hardware.DoesNotExist:
-                # Check if the host already exists.
-                if Hardware.objects.filter(name__icontains=computer.hostname).exists():
-                    hw = Hardware.objects.get(name__icontains=computer.hostname)
-                    hw.computer = computer
-                    hw.save()
-                else:
-                    hw = Hardware.objects.create(device_type=3, computer=computer, name=computer.hostname)
         except Exception as e:
             logger_ex.error('Error while loading computers from PDQ')
             logger_ex.info(row)
