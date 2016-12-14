@@ -6,7 +6,6 @@ from django.views.generic import TemplateView
 import json
 from registers.models import ITSystem
 from organisation.models import DepartmentUser
-from organisation.Groups import groupCheck
 
 
 class AddressBook(TemplateView):
@@ -19,6 +18,13 @@ class UserAccounts(TemplateView):
 # ==================================================
 # Legacy views below.
 # ==================================================
+
+
+def groupCheck(request, groupname):
+    for group in request.user.groups.all():
+        if group.name == groupname:
+            return True
+    return False
 
 
 def itsystemreq(request):
