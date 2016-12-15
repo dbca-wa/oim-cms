@@ -92,13 +92,10 @@ class ITSystemResource(CSVDjangoResource):
             'rto': format_timedelta(data.rto),
             'rpo': format_timedelta(data.rpo),
             'hardwares': [{
-                'host': i.host.name,
+                'computer': i.computer.hostname,
                 'role': i.get_role_display(),
-                'host__location': i.host.location.name if i.host.location else '',
-                'operating_system': i.host.os.name if i.host.os else '',
-                'operating_system__url': i.host.os.url if i.host.os else '',
-                'backup': i.host.backup.get_os_schedule_display() if (hasattr(i, 'host.backup') and i.host.backup) else '',
-                'backup_test_date': i.host.backup.last_tested.isoformat() if (hasattr(i, 'host.backup') and i.host.backup and i.host.backup.last_tested) else '',
+                'computer__location': i.computer.location.name if i.computer.location else '',
+                'operating_system': i.computer.os_name if i.computer.os_name else '',
 
             } for i in data.hardwares.all()],
             'processes': [{
