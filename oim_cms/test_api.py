@@ -431,6 +431,13 @@ class ITSystemResourceTestCase(ApiTestCase):
         self.assertContains(response, self.it1.name)
         self.assertNotContains(response, self.it2.name)
 
+    def test_detail(self):
+        """Test the ITSystemResource detail response
+        """
+        url = '/api/itsystems/{}/'.format(self.it1.system_id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
 
 class FreshdeskTicketResourceTestCase(ApiTestCase):
 
