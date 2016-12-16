@@ -70,8 +70,7 @@ class ITSystemHardware(models.Model):
         (3, 'Network file storage'),
         (4, 'Reverse proxy'),
     )
-    computer = models.ForeignKey(
-        Computer, blank=True, null=True, on_delete=models.PROTECT)
+    computer = models.ForeignKey(Computer, on_delete=models.PROTECT)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
 
     class Meta:
