@@ -8,8 +8,8 @@ import json
 from uuid import uuid1
 
 from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
-from registers.models import ITSystem
-from tracking.models import FreshdeskTicket, FreshdeskContact
+from registers.models import ITSystem, ITSystemHardware, ITSystemDependency
+from tracking.models import FreshdeskTicket, FreshdeskContact, Computer
 
 
 def random_dpaw_email():
@@ -75,9 +75,23 @@ class ApiTestCase(TestCase):
         self.shared.org_unit = self.div1
         self.shared.cost_centre = self.cc1
         self.shared.save()
+        # Generate some computers.
+        self.com1 = mixer.blend(Computer, location=mixer.SELECT)
+        self.com2 = mixer.blend(Computer, location=mixer.SELECT)
+        # Generate some ITSystemHardware objects.
+        self.itsh1 = mixer.blend(ITSystemHardware, computer=self.com1)
+        self.itsh2 = mixer.blend(ITSystemHardware, computer=self.com2)
         # Generate some IT Systems.
         self.it1 = mixer.blend(ITSystem, status=0, owner=self.user1)
         self.it2 = mixer.blend(ITSystem, status=1, owner=self.user2)
+        self.it3 = mixer.blend(ITSystem, status=1, owner=self.user2)
+        # Add hardware to the IT Systems.
+        self.it1.hardwares.add(self.itsh1)
+        self.it2.hardwares.add(self.itsh2)
+        self.it3.hardwares.add(self.itsh2)
+        # Create a system dependency.
+        self.dep1 = mixer.blend(
+            ITSystemDependency, itsystem=self.it3, dependency=self.it2)
         # Generate a test user for endpoint responses.
         self.testuser = User.objects.create_user(
             username='testuser', email='user@dpaw.wa.gov.au.com', password='pass')
@@ -402,7 +416,9 @@ class ITSystemResourceTestCase(ApiTestCase):
         self.assertEqual(response.status_code, 200)
         # The 'development' IT system won't be in the response.
         self.assertNotContains(response, self.it2.name)
-        # Test all request parameter.
+        # The ITSystemHardware computer hostname will be present.
+        self.assertContains(response, self.com1.hostname)
+        # Test 'all' request parameter.
         url = '/api/itsystems/?all'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
