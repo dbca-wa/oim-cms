@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, absolute_import
 from babel.dates import format_timedelta
 from django.conf import settings
+from django.conf.urls import url
 import itertools
 from oim_cms.utils import CSVDjangoResource
 
@@ -158,6 +159,16 @@ class ITSystemResource(CSVDjangoResource):
         }
         return prepped
 
+    @classmethod
+    def urls(self, name_prefix=None):
+        """Override the DjangoResource ``urls`` class method so the detail view
+        accepts a System ID parameter instead of PK.
+        """
+        return [
+            url(r'^$', self.as_list(), name=self.build_url_name('list', name_prefix)),
+            url(r'^(?P<system_id>[\w\d]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
+        ]
+
     def list_qs(self):
         # Only return production apps
         FILTERS = {"status": 0}
@@ -174,3 +185,8 @@ class ITSystemResource(CSVDjangoResource):
 
     def list(self):
         return list(self.list_qs())
+
+    def detail(self, system_id):
+        """Detail view for a single ITSystem object.
+        """
+        return ITSystem.objects.get(system_id=system_id)
