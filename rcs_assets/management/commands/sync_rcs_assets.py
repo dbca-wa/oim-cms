@@ -7,8 +7,8 @@ from time import sleep
 #from tracking.utils import logger_setup
 #from rcs_assets.models import FsComAssets, FsComManufacturerModels, FsComManufacturers
 from rcs_assets.models import *
-from assets.models import HardwareAsset, Vendor, HardwareModel, Suppliers, HardwareAssetExtra
-from organisation.models import Location
+from assets.models import HardwareAsset, Vendor, HardwareModel, Suppliers, HardwareAssetExtra, VehicleDetails
+from organisation.models import Location, DepartmentUser
 import confy
 from confy import env, database, cache
 from django.core import serializers
@@ -16,6 +16,8 @@ from django.core import serializers
 import smtplib
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
+import types
+import inspect
 
 class Command(BaseCommand):
     help = 'Sync RCS assets from the rcs asset system into OIM.'
@@ -28,7 +30,65 @@ class Command(BaseCommand):
 		if env("ERROR_REPORTS_EMAIL"):
 			ErrorReportEmail = env("ERROR_REPORTS_EMAIL")
 
-		print "DEBUG Notification Email Address:"+ErrorReportEmail
+		print "DEBUG Notification Email Address: "+ErrorReportEmail
+
+		VechInfo = FsVehicleDetails.objects.all()
+		for VeIn in VechInfo:
+			print "Checking for Vehicle: "+str(VeIn.vehicle_id)
+			try:
+				VD = VehicleDetails.objects.get(vehicle_id=VeIn.vehicle_id)
+				VD.rego = VeIn.rego
+				VD.make = VeIn.make_desc
+				VD.model = VeIn.model_desc
+				VD.kms = VeIn.kms
+				VD.light_flag = VeIn.light_flag
+				VD.category = VeIn.category_desc
+				VD.rate = VeIn.rate
+				VD.default_job_id = VeIn.default_job_id
+				VD.month_cost = VeIn.month_cost
+				VD.status_flag = VeIn.status_flag
+				VD.cost_centre = VeIn.cost_centre
+				VD.manufactured_month_year = VeIn.manufactured_mth_yr
+				VD.engine_no = VeIn.engine_no
+				VD.diesel_engine = VeIn.diesel_flag
+				VD.automatic_engine = VeIn.automatic_flag
+				VD.tare = VeIn.tare
+				VD.gcm = VeIn.gcm
+				VD.serial_chassis_no = VeIn.serial_chassis_no
+				VD.date_deleted = VeIn.delete_date
+				VD.comments = VeIn.comments
+				VD.comments2 = VeIn.comments2
+				VD.comments3 = VeIn.comments3
+				VD.location = VeIn.location
+				VD.save()
+			except:
+				VehicleDetails.objects.create(
+						vehicle_id = VeIn.vehicle_id,
+               			rego = VeIn.rego,
+		                make = VeIn.make_desc,
+        		        model = VeIn.model_desc,
+		                kms = VeIn.kms,
+        		        light_flag = VeIn.light_flag,
+		                category = VeIn.category_desc,
+		                rate = VeIn.rate,
+		                default_job_id = VeIn.default_job_id,
+		                month_cost = VeIn.month_cost,
+		                status_flag = VeIn.status_flag,
+	    	            cost_centre = VeIn.cost_centre,
+		                manufactured_month_year = VeIn.manufactured_mth_yr,
+		                engine_no = VeIn.engine_no,
+	    	            diesel_engine = VeIn.diesel_flag,
+    	        	    automatic_engine = VeIn.automatic_flag,
+            	    	tare = VeIn.tare,
+						gcm = VeIn.gcm,
+    		            serial_chassis_no = VeIn.serial_chassis_no,
+        		        date_deleted = VeIn.delete_date,
+            		    comments = VeIn.comments,
+                		comments2 = VeIn.comments2,
+		                comments3 = VeIn.comments3,
+    		            location = VeIn.location	
+				)
+
 
 #		ErrorReportEmail = 'jason.moore@dpaw.wa.gov.au'
 		venList = {}
@@ -170,8 +230,8 @@ class Command(BaseCommand):
 #			print "============================";
 
 			#print fscomasset.extra_data
-			if fscomasset.dec_asset_no is None: 
-				fscomasset.dec_asset_no = "NOTAG"+str(fscomasset.ast_id)
+#			if fscomasset.dec_asset_no is None:
+				#				fscomasset.dec_asset_no = "NOTAG"+str(fscomasset.ast_id)
 			#print "Working"
 			assetexists = 'no'
 			try:
@@ -183,8 +243,8 @@ class Command(BaseCommand):
 				getAssetInfo.date_updated = fscomasset.date_modified
 				getAssetInfo.date_purchased = fscomasset.purchase_date
 				getAssetInfo.purchased_value = fscomasset.purchase_price_ex_gst
-				getAssetInfo.asset_tag = fscomasset.dec_asset_no
-				getAssetInfo.finance_asset_tag = fscomasset.dec_serial_no
+				getAssetInfo.asset_tag = fscomasset.dec_serial_no
+				getAssetInfo.finance_asset_tag = fscomasset.dec_asset_no
 				getAssetInfo.status = fscomasset.denorm_asy.name
 				getAssetInfo.serial = fscomasset.manufacturer_serial_no
 				getAssetInfo.hardware_model_id = assetModelList[fscomasset.mod_id]
@@ -256,8 +316,8 @@ class Command(BaseCommand):
 						date_updated = fscomasset.date_modified,
 						date_purchased = fscomasset.purchase_date,
 						purchased_value = fscomasset.purchase_price_ex_gst,
-						asset_tag = fscomasset.dec_asset_no,
-						finance_asset_tag = fscomasset.dec_serial_no,
+						asset_tag = fscomasset.dec_serial_no,
+						finance_asset_tag = fscomasset.dec_asset_no,
 						status = fscomasset.denorm_asy.name,
 						serial = fscomasset.manufacturer_serial_no,
 						hardware_model_id = assetModelList[fscomasset.mod_id],
@@ -318,11 +378,6 @@ class Command(BaseCommand):
 			# GET 2WAYSATS
 			try:
 				ComSat = FsComAsset2WaySats.objects.get(ast_id=hwe.rsid)
-				print ComSat.sat_id
-				print "ASSET"
-				print hwe.id
-				print ComSat.service_provider
-				print ComSat.service_plan
 				try:
 					oimAssetExtra = HardwareAssetExtra.objects.get(ha_id=hwe.id)
 					oimAssetExtra.comms_type = ComSat.sat_type
@@ -336,7 +391,7 @@ class Command(BaseCommand):
 					#                   itdoesnot = "DOES NOT EXIST"
 #               HardwareAsset.objects.get(id=hwe.id)
 			except FsComAsset2WaySats.DoesNotExist:
-				itdoesnot = "DOES NOT EXIST"
+					doesexist = "no"
 
 			#SimInfo = FsComAssetSimCards.objects.get(ast_id=hwe.rsid)
 			# GET SIM INFO
@@ -381,7 +436,7 @@ class Command(BaseCommand):
 						)
 
 			except FsComAssetSimCards.DoesNotExist:
-				print "DOSE NOT EXIST"
+					doseexist = "no"
 
             # GET Asset VEHC DRIVERS
 			try:
@@ -397,6 +452,7 @@ class Command(BaseCommand):
 					oimAssetExtra.account_pin = VehcTrackInfo.account_pin
 					oimAssetExtra.date_modified = VehcTrackInfo.date_modified
 					oimAssetExtra.date_created = VehcTrackInfo.date_created
+					oimAssetExtra.vtd_id = VehcTrackInfo.vtd_id
 					oimAssetExtra.save()
 				except:
 					HardwareAssetExtra.objects.create(ha_id = hwe.id,
@@ -407,13 +463,39 @@ class Command(BaseCommand):
 							account_number = VehcTrackInfo.account_number,
 							account_pin = VehcTrackInfo.account_pin,
 							date_modified = VehcTrackInfo.date_modified,
-							date_created = VehcTrackInfo.date_created
+							date_created = VehcTrackInfo.date_created,
+							vtd_id = VehcTrackInfo.vtd_id
 						)
-					print "Creating"
-					print hwe.id
+					print "Creating Record"+str(hwe.id)
 			except FsComAssetVehcTrackDevs.DoesNotExist:
-				print "VEHC DOSE NOT EXIST"
-                                                                        
+					doseexist = "no"	
 
 
+		AssetLocsAll = FsComAssetLocations.objects.all()
+		for ALA in AssetLocsAll:
+			DeUsid = None
+			if isinstance(ALA.dec_contact_emp_no, FsResPeople):
+					employee_id = '{:06d}'.format(ALA.dec_contact_emp_no.emp_no)
 
+					try:
+						DeUs = DepartmentUser.objects.get(employee_id = employee_id )
+						DeUsid = DeUs.id
+					except DepartmentUser.DoesNotExist:
+						doesnotexist = 'yes'
+
+			try:
+				doesexist = 'yes'
+				oimAsset = HardwareAsset.objects.get(rsid=ALA.ast_id)
+				print "Updating Assigned User for "+str(ALA.ast_id)
+				oimAsset.assigned_user_id = DeUsid
+				oimAsset.save()
+			except:
+				doesexist = 'no'
+			try:
+				oimAssetExtra = HardwareAssetExtra.objects.get(ha_id=oimAsset.id)
+				oimAssetExtra.vehicle_id = ALA.vehicle_id
+				oimAssetExtra.save()
+			except:
+				HardwareAssetExtra.objects.create(ha_id = oimAsset.id,
+							vehicle_id = ALA.vehicle_id
+						)

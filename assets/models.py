@@ -266,8 +266,8 @@ class HardwareAsset(Asset):
 		('Stolen','Stolen'),
 		('Location unknown','Location unknown'),
 		('Invalid','Invalid')
-
     )
+
     asset_tag = models.CharField(max_length=10, unique=True)
     finance_asset_tag = models.CharField(
         max_length=10, null=True, blank=True,
@@ -303,10 +303,39 @@ class HardwareAssetExtra(models.Model):
 	date_modified = models.DateField(default=datetime.now)
 	date_created = models.DateTimeField(default=datetime.now)
 	comms_type = models.CharField(max_length=100)
-
+	vtd_id = models.IntegerField(null=True, blank=True)
+	vehicle_id = models.IntegerField(null=True, blank=True)
+	
 	def __str__(self):
 		return self.asset_tag
 
+@python_2_unicode_compatible
+class VehicleDetails(models.Model):
+	vehicle_id = models.IntegerField(null=True, blank=True,unique=True)
+	rego = models.CharField(max_length=20, null=True, blank=True, help_text='Vehicle Registration')
+	make = models.CharField(max_length=120, null=True, blank=True, help_text='Vehicle Make')
+	model = models.CharField(max_length=120, null=True, blank=True, help_text='Vehicle Model')
+	kms = models.IntegerField(null=True, blank=True)
+	light_flag = models.NullBooleanField(default=None)
+	category = models.CharField(max_length=170, null=True, blank=True, help_text='Category')
+	rate = models.IntegerField(null=True, blank=True)
+	default_job_id = models.CharField(max_length=40, null=True, blank=True, help_text='JOB ID')
+	month_cost = models.IntegerField(null=True, blank=True)
+	status_flag = models.CharField(max_length=2, null=True, blank=True)
+	cost_centre = models.CharField(max_length=20, null=True, blank=True)
+	manufactured_month_year = models.DateField(null=True, blank=True)
+	engine_no = models.CharField(max_length=40, null=True, blank=True)
+	diesel_engine = models.NullBooleanField(default=None)
+	automatic_engine = models.NullBooleanField(default=None)
+	tare = models.IntegerField(null=True, blank=True)
+	gcm = models.IntegerField(null=True, blank=True)
+	serial_chassis_no = models.CharField(max_length=60, null=True, blank=True)
+	date_deleted = models.DateField(null=True, blank=True)
+	comments = models.CharField(max_length=120, null=True, blank=True)
+	comments2 = models.CharField(max_length=120, null=True, blank=True)
+	comments3 = models.CharField(max_length=120, null=True, blank=True)
+	location = models.CharField(max_length=120, null=True, blank=True)
 
-
+	def __str__(self):
+		return self.make
 
