@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, absolute_import
 from babel.dates import format_timedelta
 from django.conf import settings
+from django.conf.urls import url
 import itertools
 from oim_cms.utils import CSVDjangoResource
 
@@ -92,13 +93,10 @@ class ITSystemResource(CSVDjangoResource):
             'rto': format_timedelta(data.rto),
             'rpo': format_timedelta(data.rpo),
             'hardwares': [{
-                'host': i.host.name,
+                'computer': i.computer.hostname,
                 'role': i.get_role_display(),
-                'host__location': i.host.location.name if i.host.location else '',
-                'operating_system': i.host.os.name if i.host.os else '',
-                'operating_system__url': i.host.os.url if i.host.os else '',
-                'backup': i.host.backup.get_os_schedule_display() if (hasattr(i, 'host.backup') and i.host.backup) else '',
-                'backup_test_date': i.host.backup.last_tested.isoformat() if (hasattr(i, 'host.backup') and i.host.backup and i.host.backup.last_tested) else '',
+                'computer__location': i.computer.location.name if i.computer.location else '',
+                'operating_system': i.computer.os_name if i.computer.os_name else '',
 
             } for i in data.hardwares.all()],
             'processes': [{
@@ -161,6 +159,16 @@ class ITSystemResource(CSVDjangoResource):
         }
         return prepped
 
+    @classmethod
+    def urls(self, name_prefix=None):
+        """Override the DjangoResource ``urls`` class method so the detail view
+        accepts a System ID parameter instead of PK.
+        """
+        return [
+            url(r'^$', self.as_list(), name=self.build_url_name('list', name_prefix)),
+            url(r'^(?P<system_id>[\w\d]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
+        ]
+
     def list_qs(self):
         # Only return production apps
         FILTERS = {"status": 0}
@@ -177,3 +185,8 @@ class ITSystemResource(CSVDjangoResource):
 
     def list(self):
         return list(self.list_qs())
+
+    def detail(self, system_id):
+        """Detail view for a single ITSystem object.
+        """
+        return ITSystem.objects.get(system_id=system_id)

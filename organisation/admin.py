@@ -28,8 +28,10 @@ def delayed_save(obj):
 class DepartmentUserAdmin(ModelAdmin):
     list_display = [
         'email', 'employee_id', 'username', 'active', 'vip', 'executive',
-        'cost_centre', 'account_type', 'date_ad_updated']
-    list_filter = ['account_type', 'active', 'vip', 'executive', 'shared_account']
+        'cost_centre', 'account_type', 'o365_licence']
+    list_filter = [
+        'account_type', 'active', 'vip', 'executive', 'shared_account',
+        'o365_licence']
     search_fields = ['name', 'email', 'username', 'employee_id', 'preferred_name']
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
     filter_horizontal = [

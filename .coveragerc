@@ -1,12 +1,15 @@
 [report]
 omit =
     venv/*
-    venv2/*
     approvals/migrations/*
     assets/migrations/*
+    assets/import_history.py
+    assets/import_legacy.py
     catalogue/migrations/*
     core/migrations/*
     mudmap/migrations/*
     organisation/migrations/*
     registers/migrations/*
     tracking/migrations/*
+    tracking/utils_freshdesk.py
+    tracking/utils_pdq.py
