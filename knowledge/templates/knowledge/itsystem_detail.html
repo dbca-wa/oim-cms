@@ -1,0 +1,340 @@
+{% extends "knowledge/knowledge_base.html" %}
+
+{% block head_js %}
+{{ block.super }}
+<script src="//static.dpaw.wa.gov.au/static/libs/moment.js/2.9.0/moment.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div id="container"></div>
+</div>
+
+{# Handlebars.js template follows #}
+{% verbatim %}
+<script type="text/x-handlebars-template" id="itsystem-detail-template">
+    <div class="row medium-uncollapse large-collapse">
+        <div class="columns">
+            <h1>IT System Information: {{name}} ({{this.system_id}})</h1>
+            <h4>General information</h4>
+            {{#if description}}<p>{{description}}</p>{{/if}}
+            <table>
+                {{#if link}}
+                <tr><td>Link</td><td><a href="{{link}}" target="_blank">{{link}}</a></td></tr>
+                {{/if}}
+                {{#if system_type}}
+                <tr><td>System type</td><td>{{system_type}}</td></tr>
+                {{/if}}
+                <tr><td><abbr title="Accountable for the business process being supported by the application and is accountable for business continuity to meet the needs of the Department’s core services.">Business Owner</abbr></td><td>{{cost_centre__division__manager__name}} ({{cost_centre__division__name}}, cost centre {{cost_centre__code}})</td></tr>
+                <tr><td><abbr title="Person who is responsible for the business processes being supported by the IT system and is responsible for business continuity to meet the needs of the Department's core services or common services; including managing the provision of IT system contingency, incident and disaster recovery and end user guidance and training.">System Owner</abbr></td><td>{{owner__name}}</td></tr>
+                <tr><td><abbr title="Person who has the technical expertise to support the IT system and works with OIM to manage and maintain the system; including maintaining the technical documentation for the system.">System Custodian</abbr></td><td>{{custodian__name}}</td></tr>
+                <tr><td><abbr title="Person who has the expertise to support the confidentiality, integrity and accessibility of the digital content provisioned by the IT system; including requirements within the information security management framework.">Data Custodian</abbr></td><td>{{data_custodian__name}}</td></tr>
+                {{#if usergroups}}
+                <tr><td>User groups</td><td><ul>{{#each usergroups}}<li>{{this.name}}</li>{{/each}}</ul></td></tr>
+                {{/if}}
+               {{#if notes}}
+               <tr><td>Notes</td><td>{{notes}}</td></tr>
+               {{/if}}
+            </table>
+        </div>
+    </div>
+
+    <div class="row medium-uncollapse large-collapse">
+        <div class="columns">
+            <ul class="tabs" data-tabs id="detail-tabs">
+                <li class="tabs-title is-active"><a href="#support"><h5>Support information</h5></a></li>
+                <li class="tabs-title"><a href="#technical-info"><h5>Technical information</h5></a></li>
+                <li class="tabs-title"><a href="#contingency-plan"><h5>Contingency planning</h5></a></li>
+                <li class="tabs-title"><a href="#digital-content"><h5>Digital content</h5></a></li>
+                <li class="tabs-title"><a href="#history"><h5>History</h5></a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="row medium-uncollapse large-collapse">
+        <div class="columns">
+            <div class="tabs-content" data-tabs-content="detail-tabs">
+                <div class="tabs-panel is-active" id="support">
+                    {{#if system_reqs}}
+                    <h4>What do I need to access the system?</h4>
+                    <p>{{system_reqs}}</p>
+                    {{/if}}
+                    {{#if documentation}}
+                    <h4>How do I use the system?</h4>
+                    <p>User documentation is available online for this system at <a href="{{documentation}}" target="_blank">{{documentation}}</a></p>
+                    {{/if}}
+                    <h4>Who should I contact for support?</h4>
+                    <div class="callout secondary">
+                        <h5>During business hours:</h5>
+                        <ul class="no-bullet">
+                            {{#if bh_support.name}}
+                            <li><strong>Name:</strong> {{bh_support.name}}</li>
+                            <li><strong>Telephone:</strong> {{bh_support.telephone}}</li>
+                            <li><strong>Email:</strong> <a href="mailto:{{bh_support.email}}">{{bh_support.email}}</a></li>
+                            {{else}}
+                            <li><strong>Name:</strong> {{custodian__name}}, {{ custodian__title }}</li>
+                            <li><strong>Email:</strong> <a href="mailto:{{custodian__email}}">{{custodian__email}}</a></li>
+                            {{/if}}
+                        </ul>
+                    </div>
+                    {{#if ah_support.name}}
+                    <div class="callout secondary">
+                        <h5>Out of business hours:</h5>
+                        <ul class="no-bullet">
+                            <li><strong>Name:</strong> {{ah_support.name}}</li>
+                            <li><strong>Telephone:</strong> {{ah_support.telephone}}</li>
+                            <li><strong>Email:</strong> <a href="mailto:{{bh_support.email}}">{{ah_support.email}}</a></li>
+                        </ul>
+                    </div>
+                    {{/if}}
+                </div>
+                <div class="tabs-panel" id="technical-info">
+                    <table>
+                        {{#if technical_documentation}}
+                        <tr><td>Technical documentation</td><td><a href="{{technical_documentation}}">{{technical_documentation}}</a></td></tr>
+                        {{/if}}
+                        {{#if system_health}}
+                        <tr><td>System health</td><td><div
+                            {{#ifEqual this.system_health_rag 0}} class="label success"{{/ifEqual}}
+                            {{#ifEqual this.system_health_rag 1}} class="label warning"{{/ifEqual}}
+                            {{#ifEqual this.system_health_rag 2}} class="label alert"{{/ifEqual}}
+                            >{{system_health}}</div></td></tr>
+                        {{/if}}
+                        {{#if risks}}
+                        <tr><td>System risks</td><td><ul>{{#each risks}}<li>{{this}}</li>{{/each}}</ul></td></tr>
+                        {{/if}}
+                        <tr><td>Known vulnerabilities</td><td><a href="vulnerability_docs">{{vulnerability_docs}}</a></td></tr>
+                        {{#if authentication_display}}
+                        <tr><td>Authentication method</td><td>{{authentication_display}}</td>
+                        {{/if}}
+                    </table>
+                </div>
+
+                <div class="tabs-panel" id="contingency-plan">
+                    <p>This section provides useful information as well as detailed procedures to recover the IT System quickly and effectively following an outage.</p>
+                    <table>
+                        <tr><td><abbr title="An IT system is critical when one or multiple critical business processes are highly dependent on the availability of the system; there are no or limited workarounds available; and priority recovery procedures are required.">System criticality</abbr></td><td>
+                        {{#if criticality}}
+                        <div
+                            {{#ifEqual criticality 'Critical'}} class="label alert"><abbr title="The business process cannot continue without the IT system. None or limited workarounds are available.">{{criticality}}</abbr></div>{{/ifEqual}}
+                            {{#ifEqual criticality 'Moderate'}} class="label warning"><abbr title="The business processes can continue but are highly impacted without the IT system. Some workarounds are available but are only sustainable for a limited period of time.">{{criticality}}</abbr></div>{{/ifEqual}}
+                            {{#ifEqual criticality 'Low'}} class="label success"><abbr title="The business processes can continue without the IT system. Workarounds are available and can be used for an extended period of time.">{{criticality}}</abbr></div>{{/ifEqual}}
+                        {{else}}
+                        Not available.
+                        {{/if}}
+                        <tr><td>Contingency plan</td><td>
+                        {{#if contingency_plan_url}}<a href="{{contingency_plan_url}}">{{contingency_plan_url}}</a>
+                        {{else}}
+                        Not available.
+                        </td></tr>
+                        {{/if}}
+                        {{#if backup_info}}
+                        <tr><td>Backup information</td><td>{{backup_info}}</td></tr>
+                        {{/if}}
+                        </td></tr>
+                        {{#if hardwares}}
+                        <tr><td>Hardware location(s)</td><td><ul>{{#each hardwares}}<li>{{this.computer}} ({{this.computer__location}})</li>{{/each}}</ul></td></tr>
+                        {{/if}}
+                        {{#if critical_period}}
+                        <tr><td>Critical period</td><td>{{critical_period}}</td></tr>
+                        {{/if}}
+                        {{#if mtd}}
+                        <tr><td><abbr title="The MTD represents the total amount of time the business is willing to accept for a business process disruption and includes all impact considerations. Determining MTD is important because it could leave the recovery team with imprecise direction on (1) selection of an appropriate recovery method, and (2) the depth of detail, which will be required when developing recovery procedures, including their scope and content.">Maximum Tolerable Downtime (MTD)</abbr></td><td>{{mtd}}</td></tr>
+                        {{/if}}
+                        {{#if rto}}
+                        <tr><td><abbr title="The RTO is the maximum amount of time that the IT system can remain unavailable before there is an unacceptable impact on other system resources, supported business processes and the MTD. Determining the information system resource RTO is important for selecting appropriate technologies and recovery procedures that are best suited for meeting the MTD.">Recovery Time Objective (RTO)</abbr>
+                        </td><td>{{rto}}</td></tr>
+                        {{/if}}
+                        {{#if alt_processing}}
+                        <tr><td>Alternative processing procedure</td><td>{{alt_processing}}</td></tr>
+                        {{/if}}
+                        {{#if technical_recov}}
+                        <tr><td>Technical recovery procedure</td><td>{{technical_recov}}</td></tr>
+                        {{/if}}
+                        {{#if post_recovery}}
+                        <tr><td>Functional testing and post-recovery procedure</td><td>{{post_recovery}}</td></tr>
+                        {{/if}}
+                        {{#if variation_iscp}}
+                        <tr><td>Variation to the ISCP</td><td>{{variation_iscp}}</td></tr>
+                        {{/if}}
+                        {{#if user_notification}}
+                        <tr><td>User notifications</td><td>The following users and stakeholders should be informed about incidents involving this system: {{user_notification}}</td></tr>
+                        {{/if}}
+                        <tr><td>Number of users</td><td>
+                        {{#if user_count}}
+                        {{user_count}}
+                        {{else}}
+                        Not recorded
+                        {{/if}}
+                        </td></tr>
+                        {{#if function}}
+                        <tr><td>System function(s)</td><td><ul>{{#each function}}<li>{{this}}</li>{{/each}}</ul></td></tr>
+                        {{/if}}
+                        {{#if use}}
+                        <tr><td>System use(s)</td><td><ul>{{#each use}}<li>{{this}}</li>{{/each}}</ul></td></tr>
+                        {{/if}}
+                        {{#if capability}}
+                        <tr><td>System capabilities</td><td><ul>{{#each capability}}<li>{{this}}</li>{{/each}}</ul></td></tr>
+                        {{/if}}
+                    </table>
+
+                    <h4>Dependencies</h4>
+                    <p>
+                    {{#if dependencies}}This system depends on other IT Systems (see below). {{else}}This system does not depend on other IT Systems. {{/if}}
+                    {{#if dependants}}Other IT Systems depend on this system (see below).{{else}}No other IT Systems depend on this system.{{/if}}
+                    </p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <td>System</td>
+                                <td>Dependency</td>
+                                <td>Dependency criticality</td>
+                                <td>System custodian</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{#each dependencies}}
+                            <tr>
+                                <td><a href="/it-systems-register/it-system-information/?system_id={{this.dependency__system_id}}">{{this.dependency__name}} ({{this.dependency__system_id}})</a></td>
+                                <td>...is depended upon by this IT System</td>
+                                <td><span
+                                {{#ifEqual this.criticality 'Critical'}} class="label alert"{{/ifEqual}}
+                                {{#ifEqual this.criticality 'Moderate'}} class="label warning"{{/ifEqual}}
+                                {{#ifEqual this.criticality 'Low'}} class="label success"{{/ifEqual}}
+                                >{{ this.criticality }}</span></td>
+                                <td>{{this.custodian__name}}</td>
+                            </tr>
+                            {{/each}}
+                            {{#each dependants}}
+                            <tr>
+                            <td><a href="/it-systems-register/it-system-information/?system_id={{this.dependant__system_id}}">{{this.dependant__name}} ({{this.dependant__system_id}})</a></td>
+                            <td>...depends upon this IT System</td>
+                            <td><span
+                            {{#ifEqual this.criticality 'Critical'}} class="label alert"{{/ifEqual}}
+                            {{#ifEqual this.criticality 'Moderate'}} class="label warning"{{/ifEqual}}
+                            {{#ifEqual this.criticality 'Low'}} class="label success"{{/ifEqual}}
+                            >{{ this.criticality }}</span></td>
+                            </td>{{this.custodian__name}}</td>
+                            </tr>
+                            {{/each}}
+                        </tbody>
+                    </table>
+
+                    {{#if processes}}
+                    <h4>Business processes</h4>
+                    <p>{{name}} allows the Department to undertake the following business processes:</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <td>Process name</td>
+                                <td>Core service(s)</td>
+                                <td><abbr title="A business process is ranked critical when its disruption stops the continuous delivery of important business functions for one or more of the department's 8 core services.">Process criticality</abbr></td>
+                                <td>Process reliance on this system</td>
+                            </tr>
+
+                        </thead>
+                        <tbody>
+                            {{#each processes}}
+                            <tr>
+                                <td>{{this.process__name}}</td>
+                                <td>{{this.function__service}}</td>
+                                <td><span
+                                    {{#ifEqual this.process__criticality 'Critical'}} class="label alert"{{/ifEqual}}
+                                    {{#ifEqual this.process__criticality 'Moderate'}} class="label warning"{{/ifEqual}}
+                                    {{#ifEqual this.process__criticality 'Low'}} class="label success"{{/ifEqual}}
+                                    >{{this.process__criticality}}</span></td>
+                                <td><span
+                                    {{#ifEqual this.process__importance 'High'}} class="label alert"{{/ifEqual}}
+                                    {{#ifEqual this.process__importance 'Medium'}} class="label warning"{{/ifEqual}}
+                                    {{#ifEqual this.process__importance 'Low'}} class="label success"{{/ifEqual}}
+                                    >{{this.process__importance}}</span></td>
+                            </tr>
+                            {{/each}}
+                        </tbody>
+                    </table>
+                    {{/if}}
+                </div>
+                <div class="tabs-panel" id="digital-content">
+                    <table>
+                        <tr><td>Is the digital content kept in this business system unique evidence of the official business of the Department?</td><td>{{unique_evidence}}</td></tr>
+                        <tr><td>Is the digital content kept in the system a single point of truth?</td><td>{{point_of_truth}}</td></tr>
+                        <tr><td>Is there a legal or compliance need to keep the digital content?</td><td>{{legal_need_to_retain}}</td></tr>
+                    </table>
+                </div>
+                <div class="tabs-panel" id="history">
+                    {{#if system_creation_date}}
+                    <p><strong>System creation date:</strong> {{formatDate system_creation_date "DD-MMM-YYYY"}}</p>
+                    {{/if}}
+                    <h4>Change history</h4>
+                    <p>Not available.</p>
+                    <h4>Related incidents</h4>
+                    <p>Not available.</p>
+                    <h4>Related projects</h4>
+                    {{#if other_projects}}
+                    {{other_projects}}
+                    {{else}}
+                    <p>Not available.</p>
+                    {{/if}}
+                    <h4>Uptime statistics</h4>
+                    {{#if status_html}}
+                    <iframe seamless="seamless" src="{{status_html}}" width="100%" height="400" style="border: 0px;"></iframe>
+                    {{else}}
+                    <p>Not available.</p>
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+{% endverbatim %}
+
+<script>
+    // Utility function to obtain query parameters.
+    var urlParam = function(name, url) {
+        if (!url) {
+         url = window.location.href;
+        }
+        var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(url);
+        if (!results) {
+            return undefined;
+        }
+        return results[1] || undefined;
+    }
+
+    // Register Handlebars helpers
+    Handlebars.registerHelper('ifEqual', function(val1, val2, options) {
+        if (val1 === val2) {
+            return options.fn(this);
+        }
+        return options.inverse(this);
+    });
+    Handlebars.registerHelper('formatDate', function(date, format) {
+        return moment.utc(date).local().format(format);
+    });
+
+    // Compile the Handlebars template.
+    var template = Handlebars.compile($("#itsystem-detail-template").html());
+
+    // Document ready function.
+    $(function () {
+        var system = $.get("/api/itsystems/", {"system_id": "{{ system_id }}"}, function(data) {
+            var system = data["objects"][0];
+            // Calculate the (approximate) number of users.
+            if (system.usergroups) {
+                system.user_count = 0;
+                for (var i = 0; i < system.usergroups.length; i++) {
+                    system.user_count += system.usergroups[i].count;
+                }
+                if (system.user_count > 100) {
+                    system.user_count = ">100";
+                }
+            } else {
+                system.user_count = "Unknown";
+            }
+            // Push the data into the Handlebars template.
+            $("#container").html(template(system));
+            // Manually create the Foundation tabs instance.
+            var tabs = new Foundation.Tabs($("ul#detail-tabs"));
+        });
+    });
+</script>
+{% endblock %}

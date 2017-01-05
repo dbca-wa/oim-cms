@@ -1,8 +1,9 @@
 from __future__ import unicode_literals, absolute_import
 from datetime import datetime
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, UpdateView
 import json
 from registers.models import ITSystem
 from organisation.models import DepartmentUser
@@ -14,6 +15,37 @@ class AddressBook(TemplateView):
 
 class UserAccounts(TemplateView):
     template_name = 'knowledge/user_accounts.html'
+
+
+class ITSystemRegister(TemplateView):
+    template_name = 'knowledge/itsystem_register.html'
+
+
+class ITSystemDetail(TemplateView):
+    template_name = 'knowledge/itsystem_detail.html'
+
+    def get_context_data(self, **kwargs):
+        # Pass the IT system ID through to the template context.
+        context = super(ITSystemDetail, self).get_context_data(**kwargs)
+        return context
+
+
+class ITSystemUpdate(UpdateView):
+    model = ITSystem
+    fields = ['name', 'acronym', 'description']
+    template_name = 'knowledge/itsystem_form.html'
+    success_url = '/thanks/'
+
+    def get_object(self):
+        # Use the system ID instead of the object PK.
+        queryset = self.get_queryset()
+        return queryset.get(system_id=self.kwargs.get('system_id'))
+
+    def get_success_url(self):
+        # Update success URL is the IT system detail view.
+        obj = self.get_object()
+        return reverse('km_itsystem_detail', kwargs={'system_id': obj.system_id})
+
 
 # ==================================================
 # Legacy views below.
