@@ -3,7 +3,7 @@ from datetime import datetime
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
-from django.views.generic import TemplateView, UpdateView
+from django.views.generic import TemplateView, DetailView, UpdateView
 import json
 from registers.models import ITSystem
 from organisation.models import DepartmentUser
@@ -21,12 +21,19 @@ class ITSystemRegister(TemplateView):
     template_name = 'knowledge/itsystem_register.html'
 
 
-class ITSystemDetail(TemplateView):
+class ITSystemDetail(DetailView):
+    model = ITSystem
     template_name = 'knowledge/itsystem_detail.html'
 
+    def get_object(self):
+        # Use the system ID instead of the object PK.
+        queryset = self.get_queryset()
+        return queryset.get(system_id=self.kwargs.get('system_id'))
+
     def get_context_data(self, **kwargs):
-        # Pass the IT system ID through to the template context.
         context = super(ITSystemDetail, self).get_context_data(**kwargs)
+        # TODO: pass object dependencies, dependants and processes.
+        # TODO: pass object functions, uses and capabilities.
         return context
 
 
@@ -34,7 +41,6 @@ class ITSystemUpdate(UpdateView):
     model = ITSystem
     fields = ['name', 'acronym', 'description']
     template_name = 'knowledge/itsystem_form.html'
-    success_url = '/thanks/'
 
     def get_object(self):
         # Use the system ID instead of the object PK.

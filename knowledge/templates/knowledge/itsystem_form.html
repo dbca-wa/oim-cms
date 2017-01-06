@@ -3,7 +3,7 @@
 {% block content %}
 <div class="row">
     <div class="columns end">
-        <h1>IT System Update</h1>
+        <h1>IT system update: {{ object.name }} ({{ object.system_id }})</h1>
     </div>
 </div>
 
@@ -11,7 +11,7 @@
     <div class="columns end">
         <form action="" method="post">
             {% csrf_token %}
-            #{{ form.as_p }}
+            {{ form.as_p }}
             <input type="submit" value="Update" />
         </form>
     </div>
