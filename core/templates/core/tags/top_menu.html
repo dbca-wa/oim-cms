@@ -1,75 +1,179 @@
 {% load core_tags static wagtailcore_tags %}
 {% get_site_root as site_root %}
 
+{% if request.user.is_authenticated %}
+<input type='hidden' id='authed' value='True'>
+{% else %}
+<input type='hidden' id='authed' value='False'>
+{% endif %}
 <nav class="tab-bar show-for-small hide-for-print draft-bg-change">
-    <section class="left-small">
-        <a class="left-off-canvas-toggle menu-icon"><span></span></a>
-    </section>
-    <section class="middle tab-bar-section mobile-title">
-        Office for Information Management
-    </section>
-    <section class="right-small tab-bar-section mobile-title">
-        <h4><a href="{% url 'logout' %}"><i style="color:white;" class="white fa fa-sign-out"></i></a></h4>
-    </section>
+	<section class="left-small">
+		<a class="left-off-canvas-toggle menu-icon"><span></span></a>
+	</section>
+	<section class="middle tab-bar-section mobile-title">
+		Office for Information Management
+	</section>
+	<section class="right-small tab-bar-section mobile-title">
+		<h4><a href="{% url 'logout' %}"><i style="color:white;" class="white fa fa-sign-out"></i></a></h4>
+	</section>
 </nav>
+
 <aside class="left-off-canvas-menu" aria-hidden="true">
-    <ul class="off-canvas-list">
-        <li><label>Navigation</label></li>
-        <li><a href="/">Home</a></li>
-        <li class="has-form">
-            <form method="get" action="{% url 'search' %}" role="search">
-                <input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
-            </form>
-        </li>
-        {% for menuitem in menuitems %}
-        <li class="{% if menuitem.show_dropdown %}has-submenu{% endif %}">
-            <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
-            {% if menuitem.show_dropdown %}
-                {% mobile_menu_children parent=menuitem %}
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
+	<ul class="off-canvas-list">
+		<li><label>Navigation</label></li>
+		<li><a href="/">Home</a></li>
+		<li class="has-form">
+			<form method="get" action="{% url 'search' %}" role="search">
+				<input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
+			</form>
+		</li>
+		{% for menuitem in menuitems %}
+		<li class="{% if menuitem.show_dropdown %}has-submenu{% endif %}">
+			<a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+			{% if menuitem.show_dropdown %}
+			{% mobile_menu_children parent=menuitem %}
+			{% endif %}
+		</li>
+		{% endfor %}
+	</ul>
 </aside>
 
 <div class="hide-for-small hide-for-print row draft-bg-change">
-<div class="large-12 columns header">
-    <div class="large-4 columns">
-        <a target="_blank" href="http://www.dpaw.wa.gov.au"><img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife" /></a>
-    </div><div class="large-6 columns draft-content">
-        <a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet" /></a>
-    </div><div class="large-1 columns">
-        <a class="right" href="/products/"><img src="//static.dpaw.wa.gov.au/images/oim_tree.svg" /></a>
-    </div>
-</div>
+	<div class="large-12 columns header">
+		<div class="large-4 columns">
+			<a target="_blank" href="http://www.dpaw.wa.gov.au"><img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife" /></a>
+		</div>
+		<div class="large-6 columns draft-content">
+			<a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet" /></a>
+		</div>
+		<div class="large-1 columns">
+			<a class="right" href="/products/"><img src="//static.dpaw.wa.gov.au/images/oim_tree.svg" /></a>
+		</div>
+	</div>
 </div>
 
 <div class="header-topbar hide-for-print">
-<nav class="top-bar hide-for-small row" data-topbar>
-    <section class="top-bar-section">
-        <ul class="left">
-            <li><a href="/">Home</a></li>
-            {% for menuitem in menuitems %}
-            <li class="divider"></li>
-            <li class="{% if menuitem.show_dropdown %}has-dropdown{% endif %}">
-                <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
-                {% if menuitem.show_dropdown %}
-                    {% top_menu_children parent=menuitem %}
-                {% endif %}
-            </li>
-            {% endfor %}
-        </ul>
-        <ul class="right">
-            <li class="has-form">
-        {% block search %}
-            <form method="get" action="{% url 'search' %}" role="search">
-                <input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
-            </form>
-        {% endblock %}
-            </li>
-        </ul>
-    </section>
-</nav></div>
+
+	<nav class="top-bar hide-for-small row" data-topbar >
+
+		<section class="appmenu-section" >
+			<ul class="left">
+				<li  class='has-dropdown appmenu' data-options="is_hover:false">
+					<img SRC='/static/images/appicon.png' onclick="topbar.toggleAppMenu()" id='appbutton' >
+					<ul id='appmenu' class='appmenu-dropdown' data-options="disableHover:true;clickOpen:true" >
+						<li id='applist'>
+							<div  id='appsdiv' >
+								<h5  id='apph2' >Apps</h5>
+								<div class='appicon' >
+									<div class='appicon-box' onclick="window.location='https://o365.dpaw.wa.gov.au/';">
+										<div class='appicon-img'><IMG src="/static/images/office365.png" ></div>
+										<span class='appicon-text'>Office 365</span>
+									</div>
+								</div>
+
+						<div class='appicon' >
+							<div class='appicon-box'>
+								<div class='appicon-img'><IMG src="/static/wagtailadmin/images/outlookicon.png" ></div>
+								<span class='appicon-text'>Outlook</span>
+							</div>
+						</div>
+
+			<div class='appicon' >
+				<div  class='appicon-box' >
+					<div class='appicon-img'><IMG src="/static/wagtailadmin/images/calendaricon.png" ></div>
+					<span class='appicon-text' >Calendar</span>
+				</div>
+			</div>
+
+				<div class='appicon' >
+					<div class='appicon-box' >
+						<div class='appicon-img'><IMG src="/static/wagtailadmin/images/contacticon.png" ></div>
+						<span class='appicon-text'>People</span>
+					</div>
+				</div>
+
+		<div class='appicon' >
+			<div class='appicon-box' >
+				<div class='appicon-img' ><IMG src="/static/wagtailadmin/images/yammericon.png" ></div>
+				<span class='appicon-text'>Yammer</span>
+			</div>
+		</div>
+
+			<div class='appicon' >
+				<div class='appicon-box' >
+					<div class='appicon-img' ><IMG src="/static/wagtailadmin/images/tasksicon.png" ></div>
+					<span class='appicon-text'>Tasks</span>
+				</div>
+			</div>
+
+							</div>
+						</li>
+					</ul>
+				</li>
+			</ul>
+		</section>
+		<section class="top-bar-section" >
+			<ul class="left">
+
+
+				<li><a href="/">Home</a></li>
+				{% for menuitem in menuitems %}
+				<li class="divider"></li>
+				<li class="{% if menuitem.show_dropdown %}has-dropdown{% endif %}">
+					<a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+					{% if menuitem.show_dropdown %}
+					{% top_menu_children parent=menuitem %}
+					{% endif %}
+				</li>
+				{% endfor %}
+			</ul>
+		</section>
+		<section class='top-bar-profile' >
+
+			<ul class="right" class='top-bar-profile'>
+				<li>     
+					<IMG id='myprofilebutton' src="/static/wagtailadmin/images/busmanwomen2.png" onclick='topbar.toggleMyProfile()'>
+
+					<div class='myprofilebox' id='myprofileinfo'>
+						<div class='myprofilebox2'  id='myprofileinfosub'>
+							<div class='myprofilebox-textimg' id='myprofileinfosub'>
+								<div class='myprofilebox-img' ><img src="/static/wagtailadmin/images/busmanwomen.png" iisrc="/static/wagtailadmin/images/womenprofessional2.jpg" iisrc="/static/wagtailadmin/images/noprofileicon.png" style="height: 85px; border: 1px solid #f3f0f0; padding: 5px;" id='myprofileimage2'><div><a style='font-size: 12px; font-weight: normal; text-align: center; width: 100%; float: left; padding-top: 5px' href=''>change</a></div> </div>
+								<div class='myprofilebox-text' id='myprofileinfosub'>
+									<div  class='myprofilebox-text-area' id='myprofileinfosub' >
+										<div class='myprofilebox-text-name' id='myprofileinfosub'> <span style='text-transform: uppercase;' id='myprofileinfosub' >{{ request.user.last_name }}</span>, <span id='myprofileinfosub' style=' text-transform: capitalize;'>{{ request.user.first_name }}</span></div>
+										<div class='myprofilebox-text-email' id='myprofileinfosub'>	{{ request.user.email }}</div>
+									</div>	
+								</div>
+							</div>
+							<div class='myprofilebox-item' >  
+								<A HREF=''>About Me</A>
+							</div>
+							<div  class='myprofilebox-item'> 
+								<A HREF='/profile/'>My Profile</A>
+							</div>
+							<div class='myprofilebox-item-end' >
+								<A HREF='{% url 'logout' %}'>Log Out</A>
+							</div>
+						</div>
+					</div>
+
+				</li>
+			</ul>
+		</section>
+		<section class='top-bar-search' >
+			<ul class="right" >
+				<li class="has-form">
+					{% block search %}
+					<form method="get" action="{% url 'search' %}" role="search">
+						<input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
+					</form>
+				{% endblock %}
+				</li>
+			</ul>
+		</section>
+	</nav>
+
+</div>
 
 <a class="exit-off-canvas" href="#"></a>
 

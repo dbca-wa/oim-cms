@@ -19,7 +19,8 @@
 		<script type="text/javascript" src="{% static 'js/notification.js' %}"></script>
 		<script type="text/javascript" src="{% static 'js/validation.js' %}"></script>
 		<script type="text/javascript" src="{% static 'js/utils.js' %}"></script>
-
+		<script type="text/javascript" src="{% static 'js/topbar.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/common.js' %}"></script>
 
         <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon.png' %}">
         <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
@@ -29,8 +30,8 @@
 		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/dpawforms.css' %}" />
         <link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/selectsize.default.css' %}" />
 		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/notification.css' %}" />
-
-        {% block extra_css %}{% endblock %}
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/topbar.css' %}" />
+		{% block extra_css %}{% endblock %}
     </head>
 	<div id='notification-topbar'></div>
     <body class="{% block body_class %}{% endblock %}">
