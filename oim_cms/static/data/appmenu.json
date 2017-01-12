@@ -1,0 +1,34 @@
+{ 
+	"apps": [
+		{ 
+			"name": "Office 365",
+			"image": "/static/images/office365.png",
+			"link": "https://o365.dpaw.wa.gov.au/"
+		},
+		{
+            "name": "Outlook",
+            "image": "/static/wagtailadmin/images/outlookicon.png",
+            "link": ""
+        },
+		{
+            "name": "Calendar",
+            "image": "/static/wagtailadmin/images/calendaricon.png",
+            "link": ""
+        },
+		{
+            "name": "People",
+            "image": "/static/wagtailadmin/images/contacticon.png",
+            "link": "/address-book/"
+        },
+		{
+            "name": "Yammer",
+            "image": "/static/wagtailadmin/images/yammericon.png",
+            "link": "https://www.yammer.com/dpaw.wa.gov.au/#/inbox/unread"
+        },
+        {
+            "name": "Tasks",
+            "image": "/static/wagtailadmin/images/tasksicon.png",
+            "link": ""
+        }
+	]
+}

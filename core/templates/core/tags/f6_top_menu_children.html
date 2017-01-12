@@ -4,12 +4,12 @@
     {% for child in menuitems_children %}
 
     {% if child.show_dropdown %}
-        <li>
-            <a href="{% pageurl child %}">{{ child.title }}</a>
+        <li style="font-size: 12.5px; height: 45px;" >
+            <a style="font-size: 12.5px; height: 45px; " href="{% pageurl child %}">{{ child.title }}</a>
             {% f6_top_menu_children parent=child vertical=false %}
         </li>
     {% else %}
-        <li><a href="{% pageurl child %}">{{ child.title }}</a></li>
+        <li style="font-size: 12.5px; height: 45px;"><a href="{% pageurl child %}">{{ child.title }}</a></li>
     {% endif %}
     {% endfor %}
 </ul>

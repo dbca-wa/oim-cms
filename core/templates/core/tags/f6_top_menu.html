@@ -2,10 +2,10 @@
 <div class="top-bar columns">
     <div class="top-bar-left show-for-large">
         <ul class="dropdown menu" data-dropdown-menu>
-            <li><a href="/">Home</a></li>
+            <li><a  style="font-size: 12.5px; height: 45px; padding-top: 17px" href="/">Home</a></li>
             {% for menuitem in menuitems %}
             <li>
-                <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+                <a  style="font-size: 12.5px; height: 45px; padding-top: 17px" href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
                 {% if menuitem.show_dropdown %}
                     {% f6_top_menu_children parent=menuitem vertical=False %}
                 {% endif %}
@@ -18,7 +18,7 @@
             <li><a href="/">Home</a></li>
             {% for menuitem in menuitems %}
             <li>
-                <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+                <a style="font-size: 12.5px; height: 45px; padding-top: 17px" href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
                 {% if menuitem.show_dropdown %}
                     {% f6_top_menu_children parent=menuitem vertical=True %}
                 {% endif %}
@@ -28,15 +28,50 @@
     </div>
             <div class="top-bar-left" data-responsive-toggle="drilldown-main-menu" data-hide-for="large">
                 <ul class="menu">
-                    <li><a data-toggle><i class="fi-list"></i> Menu</a></li>
+                    <li><a  style="font-size: 12.5px; height: 45px; padding-top: 17px" data-toggle><i class="fi-list"></i> Menu</a></li>
                 </ul>
             </div>
-    <div class="top-bar-right">
+
+	<div class='top-bar-right' >
+
+            <ul class='right menu top-bar-profile'>
+                <li>
+                    <IMG id='myprofilebutton' src="/static/wagtailadmin/images/busmanwomen2.png" onclick='topbar.toggleMyProfile()'>
+
+                    <div class='myprofilebox' id='myprofileinfo'>
+                        <div class='myprofilebox2'  id='myprofileinfosub'>
+                            <div class='myprofilebox-textimg' id='myprofileinfosub'>
+                                <div class='myprofilebox-img' ><img src="/static/wagtailadmin/images/busmanwomen2.png" iisrc="/static/wagtailadmin/images/womenprofessional2.jpg" iisrc="/static/wagtailadmin/images/noprofileicon.png" style="height: 85px; width: 85px; border: 1px solid #f3f0f0; padding: 5px;" id='myprofileimage2'><div><a style='font-size: 12px; font-weight: normal; text-align: center; width: 100%; float: left; padding-top: 5px; background: none; color: #004d88' href=''>change</a></div></div>
+                                <div class='myprofilebox-text' id='myprofileinfosub'>
+                                    <div  class='myprofilebox-text-area' id='myprofileinfosub' >
+                                        <div class='myprofilebox-text-name' id='myprofileinfosub'> <span style='text-transform: uppercase;' id='myprofileinfosub' >{{ request.user.last_name }}</span>, <span id='myprofileinfosub' style=' text-transform: capitalize;'>{{ request.user.first_name }}</span></div>
+                                        <div class='myprofilebox-text-email' id='myprofileinfosub'> {{ request.user.email }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class='myprofilebox-item' >
+                                <A style='background: none; color: #004d88; font-weight: bold;' HREF=''>About Me</A>
+                            </div>
+                            <div  class='myprofilebox-item'>
+                                <A HREF='/profile/'>My Profile</A>
+                            </div>
+                            <div class='myprofilebox-item-end' >
+                                <A style='background: none; color: #004d88; font-weight: bold;' HREF='{% url 'logout' %}'>Log Out</A>
+                            </div>
+                        </div>
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+	<div class="top-bar-right">
         <ul class="menu">
             <li class="has-form">
         {% block search %}
             <form method="get" action="{% url 'search' %}" role="search">
-                <input name="q" type="search" placeholder="Search OIM Extranet"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
+                <input style='margin-top: 8px;' name="q" type="search" placeholder="Search OIM Extranet"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
             </form>
         {% endblock %}
             </li>

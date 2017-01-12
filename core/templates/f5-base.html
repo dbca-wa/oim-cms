@@ -35,6 +35,12 @@
     </head>
 	<div id='notification-topbar'></div>
     <body class="{% block body_class %}{% endblock %}">
+		{% if request.user.is_authenticated %}
+		<input type='hidden' id='authed' value='True'>
+		{% else %}
+		<input type='hidden' id='authed' value='False'>
+		{% endif %}
+
         {% if 'fullscreen' not in request.GET %}
         {% wagtailuserbar %}
         <div class="off-canvas-wrap" data-offcanvas>
