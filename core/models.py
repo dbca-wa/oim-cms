@@ -85,6 +85,8 @@ class Content(Page):
         ('content_list', blocks.CharBlock()),
     ], null=True, blank=True)
     date = models.DateField('Content updated date', default=timezone.now)
+
+
     template_filename = models.CharField(max_length=64, choices=(
         ('content.html', 'content.html'),
         ('f6-content.html', 'f6-content.html'),
@@ -94,6 +96,11 @@ class Content(Page):
 
     def get_template(self, request, *args, **kwargs):
         template_name = request.GET.get('template', self.template_filename)
+        force_template  = request.COOKIES.get('force_template');
+
+        if force_template == 'f6': 
+           template_name = 'f6-content.html'
+
         return '{}/{}'.format(self.__class__._meta.app_label, template_name)
 
     promote_panels = Page.promote_panels + [
