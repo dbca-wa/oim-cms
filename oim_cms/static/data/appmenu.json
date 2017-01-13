@@ -7,27 +7,27 @@
 		},
 		{
             "name": "Outlook",
-            "image": "/static/wagtailadmin/images/outlookicon.png",
+            "image": "/static/images/outlookicon.png",
             "link": ""
         },
 		{
             "name": "Calendar",
-            "image": "/static/wagtailadmin/images/calendaricon.png",
+            "image": "/static/images/calendaricon.png",
             "link": ""
         },
 		{
             "name": "People",
-            "image": "/static/wagtailadmin/images/contacticon.png",
+            "image": "/static/images/contacticon.png",
             "link": "/address-book/"
         },
 		{
             "name": "Yammer",
-            "image": "/static/wagtailadmin/images/yammericon.png",
+            "image": "/static/images/yammericon.png",
             "link": "https://www.yammer.com/dpaw.wa.gov.au/#/inbox/unread"
         },
         {
             "name": "Tasks",
-            "image": "/static/wagtailadmin/images/tasksicon.png",
+            "image": "/static/images/tasksicon.png",
             "link": ""
         }
 	]
