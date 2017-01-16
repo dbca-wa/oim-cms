@@ -60,7 +60,10 @@
 	opacity: 20
 
 }
+.appicon:hover {
+	background-color:#004d88;
 
+}
 .appicon-box { 
 	height: 60px; 
 	text-align: center;
@@ -80,10 +83,11 @@
 
 .appicon-text { 
 	font-size: 10px; 
-	margin-top: 10px; 
+	margin-top: 3px; 
 	width: 100%;
 	color: #FFFFFF;
-	line-height: 0.9 !important;
+	line-height: 1.1 !important;
+	display: block;
 }
 .top-bar-profile li {
 	padding-right: 10px; 

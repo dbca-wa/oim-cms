@@ -39,7 +39,7 @@
 		{
 			"name": "Support Ticket",
 			"image": "/static/images/supporticon.png",
-			"link": "https://dpaw.freshdesk.com/support/tickets/new"
+			"link": "/support/log-request/"
 		},
 		{
 			"name": "IT System Registry",
