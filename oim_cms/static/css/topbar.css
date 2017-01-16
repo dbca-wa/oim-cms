@@ -83,6 +83,7 @@
 	margin-top: 10px; 
 	width: 100%;
 	color: #FFFFFF;
+	line-height: 0.9 !important;
 }
 .top-bar-profile li {
 	padding-right: 10px; 
@@ -184,4 +185,6 @@
 .is-dropdown-submenu-parent.is-right-arrow > a::after {
 	border-color: transparent transparent transparent #3c6b8a !important;
 }
-
+.top-bar ul {
+	line-height: 0.9 !important;
+}
