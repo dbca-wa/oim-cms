@@ -2,98 +2,122 @@
 
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title>{% block title %}{% if self.seo_title %}{{ self.seo_title }}{% else %}{{ self.title }}{% endif %}{% endblock %}{% block title_suffix %} - Office for Information Management - Department of Parks and Wildlife{% endblock %}</title>
-        <meta name="description" content="" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>{% block title %}{% if self.seo_title %}{{ self.seo_title }}{% else %}{{ self.title }}{% endif %}{% endblock %}{% block title_suffix %} - Office for Information Management - Department of Parks and Wildlife{% endblock %}</title>
+		<meta name="description" content="" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-        {% block head_js %}
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/modernizr/2.8.3/modernizr.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/jquery/2.2.0/jquery.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/localforage/1.3.1/localforage.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation/6.1.2/foundation.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/js/egg.js"></script>
-        <script type="text/javascript" src="{% static 'js/f6_oim_cms.js' %}"></script>
-        <script type="text/javascript" src="{% static 'js/oim_cms_useradmin.js' %}"></script>
-        <script type="text/javascript" src="{% static 'js/selectize.js' %}"></script>
+		{% block head_js %}
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/modernizr/2.8.3/modernizr.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/jquery/2.2.0/jquery.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/localforage/1.3.1/localforage.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation/6.1.2/foundation.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/js/egg.js"></script>
+		<script type="text/javascript" src="{% static 'js/f6_oim_cms.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/oim_cms_useradmin.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/selectize.js' %}"></script>
 		<script type="text/javascript" src="{% static 'js/notification.js' %}"></script>
 		<script type="text/javascript" src="{% static 'js/validation.js' %}"></script>
 		<script type="text/javascript" src="{% static 'js/utils.js' %}"></script>
-        {% endblock %}
+		<script type="text/javascript" src="{% static 'js/topbar.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/common.js' %}"></script>
+		{% endblock %}
 
-        {% block head_css %}
-        <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon.png' %}">
-        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
-        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation/6.1.2/foundation-flex.css">
-        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/cdnjs/ajax/libs/foundicons/3.0.0/foundation-icons.css" />
-        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css" />
-        <link rel="stylesheet" type="text/css" media="all" href="{% static 'css/f6_oim_cms.css' %}" />
-        <link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/selectsize.default.css' %}" />
+		{% block head_css %}
+		<link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon.png' %}">
+		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation/6.1.2/foundation-flex.css">
+		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/cdnjs/ajax/libs/foundicons/3.0.0/foundation-icons.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static 'css/f6_oim_cms.css' %}" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/selectsize.default.css' %}" />
 		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/dpawforms.css' %}" />
 		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/notification.css' %}" />
-        {% endblock %}
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/topbar.css' %}" />
+		{% endblock %}
 
-        {% block extra_css %}{% endblock %}
-    </head>
+		{% block extra_css %}{% endblock %}
+	</head>
 	<div id='notification-topbar'></div>
-    <body class="{% block body_class %}{% endblock %}">
-        {% wagtailuserbar %}
-        <div class="inner-wrap">
-            <div class="content">
-                {% if 'fullscreen' not in request.GET %}
-                    {% block header %}
-                    <div class="row header_row align-justify">
-                        <div class="columns show-for-large hide-for-print"><a target="_blank" href="//www.dpaw.wa.gov.au"><img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife"></a></div>
-                        <div class="columns"><a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a></div>
-                        <div class="columns show-for-large hide-for-print"><a class="float-right" href="/products/"><img src="//static.dpaw.wa.gov.au/images/oim_tree.svg"></a></div>
-                    </div>
-                    <div class="main_menu">
-                        <div class="row">
-                            {% get_site_root as site_root %}
-                            {% f6_top_menu parent=site_root calling_page=self %}
-                        </div>
-                    </div>
-                    <div class="row breadcrumbs_row align-middle">
-                        <ul class="breadcrumbs columns large-9">
-                        {% page_menuitems self as menuitems %}
-                        {% for menuitem in menuitems %}
-                            <li>{% if not forloop.last %}<a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>{% else %}{{ menuitem.title }}{% endif %}</li>
-                        {% endfor %}
-                            <li><a title="Open fullscreen in new tab" target="_blank" href="{{ request.get_full_path }}{% if '?' in request.get_full_path %}&amp;{% else %}?{% endif %}fullscreen">
-                                <i class="fi-arrows-expand"></i></a>
-                            </li>
-                        </ul>
-                        <div class="columns large-3">
-                            <ul class="breadcrumbs float-right">
-                                <li>{{ request.user.first_name }}</li>
-                                <li><a href="/profile/">My Profile</a></li>
-                                <li><a title="Logout" href="{% url 'logout' %}">Logout</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    {% endblock %}
-                {% endif %}
-                <div class="main">
-                    {% block content %}{% endblock %}
-                </div>
-            </div>
-            <div class="footer">
-                {% if 'fullscreen' in request.GET %}
-                    <div class="hide">{% include_content "footer" %}</div>
-                    <style type="text/css">.row {min-width:100% !important;}</style>
-                {% else %}
-                    {% block footer %}{% include_content "f6-footer" %}{% endblock %}
-                    <div class="row">
-                        <div class="columns end text-right"><small>v{{ application_version }}</small></div>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-        {% block extra_js %}
-        {% endblock %}
-    </body>
+	<body class="{% block body_class %}{% endblock %}">
+		{% if request.user.is_authenticated %}
+		<input type='hidden' id='authed' value='True'>
+		{% else %}
+		<input type='hidden' id='authed' value='False'>
+		{% endif %}
+
+
+		{% wagtailuserbar %}
+		<div class="inner-wrap">
+			<div class="content">
+				{% if 'fullscreen' not in request.GET %}
+				{% block header %}
+				<div class="row header_row align-justify">
+					<div class="columns show-for-large hide-for-print"><a target="_blank" href="//www.dpaw.wa.gov.au"><img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife"></a></div>
+					<div class="columns"><a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a></div>
+					<div class="columns show-for-large hide-for-print"><a class="float-right" href="/products/"><img src="//static.dpaw.wa.gov.au/images/oim_tree.svg"></a></div>
+				</div>
+				<div class="main_menu">
+					<div class="row">
+						<div class="appmenu-section" >
+							<div class='has-dropdown appmenu' >
+								<img SRC='/static/images/appicon.png' onclick="topbar.toggleAppMenu()" id='appbutton' >
+								<div id='appmenu' class='appmenu-dropdown appmenu-section-ul' >
+									<div id='applist'>
+										<div  id='appsdiv' >
+											<h5  id='apph2' >Apps</h5>
+											<div id='applistitems'>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						{% get_site_root as site_root %}
+
+						{% f6_top_menu parent=site_root calling_page=self %}
+					</div>
+				</div>
+
+				<div class="row breadcrumbs_row align-middle">
+					<ul class="breadcrumbs columns large-9">
+						{% page_menuitems self as menuitems %}
+						{% for menuitem in menuitems %}
+						<li style='font-size: 13px;'>{% if not forloop.last %}<a style='font-size: 13px;' href="{% pageurl menuitem %}">{{ menuitem.title }}</a>{% else %}{{ menuitem.title }}{% endif %}</li>
+						{% endfor %}
+						<li><a title="Open fullscreen in new tab" style='font-size: 13px;' target="_blank" href="{{ request.get_full_path }}{% if '?' in request.get_full_path %}&amp;{% else %}?{% endif %}fullscreen">
+								<i class="fi-arrows-expand"></i></a>
+						</li>
+					</ul>
+					<div class="columns large-3">
+						<ul class="breadcrumbs float-right">
+						</ul>
+					</div>
+				</div>
+				{% endblock %}
+				{% endif %}
+				<div class="main">
+					{% block content %}{% endblock %}
+				</div>
+			</div>
+			<div class="footer">
+				{% if 'fullscreen' in request.GET %}
+				<div class="hide">{% include_content "footer" %}</div>
+				<style type="text/css">.row {min-width:100% !important;}</style>
+				{% else %}
+				{% block footer %}{% include_content "f6-footer" %}{% endblock %}
+				<div class="row">
+					<div class="columns end text-right"><small>v{{ application_version }}</small></div>
+				</div>
+				{% endif %}
+			</div>
+		</div>
+		{% block extra_js %}
+		{% endblock %}
+	</body>
 </html>
