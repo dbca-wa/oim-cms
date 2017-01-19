@@ -1,0 +1,56 @@
+{ 
+	"apps": [
+		{ 
+			"name": "Office 365",
+			"image": "/static/images/office365.png",
+			"link": "https://o365.dpaw.wa.gov.au/"
+		},
+		{
+			"name": "Outlook",
+			"image": "/static/images/outlookicon.png",
+			"link": "https://outlook.office365.com/owa/?realm=dpaw.wa.gov.au&exsvurl=1&ll-cc=1033&modurl=0"
+		},
+		{
+			"name": "Calendar",
+			"image": "/static/images/calendaricon.png",
+			"link": "https://outlook.office.com/owa/?realm=dpaw.wa.gov.au&exsvurl=1&ll-cc=1033&modurl=1&path=/calendar/view/Month"
+		},
+		{
+			"name": "People",
+			"image": "/static/images/contacticon.png",
+			"link": "/address-book/"
+		},
+		{
+			"name": "Yammer",
+			"image": "/static/images/yammericon.png",
+			"link": "https://www.yammer.com/dpaw.wa.gov.au/#/inbox/unread"
+		},
+		{
+			"name": "Tasks",
+			"image": "/static/images/tasksicon.png",
+			"link": "https://outlook.office365.com/owa/?realm=dpaw.wa.gov.au&exsvurl=1&ll-cc=1033&modurl=3"
+		},
+		{
+			"name": "One Drive",
+			"image": "/static/images/onedrive.png",
+			"link": "https://dpaw-my.sharepoint.com/_layouts/15/MySite.aspx?MySiteRedirect=AllDocuments"
+
+		},
+		{
+			"name": "Support Ticket",
+			"image": "/static/images/supporticon.png",
+			"link": "/support/log-request/"
+		},
+		{
+			"name": "IT System Registry",
+			"image": "/static/images/itsysreg.png",
+			"link": "/it-system-register/"
+		},
+		{
+			"name": "Radio Comms",
+			"image": "/static/images/signaltower.png",
+			"link": "/support/radio/"
+		}
+
+	]
+}
