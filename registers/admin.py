@@ -97,7 +97,7 @@ class ITSystemAdmin(VersionAdmin):
         'notes',
         ('criticality', 'availability'),
         'schema_url',
-        ('softwares', 'hardwares'),
+        'hardwares',
         'user_groups',
         'system_reqs',
         'system_type',
