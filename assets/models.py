@@ -105,7 +105,7 @@ class Asset(CommonFields):
         max_digits=20, decimal_places=2, blank=True, null=True,
         help_text='The amount paid for this asset, inclusive of any upgrades (excluding GST).')
     notes = models.TextField(blank=True)
-    supplier = models.ForeignKey(Suppliers, on_delete=models.PROTECT)
+    supplier = models.ForeignKey(Suppliers, on_delete=models.PROTECT, blank=True, null=True)
     rsid = models.IntegerField(default='0')
 
     class Meta:
