@@ -1,0 +1,375 @@
+{% extends "knowledge/knowledge_base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="row medium-uncollapse large-collapse">
+        <div class="columns">
+            <h1>IT System Information: {{ object.name }} ({{ object.system_id }})</h1>
+            <h4>General information</h4>
+            {% if object.description %}<p>{{ object.description }}</p>{% endif %}
+            <table>
+                {% if object.link %}
+                <tr><td>Link</td><td><a href="{{object.link}}" target="_blank">{{object.link}}</a></td></tr>
+                {% endif %}
+                {% if object.system_type %}
+                <tr><td>System type</td><td>{{ object.get_system_type_display }}</td></tr>
+                {% endif %}
+                <tr><td><abbr title="Accountable for the business process being supported by the application and is accountable for business continuity to meet the needs of the Department’s core services.">Business Owner</abbr></td><td>{{ object.cost_centre.division.manager.name }} ({{ object.cost_centre.division.name }}, cost centre {{ object.cost_centre.code }})</td></tr>
+                <tr><td><abbr title="Person who is responsible for the business processes being supported by the IT system and is responsible for business continuity to meet the needs of the Department's core services or common services; including managing the provision of IT system contingency, incident and disaster recovery and end user guidance and training.">System Owner</abbr></td><td>{{ object.owner.name}}</td></tr>
+                <tr><td><abbr title="Person who has the technical expertise to support the IT system and works with OIM to manage and maintain the system; including maintaining the technical documentation for the system.">System Custodian</abbr></td><td>{{ object.custodian.name }}</td></tr>
+                <tr><td><abbr title="Person who has the expertise to support the confidentiality, integrity and accessibility of the digital content provisioned by the IT system; including requirements within the information security management framework.">Data Custodian</abbr></td><td>{{ object.data_custodian.name }}</td></tr>
+                {% if object.user_groups.exists %}
+                <tr>
+                    <td>User groups</td>
+                    <td><ul>{% for group in object.user_groups.all %}<li>{{ group.name }}</li>{% endfor %}</ul></td>
+                </tr>
+                {% endif %}
+                {% if object.notes %}
+                <tr><td>Notes</td><td>{{ object.notes }}</td></tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+    <div class="row medium-uncollapse large-collapse">
+        <div class="columns">
+            <ul class="tabs" data-tabs id="detail-tabs">
+                <li class="tabs-title is-active"><a href="#support-tab"><h5>Support information</h5></a></li>
+                <li class="tabs-title hide"><a href="#technical-info-tab"><h5>Technical information</h5></a></li>
+                <li class="tabs-title hide"><a href="#contingency-plan-tab"><h5>Contingency planning</h5></a></li>
+                <li class="tabs-title hide"><a href="#digital-content-tab"><h5>Digital content</h5></a></li>
+                <li class="tabs-title hide"><a href="#history-tab"><h5>History</h5></a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row medium-uncollapse large-collapse">
+        <div class="tabs-content" data-tabs-content="detail-tabs">
+            <div class="tabs-panel is-active" id="support-tab">
+                {% if object.system_reqs %}
+                <h4>What do I need to access the system?</h4>
+                <p>{{ object.system_reqs }}</p>
+                {% endif %}
+                {% if object.documentation %}
+                <h4>How do I use the system?</h4>
+                <p>User documentation is available online for this system at <a href="{{ object.documentation }}" target="_blank">{{ object.documentation }}</a></p>
+                {% endif %}
+                <h4>Who should I contact for support?</h4>
+                <div class="callout secondary">
+                    <h5>During business hours:</h5>
+                    <ul class="no-bullet">
+                        {% if object.bh_support %}
+                        <li><strong>Name:</strong> {{ object.bh_support.name }}</li>
+                        <li><strong>Telephone:</strong> {{ object.bh_support.telephone }}</li>
+                        <li><strong>Email:</strong> <a href="mailto:{{ object.bh_support.email }}">{{ object.bh_support.email }}</a></li>
+                        {% else %}
+                        <li><strong>Name:</strong> {{ object.custodian.name }}</li>
+                        <li><strong>Email:</strong> <a href="mailto:{{ object.custodian.email }}">{{ object.custodian.email }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% if object.ah_support %}
+                <div class="callout secondary">
+                    <h5>Out of business hours:</h5>
+                    <ul class="no-bullet">
+                        <li><strong>Name:</strong> {{ object.ah_support.name }}</li>
+                        <li><strong>Telephone:</strong> {{ object.ah_support.telephone }}</li>
+                        <li><strong>Email:</strong> <a href="mailto:{{ object.ah_support.email }}">{{ object.ah_support.email }}</a></li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="tabs-panel hide" id="technical-info-tab">
+                <table>
+                    {% if object.technical_documentation %}
+                    <tr>
+                        <td>Technical documentation</td>
+                        <td><a href="{{ object.technical_documentation }}">{{ object.technical_documentation }}</a></td>
+                    </tr>
+                    {% endif %}
+                    {% if object.system_health %}
+                    <tr>
+                        <td>System health</td>
+                        <td><div
+                        {% if object.system_health_rag == 0 %} class="label success"
+                        {% elif object.system_health_rag == 1 %} class="label warning"
+                        {% elif object.system_health_rag == 2 %} class="label alert"
+                        {% endif %}>{{ object.system_health }}</div></td>
+                    </tr>
+                    {% endif %}
+                    {% if object.risks %}
+                    <tr>
+                        <td>System risks</td>
+                        <td><ul>{% for risk in object.risks %}<li>{{rick}}</li>{% endfor %}</ul></td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td>Known vulnerabilities</td>
+                        <td><a href="{{ object.vulnerability_docs }}">{{ object.vulnerability_docs }}</a></td>
+                    </tr>
+                    {% if object.authentication_display %}
+                    <tr>
+                        <td>Authentication method</td>
+                        <td>{{ object.authentication_display }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+
+            <div class="tabs-panel hide" id="contingency-plan-tab">
+                <p>This section provides useful information as well as detailed procedures to recover the
+                IT System quickly and effectively following an outage.</p>
+                <table>
+                    <tr>
+                        <td><abbr title="An IT system is critical when one or multiple critical business
+                            processes are highly dependent on the availability of the system; there are no
+                            or limited workarounds available; and priority recovery procedures are
+                            required.">System criticality</abbr></td>
+                        <td>
+                        {% if object.criticality %}
+                        <div
+                            {% if object.criticality == 1 %} class="label alert"><abbr title="The business process cannot continue without the IT system. None or limited workarounds are available.">
+                            {% elif object.criticality == 2 %} class="label warning"><abbr title="The business processes can continue but are highly impacted without the IT system. Some workarounds are available but are only sustainable for a limited period of time.">
+                            {% elif object.criticality == 3 %} class="label success"><abbr title="The business processes can continue without the IT system. Workarounds are available and can be used for an extended period of time.">
+                            {% endif %}{{ object.get_criticality_display }}</abbr></div>
+                        {% else %}
+                        Not available.
+                        {% endif %}
+                    <tr>
+                        <td>Contingency plan</td>
+                        <td>
+                        {% if object.contingency_plan_url %}<a href="{{ object.contingency_plan_url }}">{{ object.contingency_plan_url }}</a>
+                        {% else %}Not available.
+                        {% endif %}
+                        </td>
+                    </tr>
+                    {% if object.backup_info %}
+                    <tr>
+                        <td>Backup information</td>
+                        <td>{{ object.backup_info }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if object.hardwares.exists %}
+                    <tr>
+                        <td>Hardware location(s)</td>
+                        <td><ul>{% for h in object.hardwares.all %}<li>{{ h.computer.hostname }} ({{ h.computer.location.name }})</li>{% endfor %}</ul></td>
+                    </tr>
+                    {% endif %}
+                    {% if object.critical_period %}
+                    <tr>
+                        <td>Critical period</td>
+                        <td>{{ object.critical_period }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if object.mtd %}
+                    <tr>
+                        <td><abbr title="The MTD represents the total amount of time the business
+                            is willing to accept for a business process disruption and includes all
+                            impact considerations. Determining MTD is important because it could leave
+                            the recovery team with imprecise direction on (1) selection of an appropriate
+                            recovery method, and (2) the depth of detail, which will be required when
+                            developing recovery procedures, including their scope and content.">Maximum Tolerable Downtime (MTD)</abbr></td>
+                        <td>{{ object.mtd }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if object.rto %}
+                    <tr>
+                        <td><abbr title="The RTO is the maximum amount of time that the IT system can remain unavailable before there is an unacceptable impact on other system resources, supported business processes and the MTD. Determining the information system resource RTO is important for selecting appropriate technologies and recovery procedures that are best suited for meeting the MTD.">Recovery Time Objective (RTO)</abbr>
+                        </td>
+                        <td>{{ object.rto }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if object.alt_processing %}
+                    <tr>
+                        <td>Alternative processing procedure</td>
+                        <td>{{ object.alt_processing }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if object.technical_recov %}
+                    <tr>
+                        <td>Technical recovery procedure</td>
+                        <td>{{ object.technical_recov }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if object.post_recovery %}
+                    <tr>
+                        <td>Functional testing and post-recovery procedure</td>
+                        <td>{{ object.post_recovery }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if object.variation_iscp %}
+                    <tr>
+                        <td>Variation to the ISCP</td>
+                        <td>{{ object.variation_iscp }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if object.user_notification %}
+                    <tr>
+                        <td>User notifications</td>
+                        <td>The following users and stakeholders should be informed about incidents
+                            involving this system: {{ object.user_notification }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td>Number of users</td>
+                        <td>
+                        {% if object.user_count %}
+                        {{ object.user_count }}
+                        {% else %}
+                        Not recorded
+                        {% endif %}
+                        </td>
+                    </tr>
+                    {% if object.function %}
+                    <tr>
+                        <td>System function(s)</td>
+                        <td><ul>{% for function in object.function %}<li>{{ function }}</li>{% endfor %}</ul></td>
+                    </tr>
+                    {% endif %}
+                    {% if object.use %}
+                    <tr>
+                        <td>System use(s)</td>
+                        <td><ul>{% for use in object.use %}<li>{{ use }}</li>{% endfor %}</ul></td>
+                    </tr>
+                    {% endif %}
+                    {% if object.capability %}
+                    <tr>
+                        <td>System capabilities</td>
+                        <td><ul>{% for capability in object.capability %}<li>{{ capability }}</li>{% endfor %}</ul></td>
+                    </tr>
+                    {% endif %}
+                </table>
+                {% comment %}
+                <h4>Dependencies</h4>
+                <p>
+                {% if object.dependencies %}
+                This system depends on other IT Systems (see below). {% else %}This system does not depend on other IT Systems.
+                {% endif %}
+                {% if object.dependants %}
+                Other IT Systems depend on this system (see below).{% else %}No other IT Systems depend on this system.
+                {% endif %}
+                </p>
+                <table>
+                    <thead>
+                        <tr>
+                            <td>System</td>
+                            <td>Dependency</td>
+                            <td>Dependency criticality</td>
+                            <td>System custodian</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dependencies}}
+                        <tr>
+                            <td><a href="/it-systems-register/it-system-information/?system_id={{this.dependency__system_id}}">{{this.dependency__name}} ({{this.dependency__system_id}})</a></td>
+                            <td>...is depended upon by this IT System</td>
+                            <td><span
+                            {% ifEqual this.criticality 'Critical'}} class="label alert"{{/ifEqual}}
+                            {% ifEqual this.criticality 'Moderate'}} class="label warning"{{/ifEqual}}
+                            {% ifEqual this.criticality 'Low'}} class="label success"{{/ifEqual}}
+                            >{{ this.criticality }}</span></td>
+                            <td>{{this.custodian__name}}</td>
+                        </tr>
+                        {% endfor %}
+                        {% for dependants}}
+                        <tr>
+                        <td><a href="/it-systems-register/it-system-information/?system_id={{this.dependant__system_id}}">{{this.dependant__name}} ({{this.dependant__system_id}})</a></td>
+                        <td>...depends upon this IT System</td>
+                        <td><span
+                        {% ifEqual this.criticality 'Critical'}} class="label alert"{{/ifEqual}}
+                        {% ifEqual this.criticality 'Moderate'}} class="label warning"{{/ifEqual}}
+                        {% ifEqual this.criticality 'Low'}} class="label success"{{/ifEqual}}
+                        >{{ this.criticality }}</span></td>
+                        </td>{{this.custodian__name}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% if object.processes %}
+                <h4>Business processes</h4>
+                <p>{{ object.name }} allows the Department to undertake the following business processes:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <td>Process name</td>
+                            <td>Core service(s)</td>
+                            <td><abbr title="A business process is ranked critical when its disruption stops the continuous delivery of important business functions for one or more of the department's 8 core services.">Process criticality</abbr></td>
+                            <td>Process reliance on this system</td>
+                        </tr>
+
+                    </thead>
+                    <tbody>
+                        {% for processes}}
+                        <tr>
+                            <td>{{this.process__name}}</td>
+                            <td>{{this.function__service}}</td>
+                            <td><span
+                                {% ifEqual this.process__criticality 'Critical'}} class="label alert"{{/ifEqual}}
+                                {% ifEqual this.process__criticality 'Moderate'}} class="label warning"{{/ifEqual}}
+                                {% ifEqual this.process__criticality 'Low'}} class="label success"{{/ifEqual}}
+                                >{{this.process__criticality}}</span></td>
+                            <td><span
+                                {% ifEqual this.process__importance 'High'}} class="label alert"{{/ifEqual}}
+                                {% ifEqual this.process__importance 'Medium'}} class="label warning"{{/ifEqual}}
+                                {% ifEqual this.process__importance 'Low'}} class="label success"{{/ifEqual}}
+                                >{{this.process__importance}}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+                {% endcomment %}
+            </div>
+
+            <div class="tabs-panel hide" id="digital-content-tab">
+                <table>
+                    <tr>
+                        <td>Is the digital content kept in this business system unique evidence
+                            of the official business of the Department?</td>
+                        <td>{{ object.unique_evidence }}</td>
+                    </tr>
+                    <tr>
+                        <td>Is the digital content kept in the system a single point of truth?</td>
+                        <td>{{ object.point_of_truth }}</td>
+                    </tr>
+                    <tr>
+                        <td>Is there a legal or compliance need to keep the digital content?</td>
+                        <td>{{ object.legal_need_to_retain }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="tabs-panel hide" id="history-tab">
+                {% if object.system_creation_date %}
+                <p><strong>System creation date:</strong> {{ object.system_creation_date|date:"d-g-Y"}}</p>
+                {% endif %}
+                <h4>Change history</h4>
+                <p>Not available.</p>
+                <h4>Related incidents</h4>
+                <p>Not available.</p>
+                <h4>Related projects</h4>
+                {% if object.other_projects %}
+                <p>{{ object.other_projects }}</p>
+                {% else %}
+                <p>Not available.</p>
+                {% endif %}
+                <h4>Uptime statistics</h4>
+                {% if object.status_html %}
+                <iframe seamless="seamless" src="{{ object.status_html }}" width="100%" height="400" style="border: 0px;"></iframe>
+                {% else %}
+                <p>Not available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Manually create the Foundation tabs instance.
+    var tabs = new Foundation.Tabs($("ul#detail-tabs"));
+</script>
+{% endblock %}
