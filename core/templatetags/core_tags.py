@@ -63,9 +63,9 @@ def page_menuitems(x):
         menuitems.append(x)
         x = x.get_parent()
 
-	if x:
-	    menuitems.pop()
-    	menuitems.reverse()
+    if x:
+        menuitems.pop()
+        menuitems.reverse()
 
     return menuitems
 
