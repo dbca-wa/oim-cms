@@ -84,11 +84,16 @@ var topbar = {
 		$(window).click(function(e) {
 			e = e || window.event;
 			e = e.target || e.srcElement;
-			if (e.id == 'applist' || e.id == 'appbutton' || e.id == 'apph2' || e.id == 'myprofileinfo' || e.id == 'myprofilebutton'|| e.id == 'myprofileinfosub' || e.id == 'appsdiv') {
+//			alert(e.id);
+			if (e.id == 'applist' || e.id == 'appbutton' || e.id == 'apph2' || e.id == 'myprofileinfo' || e.id == 'myprofilebutton'|| e.id == 'myprofileinfosub' || e.id == 'appsdiv' || e.id== 'rightslidermenubutton' || e.id=='meunslidersub' || e.id=='rightslidemenu' || e.id=='oimsearch' || e.id=='menuslider' || e.id =='rightmenuclosebutton') {
 				// This check to see a click is from with one of the menu's peventing the menu from closing unless the click comes from outsize the menu unless its a button
 			} else {
 				topbar.toggleAppMenu('outside');
 				topbar.toggleMyProfile('profileoutside');
+				if ($('#rightslidemenu').css('display') == 'none') {
+				} else {
+					topbar.openRightSlideMenu();
+				}
 			}
 
 		});
@@ -124,9 +129,14 @@ var topbar = {
 		});
 
 
+	},
+	openRightSlideMenu: function() { 
+		    $('#rightslidemenu').animate({width:'toggle'});
+
 	}
 
 }
 $( document ).ready(function() {
 	topbar.loadProfileTopBar();
+	$('#rightslidemenu').hide();
 });

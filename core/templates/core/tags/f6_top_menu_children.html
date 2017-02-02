@@ -1,15 +1,15 @@
 {% load core_tags wagtailcore_tags %}
 
 <ul class="{% if vertical %}vertical {% endif %}menu">
-    {% for child in menuitems_children %}
+	{% for child in menuitems_children %}
 
-    {% if child.show_dropdown %}
-        <li style="font-size: 12.5px; height: 45px;" >
-            <a style="font-size: 12.5px; height: 45px; " href="{% pageurl child %}">{{ child.title }}</a>
-            {% f6_top_menu_children parent=child vertical=false %}
-        </li>
-    {% else %}
-        <li style="font-size: 12.5px; height: 45px;"><a href="{% pageurl child %}">{{ child.title }}</a></li>
-    {% endif %}
-    {% endfor %}
+	{% if child.show_dropdown %}
+	<li >
+		<a href="{% pageurl child %}">{{ child.title }}</a>
+		{% f6_top_menu_children parent=child vertical=false %}
+	</li>
+	{% else %}
+	<li><a href="{% pageurl child %}">{{ child.title }}</a></li>
+	{% endif %}
+	{% endfor %}
 </ul>

@@ -1,0 +1,19 @@
+{% load core_tags wagtailcore_tags %}
+
+<ul id='meunslider'>
+    {% for child in menuitems_children %}
+
+    {% if child.show_dropdown %}
+		<li id='meunslidersub' >
+			<span class='text'><a href="{% pageurl child %}">{{ child.title }}</a></span>
+			<div class='submenutwo'>
+            {% f6_top_menu_children_mobile parent=child vertical=false %}
+			</div>
+        </li>
+    {% else %}
+	<li id='meunslidersub' >
+		<span class='text'><a href="{% pageurl child %}">{{ child.title }}</a></span>
+	</li>
+    {% endif %}
+    {% endfor %}
+</ul>

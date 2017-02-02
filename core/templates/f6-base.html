@@ -1,4 +1,7 @@
 {% load core_tags static wagtailcore_tags wagtailuserbar %}
+{% load wagtailimages_tags %}
+
+{% image self.background_image original as background_photo_cover %}
 
 <!DOCTYPE html>
 <html>
@@ -38,11 +41,14 @@
 		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/dpawforms.css' %}" />
 		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/notification.css' %}" />
 		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/topbar.css' %}" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/maincontent.css' %}" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/mobilemenu.css' %}" />
+
 		{% endblock %}
 
 		{% block extra_css %}{% endblock %}
 	</head>
-	<div id='notification-topbar'></div>
+	<div id='notification-topbar' style='display:none;'></div>
 	<body class="{% block body_class %}{% endblock %}">
 		{% if request.user.is_authenticated %}
 		<input type='hidden' id='authed' value='True'>
@@ -53,16 +59,11 @@
 
 		{% wagtailuserbar %}
 		<div class="inner-wrap">
-			<div class="content">
+			<div class="content background-content" style="background: url('{{ background_photo_cover.url }}') no-repeat center center fixed;";>
 				{% if 'fullscreen' not in request.GET %}
 				{% block header %}
-				<div class="row header_row align-justify">
-					<div class="columns show-for-large hide-for-print"><a target="_blank" href="//www.dpaw.wa.gov.au"><img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife"></a></div>
-					<div class="columns"><a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a></div>
-					<div class="columns show-for-large hide-for-print"><a class="float-right" href="/products/"><img src="//static.dpaw.wa.gov.au/images/oim_tree.svg"></a></div>
-				</div>
-				<div class="main_menu">
-					<div class="row">
+				<div class="main_menu" >
+					<div class="row menusize">
 						<div class="appmenu-section" >
 							<div class='has-dropdown appmenu' >
 								<img SRC='/static/images/appicon.png' onclick="topbar.toggleAppMenu()" id='appbutton' >
@@ -77,16 +78,33 @@
 								</div>
 							</div>
 						</div>
+					<div class="row show-for-large show-for-medium hide-for-small topbarlogo" >
+						<a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a>
+					</div>
+					<div class="row show-for-small hide-for-large topbarlogomobile" >
+						<a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a>
+					</div>
 
-						{% get_site_root as site_root %}
 
-						{% f6_top_menu parent=site_root calling_page=self %}
+					{% get_site_root as site_root %}
+					{% f6_top_menu parent=site_root calling_page=self %}
+
 					</div>
 				</div>
 
-				<div class="row breadcrumbs_row align-middle">
-					<ul class="breadcrumbs columns large-9">
+				<div class="row breadcrumbs_row align-middle" style='margin-bottom: 0px;'>
+					{% breadcrumbs_f6 calling_page=self %}
+
+					<ul class="breadcrumbs columns large-9" style='display: none'>
+						{% get_site_root as site_root %}
+
+						{% for menuitem in menuitems %}
+
+						<li {% if forloop.last %}class="current"{% endif %}><a href="{% pageurl menuitem %}">{{ menuitem.title }}</a></li>
+						{% endfor %}
+
 						{% page_menuitems self as menuitems %}
+						{{ page_menuitems }}	
 						{% for menuitem in menuitems %}
 						<li style='font-size: 13px;'>{% if not forloop.last %}<a style='font-size: 13px;' href="{% pageurl menuitem %}">{{ menuitem.title }}</a>{% else %}{{ menuitem.title }}{% endif %}</li>
 						{% endfor %}
@@ -101,10 +119,96 @@
 				</div>
 				{% endblock %}
 				{% endif %}
-				<div class="main">
+				<div class="main" >
+					{% if 'Home' in self.title %}	
+					<div class="row main-content" style='background-color: rgb(255, 255, 255); padding-bottom: 20px; opacity: 0.96; min-height: 914px;'>
+						<div class="large-9">
+							{% if self.body_simple|length >  0 %}
+							<div id='maincontentarea'>
+								<div id='maincontentbox'>
+									{{ self.body_simple|safe }}
+									<div class="large-12" istyle='padding: 15px'>
+										<h3>How can we help you? </h3>
+										<p>Choose a category to find the help you need</p>
+										<div onclick="window.location.href='/support/';" class="large-3 float-left caption-box" >
+											<div class="large-12">
+												<IMG SRC='/static/images/enduser.png'>
+
+											</div>
+											<div class="large-12 caption-box-text" >
+													End User
+											</div>
+
+										</div>
+
+
+										<div onclick="window.location.href='/';" class="large-3 float-left caption-box">
+                                            <div class="large-12">
+                                                <IMG SRC='/static/images/costcentre.png'>
+
+                                            </div>
+                                            <div class="large-12 caption-box-text"  >
+													Cost Center
+                                            </div>
+
+                                        </div>
+										<div onclick="window.location.href='/';"  class="large-3 small-12 float-left caption-box">
+                                            <div class="large-12">
+                                                <IMG SRC='/static/images/custodian.png' style='height: 64px;'>
+                                            </div>
+                                            <div class="large-12 caption-box-text">
+                                                   System Owner & Custodian 
+                                            </div>
+
+                                        </div>
+										<div onclick="window.location.href='/governance/';" class="large-3 small-12 float-left caption-box"> 
+                                            <div class="large-12">
+                                                <IMG SRC='/static/images/filecabinet.png'>
+
+                                            </div>
+                                            <div class="large-12 caption-box-text" >
+                                                    IT Governance
+                                            </div>
+
+                                        </div>
+
+
+
+									</div>
+								</div>
+							</div>
+							{% else %}
+							{% include_content "home" %}
+							{% endif %}
+
+						</div>
+						<div class="large-3">
+							<div id='maincontentarea'>
+								<div id='maincontentright' >
+									<h3>Latest OIM News</h3>
+									{% content_list '{"tags": "OIMnews", "limit": 3}' %}
+								</div>
+							</div>
+						</div>
+					</div>
+					{% else %}
+					{% if self.body_simple|length >  1 %}
+					<div class="row body-simple-content" >
+					<div class="large-12">
+					<div id='maincontentarea'>
+						<div id='maincontentbox'>
+							{{ self.body_simple|safe }}
+						</div>
+					</div>
+					</div>
+					</div>
+					{% else %}
 					{% block content %}{% endblock %}
+					{% endif %}
+					{% endif %}
 				</div>
 			</div>
+
 			<div class="footer">
 				{% if 'fullscreen' in request.GET %}
 				<div class="hide">{% include_content "footer" %}</div>
@@ -112,7 +216,8 @@
 				{% else %}
 				{% block footer %}{% include_content "f6-footer" %}{% endblock %}
 				<div class="row">
-					<div class="columns end text-right"><small>v{{ application_version }}</small></div>
+					<div class="columns end text-left"><small>v{{ application_version }}</small></div>
+					<div class="columns end text-right footer-copyright"><small class="right">All contents copyright © Government of Western Australia. All rights reserved.</small></div>
 				</div>
 				{% endif %}
 			</div>

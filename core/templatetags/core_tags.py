@@ -22,6 +22,7 @@ def include_content(context, value):
     except Exception as e:
         page = None
         context.update({"error": "{}: {}".format(value, e)})
+	
     context.update({"self": page})
     return context
 
@@ -39,6 +40,7 @@ def content_list(context, value):
     except Exception as e:
         pages = None
         context.update({"error": "{}: {}".format(value, e)})
+
     context.update({"pages": pages})
     return context
 
@@ -61,8 +63,10 @@ def page_menuitems(x):
         menuitems.append(x)
         x = x.get_parent()
 
-    menuitems.pop()
-    menuitems.reverse()
+    if x:
+        menuitems.pop()
+        menuitems.reverse()
+
     return menuitems
 
 @register.inclusion_tag('core/tags/breadcrumbs.html', takes_context=True)
@@ -75,6 +79,31 @@ def breadcrumbs(context, calling_page):
 
     menuitems.pop()
     menuitems.reverse()
+    return {
+        'menuitems': menuitems,
+        'request': context['request']
+    }
+
+@register.inclusion_tag('core/tags/breadcrumbs_f6.html', takes_context=True)
+def breadcrumbs_f6(context, calling_page):
+    x = calling_page
+    menuitems = [] 
+
+    if calling_page:
+       x = calling_page
+    else:
+        return {
+                 'menuitems': menuitems,
+                 'request': context['request']
+               }
+   
+    while x:
+        menuitems.append(x)
+        x = x.get_parent()
+
+    menuitems.pop()
+    menuitems.reverse()
+
     return {
         'menuitems': menuitems,
         'request': context['request']
@@ -140,6 +169,23 @@ def f6_top_menu_children(context, parent, vertical):
     }
 
 # Retrieves the children of the top menu items for the drop downs
+@register.inclusion_tag('core/tags/f6_top_menu_children_mobile.html', takes_context=True)
+def f6_top_menu_children_mobile(context, parent, vertical):
+    menuitems_children = parent.get_children().live().in_menu()
+
+    #This would help to create multilevel nav bars
+    for menuitem in menuitems_children:
+        menuitem.show_dropdown = has_menu_children(menuitem)
+
+    return {
+        'vertical': vertical,
+        'parent': parent,
+        'menuitems_children': menuitems_children,
+        # required by the pageurl tag that we want to use within this template
+        'request': context['request'],
+    }
+
+# Retrieves the children of the top menu items for the drop downs
 @register.inclusion_tag('core/tags/top_menu_children.html', takes_context=True)
 def top_menu_children(context, parent):
     menuitems_children = parent.get_children().live().in_menu()
@@ -158,3 +204,13 @@ def top_menu_children(context, parent):
 @register.inclusion_tag('core/tags/mobile_menu_children.html', takes_context=True)
 def mobile_menu_children(context, parent):
     return top_menu_children(context, parent)
+
+intcount = 0
+@register.inclusion_tag('core/search_results_count.html', takes_context=False)
+def searchcounter(resetcounter):
+    global intcount
+    intcount += 1
+    if resetcounter == 0 :
+       intcount = 0
+    return {'intcount': intcount }
+

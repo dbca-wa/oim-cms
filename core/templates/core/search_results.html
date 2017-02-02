@@ -1,56 +1,51 @@
-{% extends "f5-base.html" %}
+{% extends "f6-base.html" %}
 {% load core_tags wagtailcore_tags humanize %}
 
 {% block title %}{% if http_error_code %}{{ http_error_code }} - {{ request.get_full_path }}{% else %}Search{% if search_results %} Results{% endif %}{% endif %}{% endblock %}
 
 {% block content %}
-<style type="text/css">
-.search-container {
-    height: 15em;
-    cursor: pointer;
-    overflow: hidden;
-}
-.search-compress {
-    transform:scale(0.6);
-    width:162%;
-    transform-origin: 2% 0;
-    filter: blur(1px);
-    -webkit-filter: blur(1px);
-}
-.search-compress:hover {
-    filter: none;
-    -webkit-filter: none;
-}
-</style>
-<div class="row"><div class="large-12 columns">
-    {% if http_error_code == 404 %}
-        <div data-alert class="alert-box warning">
-            <h3>Error 404 - Page could not be found</h3>
-            <p>The page ({{ request.get_full_path }}) you were looking for could not be found. Below are some search results that may help you find what you were looking for.</p>
-        </div>
-    {% elif http_error_code %}
-        <div data-alert class="alert-box alert"><h1>HTTP Error {{ http_error_code }}</h1></div>
-    {% elif search_results %}
-        <h1>Found {{ search_results.count|apnumber }} result{% if search_results.count > 1 %}s{% endif %}{% if request.GET.q %} for "{{ request.GET.q }}"{% endif %}</h1>
-    {% endif %}
-    {% if search_results %}
-        {% for self in search_results|slice:":5" %}
-        <div class="row">
-            <div onclick="window.location = $('a#link{{ self.id }}').attr('href')" class="large-12 columns search-container">
-                <h3><a id="link{{ self.id }}" href="{{ self.url }}" title="{{ self.search_description }}">{{ self.title }} ({{ self.date }})</a></h3>
-                <p>{{ self.search_description }}</p>
-                <div class="search-compress panel">
-                    {% include "core/tags/include_content.html" %}
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    {% for self in search_results|slice:"5:" %}
-        <h3><a href="{{ self.url }}" title="{{ self.search_description }}">{{ self.title }} ({{ self.date }})</a></h3>
-        <p>{{ self.search_description }}</p>
-    {% endfor %}
-    {% else %}
-        <h1>No results found!</h1>
-    {% endif %}
-</div></div>
+<!--
+// Counter Reset
+{% searchcounter resetcounter=0 %}
+-->
+<div id='maincontentbox' >
+	<div class="rich-text">
+		<div class="row"><div class="large-12 small-12 columns search-content" >
+				<div id='maincontentarea' >
+					{% if http_error_code == 404 %}
+					<div data-alert class="alert-box warning">
+						<h3>Error 404 - Page could not be found</h3>
+						<p>The page ({{ request.get_full_path }}) you were looking for could not be found. Below are some search results that may help you find what you were looking for.</p>
+					</div>
+					{% elif http_error_code %}
+					<div data-alert class="alert-box alert"><h1>HTTP Error {{ http_error_code }}</h1></div>
+					{% elif search_results %}
+					<h1>Found {{ search_results.count|apnumber }} result{% if search_results.count > 1 %}s{% endif %}{% if request.GET.q %} for "{{ request.GET.q }}"{% endif %}</h1>
+					{% endif %}
+					{% if search_results %}
+					<BR>
+					{% for self in search_results|slice:":5" %}
+					<div class="row">
+						<div onclick="window.location = $('a#link{{ self.id }}').attr('href')" class="large-12 columns isearch-container">
+
+							<h3>{% searchcounter resetcounter=-100 %}. <a id="link{{ self.id }}" href="{{ self.url }}" title="{{ self.search_description }}">{{ self.title }} ({{ self.date }})</a></h3>
+						</div>
+					</div>
+					{% endfor %}
+					<div class="row">
+
+						{% for self in search_results|slice:"5:" %}
+						<div onclick="window.location = $('a#link{{ self.url }}').attr('href')" class="large-12 small-12 columns isearch-container">
+							<h3>{% searchcounter resetcounter=-100 %}. <a href="{{ self.url }}" title="{{ self.search_description }}">{{ self.title }} ({{ self.date }})</a></h3>
+						</div>
+						{% endfor %}
+						{% else %}
+						<h1>No results found!</h1>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
 {% endblock %}
