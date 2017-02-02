@@ -89,18 +89,19 @@
 	cursor: pointer; 
 	border-radius: 5px; 
 	background-color: #f7f7f7; 
-	padding: 25px 30px 30px 30px; 
-	margin: 6px; 
+	padding: 20px 20px 20px 20px; 
+	margin: 4px; 
 	border: 1px solid #DDDDDD ; 
 	text-align: center; 
-	height: 170px; 
-	width:170px; 
+	height: 155px;
+    width: 155px;
 	opacity: 1.6 !important; 
 	box-shadow: 2px 2px 5px 0px rgba(181, 181, 181, 0.75);
 }
 
 .caption-box-text {
-	margin-top:15px;
+	margin-top:10px;
+    font-size: 14px;
 }
 
 .body-simple-content {
@@ -143,3 +144,4 @@
 	opacity: 0.96; 
 	min-height: 914px;
 }
+

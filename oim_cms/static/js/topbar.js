@@ -21,6 +21,7 @@ var topbar = {
 		}
 	},
 	toggleMyProfile: function(toggletype) {
+
 		// opens and closes the My Profile Dropdown Menu.
 		var authed = ($('#authed').val());
 		if (authed != 'True') {
@@ -34,14 +35,15 @@ var topbar = {
 			return;
 		}
 
-
 		topbar.var.justopenedprofilemenu = 'pending';
 		if ($('#myprofileinfo').css('display') == 'none' && toggletype != 'profileoutside' ) {
 			$('#myprofileinfo').fadeIn().css("display","block");
+			$('#myprofileinfomobile').slideDown().css("display","block");
 			setTimeout("topbar.var.justopenedprofilemenu = 'open';",500);
 
 		} else {
 			$('#myprofileinfo').fadeOut();
+			$('#myprofileinfomobile').slideUp();
 			topbar.var.justopenedprofilemenu = 'closed';
 		}
 	},
@@ -84,8 +86,8 @@ var topbar = {
 		$(window).click(function(e) {
 			e = e || window.event;
 			e = e.target || e.srcElement;
-//			alert(e.id);
-			if (e.id == 'applist' || e.id == 'appbutton' || e.id == 'apph2' || e.id == 'myprofileinfo' || e.id == 'myprofilebutton'|| e.id == 'myprofileinfosub' || e.id == 'appsdiv' || e.id== 'rightslidermenubutton' || e.id=='meunslidersub' || e.id=='rightslidemenu' || e.id=='oimsearch' || e.id=='menuslider' || e.id =='rightmenuclosebutton') {
+			// alert(e.id + ' '+ e.tagName);
+			if (e.id == 'applist' || e.id == 'appbutton' || e.id == 'apph2' || e.id == 'myprofileinfo' || e.id == 'myprofilebutton'|| e.id == 'myprofileinfosub' || e.id == 'appsdiv' || e.id== 'rightslidermenubutton' || e.id=='meunslidersub' || e.id=='rightslidemenu' || e.id=='oimsearch' || e.id=='menuslider' || e.id == 'rightmenuclosebutton') {
 				// This check to see a click is from with one of the menu's peventing the menu from closing unless the click comes from outsize the menu unless its a button
 			} else {
 				topbar.toggleAppMenu('outside');

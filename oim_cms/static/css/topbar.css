@@ -120,6 +120,17 @@
 	box-shadow: 1px 1px 5px 0px rgba(50, 50, 50, 0.82); 
 	display: none;
 }
+
+.myprofileboxmobile {
+	width: 100%;
+	background-color: #ffffff;
+	z-index: 103;
+	border-top: 3px solid #147ac5;
+    border-bottom: 3px solid #147ac5;
+	padding-bottom: 5px;
+	display:none;
+}
+
 .myprofilebox2 {
 	height: 250px;
 }
