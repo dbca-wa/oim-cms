@@ -1,12 +1,12 @@
 from wagtailtinymce.rich_text import TinyMCERichTextArea
-
+from django.utils import translation
+translation.activate('en')
 
 class CustomTinyMCERichTextArea(TinyMCERichTextArea):
 
     def __init__(self, attrs=None, **kwargs):
         super(CustomTinyMCERichTextArea, self).__init__(attrs)
         # NOTE: enable TinyMCE plugins in core/wagtail_hooks.py
-
         self.kwargs = {
 			'buttons': [
 				[
@@ -30,7 +30,8 @@ class CustomTinyMCERichTextArea(TinyMCERichTextArea):
 							'noneditable_leave_contenteditable': True,
 							'language_load': True,
 							'valid_elements': '*[*]',
-							'extended_valid_elements':'script[language|type|src],div,table'
+							'extended_valid_elements':'script[language|type|src],div,table',
+							'language': 'en'
 						},
 			'valid_elements': '*[*]',
 			'extended_valid_elements' :'script[language|type|src],div,table',
