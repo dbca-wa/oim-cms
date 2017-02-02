@@ -90,7 +90,7 @@ def breadcrumbs_f6(context, calling_page):
     menuitems = [] 
 
     if calling_page:
-		x = calling_page
+       x = calling_page
     else:
         return {
                  'menuitems': menuitems,
