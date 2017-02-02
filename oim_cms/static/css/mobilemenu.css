@@ -1,5 +1,5 @@
 #mobilemenu { 
-	width: 300px;
+	width: 320px;
 	z-index: 3000;
 }
 #mobilemenu ul { 
@@ -8,7 +8,7 @@
 	list-style: none;
 	float: left;
 	padding-bottom: 10px;
-	width: 280px;
+	width: 320px;
 	margin-left: 0px !important;
 }
 #mobilemenu ul li {
@@ -139,7 +139,7 @@
 #mobilemenu .headerbox .rightside {
 	float:right;
 	font-size: 22px;
-	padding-right: 20px;
+	padding-right: 30px;
 }
 
 .closemenu {

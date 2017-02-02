@@ -1,6 +1,6 @@
 {% load core_tags static wagtailcore_tags %}
 
-<div class="top-bar columns" style='z-index: 300'>
+<div class="top-bar columns" style='z-index: 300' >
 	<div class="top-bar-left show-for-large top-bar-large" style='padding-left: 20px;' >
 		<ul class="dropdown menu" data-dropdown-menu>
 			<li style='display:none'><a style="display:none" href="/">Home</a></li>
@@ -22,9 +22,9 @@
 
 		</ul>
 	</div>
-	<div class='show-for-small hide-for-large mobilemenu' id='rightslidemenu' >
+	<div class='show-for-small hide-for-large mobilemenu' id='rightslidemenu' style='display:none' >
 		<div id='mobilemenu' >
-			<div class='mainbox'>
+			<div class='mainbox' id='rightslidemenu'>
 				<div class='headerbox' id='rightmenuclosebutton'>
 					<span class='leftside' >MENU</span>
 					<span class='rightside' onclick="topbar.openRightSlideMenu();" id='rightmenuclosebutton'>
@@ -46,7 +46,7 @@
 							<a istyle="font-size: 12.5px; height: 45px; padding-top: 17px" href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
 						</span>
 						{% if menuitem.show_dropdown %}
-						<div class='submenu'>
+						<div class='submenu' >
 							{% f6_top_menu_children_mobile parent=menuitem vertical=True %}
 						</div>
 						{% endif %}
@@ -68,8 +68,9 @@
 	<div class='top-bar-right ' style='width:66px;'>
 		<ul class='right menu top-bar-profile'>
 			<li>
-				<IMG id='myprofilebutton' src="/static/images/busmanwomen2.png" onclick='topbar.toggleMyProfile()'>
 
+				<IMG  id='myprofilebutton' src="/static/images/busmanwomen2.png" onclick='topbar.toggleMyProfile()'>
+				<div class='show-for-large'>
 				<div class='myprofilebox' id='myprofileinfo'>
 					<div class='myprofilebox2'  id='myprofileinfosub'>
 						<div class='myprofilebox-textimg' id='myprofileinfosub'>
@@ -96,6 +97,7 @@
 							<A style='background: none; color: #004d88; font-weight: bold;' HREF='{% url 'logout' %}'>Log Out</A>
 						</div>
 					</div>
+				</div>
 				</div>
 
 			</li>
