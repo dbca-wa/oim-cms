@@ -5,22 +5,14 @@
     {% if block.block_type == 'heading' %}
         <h1>{{ block.value }}</h1>
     {% elif block.block_type == 'rich_text' %}
-		<div id='maincontentbox'>
         {{ block.value|richtext }}
-		</div>
     {% elif block.block_type == 'include_content' %}
-		<div id='maincontentbox'>
         {% include_content block.value %}
-		</div>
     {% elif block.block_type == 'content_list' %}
-		<div id='maincontentbox'>
 	        {% content_list block.value %}
-		</div>
 	{% elif block.block_type == 'background_image' %}
 		{% content_list block.value %}
     {% else %}
-		<div id='maincontentbox'>
         {{ block }}
-		</div>
     {% endif %}
 {% endfor %}
