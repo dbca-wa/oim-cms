@@ -1,76 +1,86 @@
 {% load core_tags static wagtailuserbar %}
+{% load wagtailimages_tags %}
+
+{% image self.background_image original as background_photo_cover %}
 
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title>{% block title %}{% if self.seo_title %}{{ self.seo_title }}{% else %}{{ self.title }}{% endif %}{% endblock %}{% block title_suffix %} - Office for Information Management - Department of Parks and Wildlife{% endblock %}</title>
-        <meta name="description" content="" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>{% block title %}{% if self.seo_title %}{{ self.seo_title }}{% else %}{{ self.title }}{% endif %}{% endblock %}{% block title_suffix %} - Office for Information Management - Department of Parks and Wildlife{% endblock %}</title>
+		<meta name="description" content="" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/modernizr/2.8.3/modernizr.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/jquery/2.1.4/jquery.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/localforage/1.3.0/localforage.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation/5.5.3/js/foundation.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js"></script>
-        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/js/egg.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/modernizr/2.8.3/modernizr.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/jquery/2.1.4/jquery.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/localforage/1.3.0/localforage.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation/5.5.3/js/foundation.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js"></script>
+		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/js/egg.js"></script>
 		<script type="text/javascript" src="{% static 'js/notification.js' %}"></script>
 		<script type="text/javascript" src="{% static 'js/validation.js' %}"></script>
 		<script type="text/javascript" src="{% static 'js/utils.js' %}"></script>
 		<script type="text/javascript" src="{% static 'js/topbar.js' %}"></script>
 		<script type="text/javascript" src="{% static 'js/common.js' %}"></script>
 
-        <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon.png' %}">
-        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
-        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/font-awesome/4.5.0/css/font-awesome.min.css" />
-        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css" />
-        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/css/foundation/stylesheets/oim_cms_v1.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/dpawforms.css' %}" />
-        <link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/selectsize.default.css' %}" />
-		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/notification.css' %}" />
+		<link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon.png' %}">
+		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/font-awesome/4.5.0/css/font-awesome.min.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/css/foundation/stylesheets/oim_cms_v1.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/selectsize.default.css' %}" />
 		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/topbar.css' %}" />
+
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/dpawforms.css?version=' %}{{ application_version }}" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/notification.css?version=' %}{{ application_version }}" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/topbar.css?version=' %}{{ application_version }}" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/maincontent.css?version=' %}{{ application_version }}" />
+		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/mobilemenu.css?version=' %}{{ application_version }}" />
+
 		{% block extra_css %}{% endblock %}
-    </head>
-	<div id='notification-topbar'></div>
-    <body class="{% block body_class %}{% endblock %}">
+	</head>
+	<div id='notification-topbar' style='display:none;'></div>
+	<body class="{% block body_class %}{% endblock %}">
 		{% if request.user.is_authenticated %}
 		<input type='hidden' id='authed' value='True'>
 		{% else %}
 		<input type='hidden' id='authed' value='False'>
 		{% endif %}
 
-        {% if 'fullscreen' not in request.GET %}
-        {% wagtailuserbar %}
-        <div class="off-canvas-wrap" data-offcanvas>
-	        <div class="inner-wrap">
-                <div class="content" id="content">
-                    {% block header %}
-                    {% get_site_root as site_root %}
-                    {% top_menu parent=site_root calling_page=self %}
-                    {% endblock %}
-                    {% block content %}{% endblock %}
-                </div>
-                <div class="footer hide-for-print"><div class="footer-inner">
-                    {% block footer %}{% include_content "footer" %}{% endblock %}
-                    <div class="row">
-                        <div class="columns end text-right"><small>v{{ application_version }}</small></div>
-                    </div>
-                </div>
-              </div>
-            </div><!--inner-wrap-->
-        </div><!--off-canvas-wrap-->
-        {% endif %}
-        {% if 'fullscreen' in request.GET %}
-            <div class="hide">{% include_content "footer" %}</div>
-            <style type="text/css">.row {min-width:100% !important;}</style>
-        {% endif %}
+		{% if 'fullscreen' not in request.GET %}
+		{% wagtailuserbar %}
+		<div class="off-canvas-wrap" data-offcanvas>
+			<div class="inner-wrap">
+				<div id="content" class="content background-content" style="background: url('{{ background_photo_cover.url }}') no-repeat center center fixed; background-color: #FFFFFF !important;";>
+					{% block header %}
+					{% get_site_root as site_root %}
+					{% top_menu parent=site_root calling_page=self %}
+					{% endblock %}
+					{% block content %}{% endblock %}
+				</div>
 
-        <script type="text/javascript" src="{% static 'js/oim_cms.js' %}"></script>
-        <script type="text/javascript" src="{% static 'js/oim_cms_useradmin.js' %}"></script>
-        <script type="text/javascript" src="{% static 'js/selectize.js' %}"></script>
 
-        {% block extra_js %}{% endblock %}
-    </body>
+				<div class="footer hide-for-print"><div class="footer-inner">
+						{% block footer %}{% include_content "footer" %}{% endblock %}
+						<div class="row">
+							<div class="columns end text-right"><small>v{{ application_version }}</small></div>
+						</div>
+					</div>
+				</div>
+			</div><!--inner-wrap-->
+		</div><!--off-canvas-wrap-->
+		{% endif %}
+		{% if 'fullscreen' in request.GET %}
+		<div class="hide">{% include_content "footer" %}</div>
+		<style type="text/css">.row {min-width:100% !important;}</style>
+		{% endif %}
+
+		<script type="text/javascript" src="{% static 'js/oim_cms.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/oim_cms_useradmin.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/selectize.js' %}"></script>
+
+		{% block extra_js %}{% endblock %}
+	</body>
 </html>

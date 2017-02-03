@@ -132,9 +132,8 @@ var topbar = {
 
 
 	},
-	openRightSlideMenu: function() { 
+	openRightSlideMenu: function() {
 		    $('#rightslidemenu').animate({width:'toggle'});
-
 	}
 
 }
