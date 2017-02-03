@@ -115,7 +115,7 @@ class Content(Page):
 
         if self.body_simple is not None:
            if len(self.body_simple) > 1: 
-		      template_name = 'f6-content.html'
+                  template_name = 'f6-content.html'
 
         return '{}/{}'.format(self.__class__._meta.app_label, template_name)
 
