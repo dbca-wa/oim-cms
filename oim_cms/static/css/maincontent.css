@@ -2,8 +2,8 @@
 	font-weight: bold;
 	padding-top: 15px;
 	font-size: 23px;
-	text-shadow: 2px 2px #b5b0b0;
 	color: #003862;
+	padding-left: 7px;
 }
 #maincontentarea h2 {
 	font-size: 19px;
@@ -141,7 +141,6 @@
 .main-content {
 	background-color: rgb(255, 255, 255); 
 	padding-bottom: 20px; 
-	opacity: 0.96; 
 	min-height: 914px;
 }
 
