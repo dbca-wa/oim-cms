@@ -54,8 +54,13 @@
 	content: "➤  \00a0";
 	font-size: 10px;
 	margin-bottom:3px;
+	color: #FFFFFF;
 }
 
+#mobilemenu li span a {
+	color: #FFFFFF;
+	font-weight: normal !important;
+}
 #mobilemenu ul ul ul li a {
 	font-size: 12px !important;
 	height: 45px;
@@ -111,7 +116,7 @@
 	position: absolute;
 	right: 0px;
 	z-index: 5000;
-	height: 100%;
+	height: 900px;
 	background-color: #003862;
 	margin-right: -10px;
 }
@@ -127,6 +132,7 @@
 	margin-top: 10px;
 	float: left;
 	width: 100%;
+	color: #FFFFFF;
 }
 #mobilemenu .headerbox .leftside {
 	padding-top: 7px;
@@ -175,6 +181,7 @@
 	width: 100%; 
 	padding-top: 20px; 
 	padding-bottom: 20px;
+	font-size: 1rem;
 }
 .sliderbutton a {
 	font-size: 12.5px !important; 
@@ -186,4 +193,12 @@
 .sliderbutton i {
 	height: 100px !important;
 	font-size: 33px !important;
+}
+.fi-list2:before{
+	content: "\f0c9";
+	color: #FFFFFF;
+	font-size: 26px !important;
+}
+.fa {
+	font: normal normal normal 14px/1 FontAwesome;
 }

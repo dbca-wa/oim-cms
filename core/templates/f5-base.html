@@ -58,6 +58,39 @@
 					{% get_site_root as site_root %}
 					{% top_menu parent=site_root calling_page=self %}
 					{% endblock %}
+					<div class='row show-for-small'>
+					<div class='myprofileboxmobile' id='myprofileinfomobile'>
+                    <div class='myprofilebox2'  id='myprofileinfosub'>
+                        <div class='myprofilebox-textimg' id='myprofileinfosub'>
+                            <div class='myprofilebox-img' >
+                                <img src="/static/images/busmanwomen2.png" style="height: 85px; width: 85px; border: 1px solid #f3f0f0; padding: 5px;" id='myprofileimage2'>
+                                <div>
+                                    <a style='font-size: 12px; font-weight: normal; text-align: center; width: 100%; float: left; padding-top: 5px; background: none; color: #004d88' href=''>change</a>
+                                </div>
+                            </div>
+                            <div class='myprofilebox-text' id='myprofileinfosub'>
+                                <div  class='myprofilebox-text-area' id='myprofileinfosub' >
+                                    <div class='myprofilebox-text-name' id='myprofileinfosub'> <span style='text-transform: uppercase;' id='myprofileinfosub' >{{ request.user.last_name }}</span>, <span id='myprofileinfosub' style=' text-transform: capitalize;'>{{ request.user.first_name }}</span></div>
+                                    <div class='myprofilebox-text-email' id='myprofileinfosub'> {{ request.user.email }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class='myprofilebox-item' >
+                            <A style='background: none; color: #004d88; font-weight: bold;' HREF=''>About Me</A>
+                        </div>
+                        <div  class='myprofilebox-item'>
+                            <A HREF='/profile/'>My Profile</A>
+                        </div>
+                        <div class='myprofilebox-item-end' >
+                            <A style='background: none; color: #004d88; font-weight: bold;' HREF='{% url 'logout' %}'>Log Out</A>
+                        </div>
+                    </div>
+                </div>
+				</div>
+
+
+
+
 					{% block content %}{% endblock %}
 				</div>
 

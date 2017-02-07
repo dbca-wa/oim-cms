@@ -116,7 +116,7 @@ CRON_CLASSES = (
     'organisation.cron.PasswordReminderCronJob',
 )
 ROOT_URLCONF = 'oim_cms.urls'
-APPLICATION_VERSION = '1.3.1'
+APPLICATION_VERSION = '1.3.2'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
 
 # Database configuration

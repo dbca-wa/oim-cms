@@ -1,7 +1,7 @@
 {% load core_tags static wagtailcore_tags %}
 {% get_site_root as site_root %}
 
-<nav class="tab-bar show-for-small hide-for-print draft-bg-change">
+<nav class='hide' dclass="tab-bar show-for-small hide-for-print draft-bg-change">
 	<section class="left-small">
 		<a class="left-off-canvas-toggle menu-icon"><span></span></a>
 	</section>
@@ -13,7 +13,7 @@
 	</section>
 </nav>
 
-<aside class="left-off-canvas-menu" aria-hidden="true">
+<aside class='hide' class="left-off-canvas-menu" aria-hidden="true">
 	<ul class="off-canvas-list">
 		<li><label>Navigation</label></li>
 		<li><a href="/">Home</a></li>
@@ -47,8 +47,8 @@
 	</div>
 </div>
 
-<div class="header-topbar hide-for-print">
-	<nav class="top-bar hide-for-small row menusize" data-topbar >
+<div class="header-topbar">
+	<nav class="top-bar row menusize show-for-all" data-topbar style='overflow:visible !important'>
 		<section class="appmenu-section" >
 			<ul class="left" style='    margin-left: 0px;' >
 				<li  class='has-dropdown appmenu' data-options="is_hover:false">
@@ -65,11 +65,11 @@
 			</ul>
 		</section>
 
-		<section class="top-bar-section" >
+		<section class="top-bar-section hide-for-small" >
 			<ul class="left">
 				<li>
 					<span class='topbarlogo' style='padding-left:0px;'>
-						<a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a>
+						<a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet" style='margin-top: -5px'></a>
 					</span>
 
 				</li>
@@ -84,31 +84,103 @@
 				{% endfor %}
 			</ul>
 		</section>
-		<section class='top-bar-profile' >
-			<ul class="right" class='top-bar-profile'>
 
-				<li>     
-					<IMG id='myprofilebutton' src="/static/images/busmanwomen2.png" onclick='topbar.toggleMyProfile()'>
+		<section class="show-for-small" style='margin-left:0px;'>
+			<ul class="left" style='margin-left: 8px'>
+				<li>
+					<span class='topbarlogo' style='padding-left:0px; width: 55px; '>
+						<a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet" style='position: absolute;'></a>
+					</span>
+					<span style='margin-left: 41px; background-color: #003862; height: 45px; width: 210px; position:absolute;'>
+					&nbsp;
+					</span>
 
-					<div class='myprofilebox' id='myprofileinfo'>
-						<div class='myprofilebox2'  id='myprofileinfosub'>
-							<div class='myprofilebox-textimg' id='myprofileinfosub'>
-								<div class='myprofilebox-img' ><img src="/static/images/busmanwomen2.png" style="height: 85px; border: 1px solid #f3f0f0; padding: 5px;" id='myprofileimage2'><div><a style='font-size: 12px; font-weight: normal; text-align: center; width: 100%; float: left; padding-top: 5px' href=''>change</a></div> </div>
-								<div class='myprofilebox-text' id='myprofileinfosub'>
-									<div  class='myprofilebox-text-area' id='myprofileinfosub' >
-										<div class='myprofilebox-text-name' id='myprofileinfosub'> <span style='text-transform: uppercase;' id='myprofileinfosub' >{{ request.user.last_name }}</span>, <span id='myprofileinfosub' style=' text-transform: capitalize;'>{{ request.user.first_name }}</span></div>
-										<div class='myprofilebox-text-email' id='myprofileinfosub'>	{{ request.user.email }}</div>
-									</div>	
+
+				</li>
+			</ul>
+		</section>
+
+
+
+
+		<section class='top-bar-menu hide-for-large' >
+			<div  >
+				<ul class="right menu" style='width: 40px; margin-left:0px;'>
+					<li onclick="topbar.openRightSlideMenu();" id='rightslidermenubutton' class='sliderbutton' style='width: 40px;' >
+						<a id='rightslidermenubutton' data-toggle><i id='rightslidermenubutton'  class="fi-list2 fa" style='margin-right: 0.25rem; display: inline-block; height 40px !important;display: block; font-weight: bold;padding: 3px 8px 8px 8px; font-size: 26px;; position: absolute;'></i> &nbsp; </a>
+
+					</li>
+				</ul>
+				<ul>
+					<div class=' mobilemenu' id='rightslidemenu' style='display:none' >
+						<div id='mobilemenu'>
+							<div class='mainbox' id='rightslidemenu'>
+								<div class='headerbox' id='rightmenuclosebutton'>
+									<span class='leftside' >MENU</span>
+									<span class='rightside' onclick="topbar.openRightSlideMenu();" id='rightmenuclosebutton'>
+										<div class='closemenu' id='rightmenuclosebutton'>&nbsp;&nbsp;<span id='rightmenuclosebutton' > &#215; </span></div>
+									</span>
+								</div>
+								<ul id='menuslider'>
+									<li class='mobilesearch' id='meunslidersub' >
+										<div id='meunslidersub'>
+											<form method="get" action="{% url 'search' %}" role="search">
+												<input name="q" type="search" placeholder="Search OIM Extranet"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} id='oimsearch' />
+											</form>
+										</div>
+									</li>
+									{% for menuitem in menuitems %}
+									<li id='meunslidersub' >
+										<span class='text'>
+											<a istyle="font-size: 12.5px; height: 45px; padding-top: 17px" href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+										</span>
+										{% if menuitem.show_dropdown %}
+										<div class='submenu' >
+											{% f6_top_menu_children_mobile parent=menuitem vertical=True %}
+										</div>
+											{% endif %}
+									</li>
+									{% endfor %}
+
+								</ul>
+								<!-- Department of Planning and Wildlife Logo -->
+								<div style='width: 100%; text-align: left;' >
+									<img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife" style='height: 50px; margin-left: 30px;    -webkit-filter: invert(1); filter: brightness(0) invert(1)'>
 								</div>
 							</div>
-							<div class='myprofilebox-item' >  
-								<A HREF=''>About Me</A>
-							</div>
-							<div  class='myprofilebox-item'> 
-								<A HREF='/profile/'>My Profile</A>
-							</div>
-							<div class='myprofilebox-item-end' >
-								<A HREF='{% url 'logout' %}'>Log Out</A>
+						</div>
+				</ul>
+
+					</div>
+		</section>
+
+
+		<section class='top-bar-profile' style='z-index: 4000;'>
+			<ul class="right" class='top-bar-profile'>
+				<li>     
+					<IMG id='myprofilebutton' src="/static/images/busmanwomen2.png" onclick='topbar.toggleMyProfile()' style='z-index: 4000;'>
+					<div class='hide-for-small'>
+						<div class='myprofilebox hide' id='myprofileinfo'>
+							<div class='myprofilebox2'  id='myprofileinfosub'>
+								<div class='myprofilebox-textimg' id='myprofileinfosub'>
+									<div class='myprofilebox-img' ><img src="/static/images/busmanwomen2.png" style="height: 85px; border: 1px solid #f3f0f0; padding: 5px;" id='myprofileimage2'><div><a style='font-size: 12px; font-weight: normal; text-align: center; width: 100%; float: left; padding-top: 5px' href=''>change</a></div> </div>
+									<div class='myprofilebox-text' id='myprofileinfosub'>
+										<div  class='myprofilebox-text-area' id='myprofileinfosub' >
+											<div class='myprofilebox-text-name' id='myprofileinfosub'> 
+												<span style='text-transform: uppercase;' id='myprofileinfosub' >{{ request.user.last_name }}</span>, <span id='myprofileinfosub' style=' text-transform: capitalize;'>{{ request.user.first_name }}</span></div>
+											<div class='myprofilebox-text-email' id='myprofileinfosub'>	{{ request.user.email }}</div>
+										</div>	
+									</div>
+								</div>
+								<div class='myprofilebox-item' >  
+									<A HREF=''>About Me</A>
+								</div>
+								<div  class='myprofilebox-item'> 
+									<A HREF='/profile/'>My Profile</A>
+								</div>
+								<div class='myprofilebox-item-end' >
+									<A HREF='{% url 'logout' %}'>Log Out</A>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -116,19 +188,22 @@
 				</li>
 			</ul>
 		</section>
-		<section class='top-bar-search' >
-			<ul class="right" >
-				<li class="has-form">
-					{% block search %}
-					<form method="get" action="{% url 'search' %}" role="search">
-						<input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
-					</form>
-				{% endblock %}
-				</li>
-			</ul>
+		<section class='top-bar-search hide-for-small' >
+			<div >
+				<ul class="right" >
+					<li class="has-form">
+						{% block search %}
+						<form method="get" action="{% url 'search' %}" role="search">
+							<input name="q" type="search" placeholder="Search"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
+						</form>
+					{% endblock %}
+					</li>
+				</ul>
+			</div>
 		</section>
+
 	</nav>
 
-</div>
+			</div>
 
-<a class="exit-off-canvas" href="#"></a>
+			<a class="exit-off-canvas" href="#"></a>
