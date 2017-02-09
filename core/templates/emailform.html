@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width" />
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>{{ subject }} ( {{ request.path }} )</title>
+    </head>
+    <body>
+        {% if email != True %}<p><i>The form info below has been sent to {{ request.user.email }}</i></p>{% endif %}
+        <h4>{{ subject }} ( <a href="{{ request.build_absolute_uri }}">{{ request.path }}</a> )</h4>
+        This form was generated for {{ request.user.email }} - if you are happy with its contents, please reply (this will direct it to OIM Support for actioning).
+
+        <dl>
+        {% for key, value in request.POST.iteritems %}{% if key != 'csrfmiddlewaretoken' %}
+          <dt><b>{{ key }}</b></dt>
+          <dd>{{ value }}</dd>
+        {% endif %}{% endfor %}
+        </dl>
+    </body>
+</html>

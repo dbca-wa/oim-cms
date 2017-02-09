@@ -21,6 +21,10 @@ from wagtail.wagtailcore.fields import StreamField
 from wagtail.wagtailimages.formats import Format, register_image_format
 from wagtail.wagtailsearch import index
 
+from wagtail.wagtailcore import hooks
+from django.shortcuts import render
+from django.core.mail import send_mail
+
 from organisation.models import DepartmentUser
 
 '''To add a new size format use the following format
@@ -89,7 +93,7 @@ class Content(Page):
         ('content.html', 'content.html'),
         ('f6-content.html', 'f6-content.html'),
         ('f6-vue.html', 'f6-vue.html'),
-    ), default='content.html')
+    ), default='f6-content.html')
     tags = ClusterTaggableManager(through=ContentTag, blank=True)
 
     def get_template(self, request, *args, **kwargs):
@@ -125,3 +129,14 @@ class Content(Page):
 
     class Meta:
         ordering = ('date',)
+
+
+@hooks.register('before_serve_page')
+def submit_form(page, request, serve_args, serve_kwargs):
+    if request.method == 'POST':
+        subject = request.POST.get('Subject', "OIM Extranet Form")
+        email = render(request, "emailform.html", {"subject": subject, "email": True}).content
+        send_mail("{} ( {} )".format(subject, request.path), email, "OIM Extranet <oimsupport@dpaw.wa.gov.au>", 
+            [request.user.email], html_message=email, fail_silently=False)
+        response = render(request, "emailform.html", {"subject": subject})
+        return response
