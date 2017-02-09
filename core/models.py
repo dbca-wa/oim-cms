@@ -135,8 +135,9 @@ class Content(Page):
 def submit_form(page, request, serve_args, serve_kwargs):
     if request.method == 'POST':
         subject = request.POST.get('Subject', "OIM Extranet Form")
-        email = render(request, "emailform.html", {"subject": subject, "email": True}).content
+        postdata = sorted(request.POST.items())
+        email = render(request, "emailform.html", {"subject": subject, "email": True, "postdata": postdata}).content
         send_mail("{} ( {} )".format(subject, request.path), email, "OIM Extranet <oimsupport@dpaw.wa.gov.au>", 
             [request.user.email], html_message=email, fail_silently=False)
-        response = render(request, "emailform.html", {"subject": subject})
+        response = render(request, "emailform.html", {"subject": subject, "postdata": postdata})
         return response
