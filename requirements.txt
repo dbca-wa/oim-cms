@@ -1,5 +1,6 @@
-Django==1.9.9
-django-extensions==1.6.7
+Django==1.10.5
+django-extensions==1.7.6
+django-uwsgi==0.1.6
 git+https://github.com/parksandwildlife/dpaw-utils.git@0.3a12#egg=dpaw-utils
 wagtail==1.8
 wagtailtinymce==4.2.1.5
@@ -12,7 +13,7 @@ python-dateutil==2.4.2
 django-model-utils==2.5
 django-debug-toolbar==1.5
 django-compressor==2.0
-restless==2.0.1
+restless==2.0.3
 #cx-Oracle==5.2.1  # Leave commented so Travis CI doesn't break :/
 dj-database-url==0.4.1
 
@@ -25,7 +26,7 @@ graphviz==0.4.8
 # fork of JSON to HTML lib with python 3 fixes
 git+https://github.com/scottp-dpaw/json2html.git@py3#egg=json2html
 
-djangorestframework==3.3.1
+djangorestframework==3.4.0
 Babel==2.2.0
 pycsw==2.0.2
 SQLAlchemy==1.0.12
@@ -37,7 +38,6 @@ django-filter==0.13.0
 Unidecode==0.04.19
 mixer==5.5.7
 django-cron==0.5.0
-django-confy==1.0.4
 coverage>=4.0.3
 coveralls>=1.1
 mock>=2.0.0

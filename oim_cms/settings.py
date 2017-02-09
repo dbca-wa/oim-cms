@@ -8,7 +8,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # Define the following in the environment:
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG', False)
-ALLOWED_HOSTS = [env('ALLOWED_DOMAIN'), ]
+if not DEBUG:
+    ALLOWED_HOSTS = [env('ALLOWED_DOMAIN'), ]
+else:
+    ALLOWED_HOSTS = ['*']
 INTERNAL_IPS = ['127.0.0.1', '::1']
 
 # Base URL to use when referring to full URLs within the Wagtail admin backend
@@ -266,7 +269,7 @@ LOGGING = {
             'maxBytes': 1024 * 1024 * 5,
             'backupCount': 5,
         },
-        'ad_file' : {
+        'ad_file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'ad_sync_actions.log'),
@@ -284,12 +287,12 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'INFO'
         },
-        'organisation' : {
+        'organisation': {
             'handlers': ['file'],
             'level': 'DEBUG'
         },
-        'ad_sync' : {
-            'handlers' : ['ad_file'],
+        'ad_sync': {
+            'handlers': ['ad_file'],
             'level': 'INFO'
         }
     }
