@@ -5,10 +5,10 @@ git+https://github.com/parksandwildlife/dpaw-utils.git@0.3a12#egg=dpaw-utils
 wagtail==1.8
 wagtailtinymce==4.2.1.5
 django-queryset-csv==1.0.0
-django-mptt==0.8.6
+django-mptt==0.8.7
 django-mptt-admin==0.4.1
-django-leaflet==0.19.0
-django-reversion==1.10.2
+django-leaflet==0.20.0
+django-reversion==2.0.8
 python-dateutil==2.4.2
 django-model-utils==2.5
 django-debug-toolbar==1.5
