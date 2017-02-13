@@ -264,13 +264,16 @@ class DepartmentUserResource(DjangoResource):
         if exclude_populate_groups:  # Exclude objects where populate_primary_group == False
             qs = qs.exclude(populate_primary_group=False)
         structure = []
-        if sync_o365:
-            orgunits = OrgUnit.objects.filter(sync_o365=True)
+        if sync_o365: # Exclude certain things from populating O365/AD
+            orgunits = OrgUnit.objects.filter(unit_type__in = [0,1])
+            costcentres = [] # CostCentre.objects.all()
+            locations = Location.objects.all()
+            slocations = [] # SecondaryLocation.objects.all()
         else:
             orgunits = OrgUnit.objects.all()
-        costcentres = CostCentre.objects.all()
-        locations = Location.objects.all()
-        slocations = SecondaryLocation.objects.all()
+            costcentres = CostCentre.objects.all()
+            locations = Location.objects.all()
+            slocations = SecondaryLocation.objects.all()
         defaultowner = 'support@dpaw.wa.gov.au'
         for obj in orgunits:
             members = [d[0] for d in qs.filter(org_unit__in=obj.get_descendants(include_self=True)).values_list('email')]

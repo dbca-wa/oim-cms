@@ -43,7 +43,7 @@ class DepartmentUser(MPTTModel):
     cost_centre = models.ForeignKey(
         "organisation.CostCentre", on_delete=models.PROTECT, null=True)
     cost_centres_secondary = models.ManyToManyField(
-        "organisation.CostCentre", related_name="cost_centres_secondary",
+        "organisation.CostCentre", related_name="cost_centres_secondary", editable=False,
         blank=True, help_text='NOTE: this provides security group access (e.g. T drives).')
     org_unit = models.ForeignKey(
         "organisation.OrgUnit", on_delete=models.PROTECT, null=True, blank=True,
@@ -51,7 +51,7 @@ class DepartmentUser(MPTTModel):
         help_text="""The organisational unit that represents the user's"""
         """ primary physical location (also set their distribution group).""")
     org_units_secondary = models.ManyToManyField(
-        "organisation.OrgUnit", related_name="org_units_secondary", blank=True,
+        "organisation.OrgUnit", related_name="org_units_secondary", blank=True, editable=False,
         help_text='NOTE: this provides email distribution group access.')
     extra_data = JSONField(null=True, blank=True)
     ad_guid = models.CharField(max_length=48, unique=True, editable=False)
@@ -127,7 +127,8 @@ class DepartmentUser(MPTTModel):
     working_hours = models.TextField(
         default="N/A", null=True, blank=True,
         help_text="Description of normal working hours")
-    secondary_locations = models.ManyToManyField("organisation.Location", blank=True)
+    secondary_locations = models.ManyToManyField("organisation.Location", blank=True, 
+        help_text="Only to be used for staff working in additional loactions from their cost centre")
     populate_primary_group = models.BooleanField(
         default=True,
         help_text="If unchecked, user will not be added to primary group email")

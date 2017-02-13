@@ -34,8 +34,7 @@ class DepartmentUserAdmin(ModelAdmin):
         'o365_licence']
     search_fields = ['name', 'email', 'username', 'employee_id', 'preferred_name']
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
-    filter_horizontal = [
-        'cost_centres_secondary', 'org_units_secondary', 'secondary_locations']
+    filter_horizontal = ['secondary_locations']
     readonly_fields = [
         'username', 'email', 'org_data_pretty', 'ad_data_pretty',
         'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
@@ -57,7 +56,6 @@ class DepartmentUserAdmin(ModelAdmin):
             'fields': (
                 'preferred_name', 'photo', 'title', 'parent',
                 'account_type', 'position_type',
-                'cost_centres_secondary', 'org_units_secondary',
                 'telephone', 'mobile_phone', 'extension', 'other_phone',
                 'populate_primary_group', 'vip', 'executive', 'contractor',
                 'secondary_locations', 'notes', 'working_hours', 'extra_data',
