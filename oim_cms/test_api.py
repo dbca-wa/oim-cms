@@ -144,6 +144,9 @@ class OptionResourceTestCase(ApiTestCase):
         self.user1.org_unit = None
         self.user1.cost_centre = None
         self.user1.save()
+        self.user3.org_unit = None
+        self.user3.cost_centre = None
+        self.user3.save()
         self.shared.org_unit = None
         self.shared.cost_centre = None
         self.shared.save()
