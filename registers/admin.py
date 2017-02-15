@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, absolute_import
+from django import forms
 from django.conf.urls import url
 from django.contrib.admin import register
 from django.http import HttpResponse
@@ -63,6 +64,21 @@ class ITSystemHardwareAdmin(VersionAdmin):
         return response
 
 
+class ITSystemForm(forms.ModelForm):
+
+    class Meta:
+        model = ITSystem
+        exclude = []
+
+    def clean_biller_code(self):
+        """Validation on the biller_code field: must be unique (ignore null values).
+        """
+        data = self.cleaned_data['biller_code']
+        if ITSystem.objects.filter(biller_code=data).exists():
+            raise forms.ValidationError('An IT System with this biller code already exists.')
+        return data
+
+
 @register(ITSystem)
 class ITSystemAdmin(VersionAdmin):
     list_display = (
@@ -125,10 +141,12 @@ class ITSystemAdmin(VersionAdmin):
         'unique_evidence',
         'point_of_truth',
         'legal_need_to_retain',
+        'biller_code',
         'extra_data',
     ]
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystem/change_list.html'
+    form = ITSystemForm  # Use the custom ModelForm.
 
     def get_urls(self):
         urls = super(ITSystemAdmin, self).get_urls()

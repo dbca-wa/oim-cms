@@ -312,6 +312,9 @@ class ITSystem(CommonFields):
         null=True, blank=True, verbose_name='Service Level Agreement',
         help_text='''Details of any Service Level Agreement that exists for'''
         ''' this IT System (typically with an external vendor).''')
+    biller_code = models.CharField(
+        max_length=64, null=True, blank=True,
+        help_text='BPAY biller code for this IT System (must be unique).')
 
     class Meta:
         verbose_name = 'IT System'
@@ -340,6 +343,7 @@ class ITSystem(CommonFields):
         self.criticality_display = self.get_criticality_display()
         self.availability_display = self.get_availability_display()
         self.system_type_display = self.get_system_type_display()
+        # Note that biller_code uniqueness is checked in the admin ModelForm.
         super(ITSystem, self).save(*args, **kwargs)
 
     @property
