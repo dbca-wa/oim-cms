@@ -155,6 +155,7 @@ class ITSystemResource(CSVDjangoResource):
             'legal_need_to_retain': 'Unknown' if data.legal_need_to_retain is None else data.legal_need_to_retain,
             'other_projects': data.other_projects,
             'sla': data.sla,
+            'biller_code': data.biller_code,
         }
         return prepped
 
