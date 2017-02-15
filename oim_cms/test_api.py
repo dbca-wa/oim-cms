@@ -24,7 +24,7 @@ class ApiTestCase(TestCase):
 
     def setUp(self):
         # Generate some other DepartmentUser objects.
-        mixer.cycle(5).blend(
+        mixer.cycle(6).blend(
             DepartmentUser, photo=None, active=True,
             email=random_dpaw_email, org_unit=None,
             cost_centre=None, ad_guid=uuid1, o365_licence=False, in_sync=False)
@@ -75,6 +75,11 @@ class ApiTestCase(TestCase):
         self.shared.org_unit = self.div1
         self.shared.cost_centre = self.cc1
         self.shared.save()
+        # Make a user that doesn't manage a division.
+        self.user3 = users[5]
+        self.user3.org_unit = self.div1
+        self.user3.cost_centre = self.cc1
+        self.user3.save()
         # Generate some IT Systems.
         self.it1 = mixer.blend(ITSystem, status=0, owner=self.user1)
         self.it2 = mixer.blend(ITSystem, status=1, owner=self.user2)
@@ -283,7 +288,12 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         self.assertEqual(response.status_code, 200)
         # User 1 will be present in the response.
         self.assertContains(response, self.user1.email)
-        # Test sync_o365=true request parameter.
+        # Division 1 will be present in the response.
+        self.assertContains(response, self.div1.name)
+
+    def test_org_structure_sync_0365(self):
+        """Test the sync_o365=true request parameter
+        """
         self.div1.sync_o365 = False
         self.div1.save()
         url = '/api/users/?org_structure=true&sync_o365=true'
@@ -291,14 +301,21 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         self.assertEqual(response.status_code, 200)
         # Division 1 won't be present in the response.
         self.assertNotContains(response, self.div1.name)
-        # Test populate_groups=true request parameter.
-        self.user1.populate_primary_group = False
-        self.user1.save()
+
+    def test_org_structure_populate_groups_members(self):
+        """Test populate_groups=true request parameter
+        """
         url = '/api/users/?org_structure=true&populate_groups=true'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        # User 1 won't be present in the response.
-        self.assertNotContains(response, self.user1.email)
+        # User 3 will be present in the response.
+        self.assertContains(response, self.user3.email)
+        self.user3.populate_primary_group = False
+        self.user3.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # User 3 won't be present in the response.
+        self.assertNotContains(response, self.user3.email)
 
     def test_create(self):
         """Test the DepartmentUserResource create response
