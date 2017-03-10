@@ -39,7 +39,6 @@ INSTALLED_APPS = (
     'mptt',
     'django_mptt_admin',
     'leaflet',
-    'django_cron',
 
     'wagtail.wagtailcore',
     'wagtail.wagtailadmin',
@@ -115,11 +114,8 @@ MIDDLEWARE_CLASSES = (
     'wagtail.wagtailredirects.middleware.RedirectMiddleware',
     'dpaw_utils.middleware.SSOLoginMiddleware',
 )
-CRON_CLASSES = (
-    'organisation.cron.PasswordReminderCronJob',
-)
 ROOT_URLCONF = 'oim_cms.urls'
-APPLICATION_VERSION = '1.2.8'
+APPLICATION_VERSION = '1.2.9'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
 
 # Database configuration
