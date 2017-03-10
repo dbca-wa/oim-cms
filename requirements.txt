@@ -1,17 +1,17 @@
-Django==1.10.5
-django-extensions==1.7.6
+Django==1.10.6
+django-extensions==1.7.7
 django-uwsgi==0.1.6
 git+https://github.com/parksandwildlife/dpaw-utils.git@0.3a12#egg=dpaw-utils
-wagtail==1.8
+wagtail==1.9
 wagtailtinymce==4.2.1.5
 django-queryset-csv==1.0.0
 django-mptt==0.8.7
-django-mptt-admin==0.4.1
-django-leaflet==0.20.0
+django-mptt-admin==0.4.4
+django-leaflet==0.21.0
 django-reversion==2.0.8
 python-dateutil==2.4.2
 django-model-utils==2.5
-django-debug-toolbar==1.5
+django-debug-toolbar==1.7
 django-compressor==2.0
 restless==2.0.3
 #cx-Oracle==5.2.1  # Leave commented so Travis CI doesn't break :/
@@ -37,7 +37,6 @@ unicodecsv==0.14.1
 django-filter==0.13.0
 Unidecode==0.04.19
 mixer==5.5.7
-django-cron==0.5.0
-coverage>=4.0.3
-coveralls>=1.1
-mock>=2.0.0
+coverage==4.0.3
+coveralls==1.1
+mock==2.0.0
