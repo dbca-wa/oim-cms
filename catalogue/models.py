@@ -677,7 +677,7 @@ class Style(models.Model):
     def save(self, *args, **kwargs):
         update_fields=None
         clean_name = self.name.split('.')
-        self.content.name = 'catalogue/styles/{}_{}.{}'.format(self.record.identifier.replace(':', '_'), clean_name[0], self.format.lower())
+        self.content.name = '{}_{}.{}'.format(self.record.identifier.replace(':', '_'), clean_name[0], self.format.lower())
         if self.pk is not None:
             update_fields=kwargs.get("update_fields", ["default", "content", "checksum"])
             if "content" in update_fields:
