@@ -42,6 +42,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.utils import timezone
+from django.core.files.storage import FileSystemStorage
 
 slug_re = re.compile(r'^[a-z0-9_]+$')
 validate_slug = RegexValidator(slug_re, "Slug can only contain lowercase letters, numbers and underscores", "invalid")
@@ -627,6 +628,17 @@ def update_modify_date(sender, instance, **kwargs):
                     update_fields.append("modified")
     
 
+def styleFilePath(instance,filename):
+    return "catalogue/styles/{}_{}.{}".format(instance.record.identifier.replace(':','_'),instance.name.split('.')[0],instance.format.lower())
+
+class StyleStorage(FileSystemStorage):
+    def get_available_name(self, name, max_length=None):
+        """
+        If the name already exist, remove it 
+        """
+        if self.exists(name):
+            self.delete(name)
+        return name
 
 class Style(models.Model):
     BUILTIN = "builtin"
@@ -639,8 +651,7 @@ class Style(models.Model):
     name = models.CharField(max_length=255)
     format = models.CharField(max_length=3, choices=FORMAT_CHOICES)
     default = models.BooleanField(default=False)
-    content = models.FileField(upload_to='catalogue/styles')
-    checksum = models.CharField(blank=True, max_length=255, editable=False)
+    content = models.FileField(upload_to=styleFilePath,storage=StyleStorage())
 
     @property
     def identifier(self):
@@ -674,49 +685,9 @@ class Style(models.Model):
         else:
             super(Style, self).delete(using)
 
-    def save(self, *args, **kwargs):
-        update_fields=None
-        clean_name = self.name.split('.')
-        self.content.name = 'catalogue/styles/{}_{}.{}'.format(self.record.identifier.replace(':', '_'), clean_name[0], self.format.lower())
-        if self.pk is not None:
-            update_fields=kwargs.get("update_fields", ["default", "content", "checksum"])
-            if "content" in update_fields:
-                if "checksum" not in update_fields: update_fields.append("checksum")
-                orig = Style.objects.get(pk=self.pk)
-                if orig.content:
-                    if orig.checksum != self._calculate_checksum(self.content):
-                        if os.path.isfile(orig.content.path):
-                            os.remove(orig.content.path)
-
-                        if os.path.isfile(self.content.path):
-                            #the style file exists in the file system, remove it
-                            os.remove(self.content.path)
-
-                    else:
-                        #content is not changed, no need to update content and checksum
-                        update_fields = [field for field in update_fields if field not in ["content", "checksum"]]
-                        if not update_fields:
-                            #nothing is needed to update.
-                            return
-                else:
-                    if os.path.isfile(orig.content.path):
-                        os.remove(orig.content.path)
-                    if os.path.isfile(self.content.path):
-                        #the style file exists in the file system, remove it
-                        os.remove(self.content.path)
-
-        if update_fields:
-            kwargs["update_fields"] = update_fields
-        super(Style, self).save(*args, **kwargs)
-        
     def __unicode__(self):
         return self.name
     
-    def _calculate_checksum(self, content):
-        checksum = hashlib.md5()
-        checksum.update(content.read())
-        return base64.b64encode(checksum.digest())
-
 @receiver(pre_save, sender=Style)
 def update_links(sender, instance, **kwargs):
     link = Record.generate_style_link(instance)
@@ -778,13 +749,6 @@ def set_default_style (sender, instance, **kwargs):
                 instance.record.modified = timezone.now()
                 instance.record.save(update_fields=["modified"])
 
-@receiver(pre_save, sender=Style)
-def set_checksum (sender, instance, **kwargs):
-    update_fields=kwargs.get("update_fields", None)
-    if not update_fields or "checksum" in update_fields:
-        checksum = hashlib.md5()
-        checksum.update(instance.content.read())
-        instance.checksum = base64.b64encode(checksum.digest())
 
 @receiver(post_delete, sender=Style)
 def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):
