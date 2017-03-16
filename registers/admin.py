@@ -74,7 +74,7 @@ class ITSystemForm(forms.ModelForm):
         """Validation on the biller_code field: must be unique (ignore null values).
         """
         data = self.cleaned_data['biller_code']
-        if ITSystem.objects.filter(biller_code=data).exists():
+        if ITSystem.objects.filter(biller_code=data).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('An IT System with this biller code already exists.')
         return data
 
