@@ -172,9 +172,9 @@ class DepartmentUserResource(DjangoResource):
         if 'ObjectGUID' not in self.data:
             raise BadRequest('Missing ObjectGUID parameter')
         try:
-            user = DepartmentUser.objects.create(
+            user = DepartmentUser.objects.get_or_create(
                 ad_guid=self.data['ObjectGUID'],
-                email=self.data['EmailAddress'],
+                email=self.data['EmailAddress'].lower(),
                 ad_dn=self.data['DistinguishedName'],
                 username=self.data['SamAccountName'],
                 expiry_date=self.data['AccountExpirationDate'],
@@ -184,7 +184,7 @@ class DepartmentUserResource(DjangoResource):
                 given_name=self.data['GivenName'],
                 surname=self.data['Surname'],
                 date_ad_updated=self.data['Modified'],
-            )
+            )[0]
         except Exception as e:
             data = self.data
             data['Error'] = repr(e)
@@ -212,7 +212,7 @@ class DepartmentUserResource(DjangoResource):
             if 'ObjectGUID' in self.data and self.data['ObjectGUID']:
                 user.ad_guid = self.data['ObjectGUID']
             if 'EmailAddress' in self.data and self.data['EmailAddress']:
-                user.email = self.data['EmailAddress']
+                user.email = self.data['EmailAddress'].lower()
             if 'DistinguishedName' in self.data and self.data['DistinguishedName']:
                 user.ad_dn = self.data['DistinguishedName']
             if 'SamAccountName' in self.data and self.data['SamAccountName']:
@@ -236,6 +236,7 @@ class DepartmentUserResource(DjangoResource):
             if 'Deleted' in self.data and self.data['Deleted']:
                 user.active = False
                 user.ad_deleted = True
+                user.ad_guid = None
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
                 logger.info('Set user {} as deleted in AD'.format(user.name))
             else:
