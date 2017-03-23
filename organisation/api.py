@@ -236,7 +236,7 @@ class DepartmentUserResource(DjangoResource):
             if 'Deleted' in self.data and self.data['Deleted']:
                 user.active = False
                 user.ad_deleted = True
-                user.ad_guid = None
+                user.ad_guid = ''
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
                 logger.info('Set user {} as deleted in AD'.format(user.name))
             else:
