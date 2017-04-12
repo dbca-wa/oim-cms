@@ -61,8 +61,9 @@ class DepartmentUserAdmin(ModelAdmin):
                 'secondary_locations', 'notes', 'working_hours', 'extra_data',
             )
         }),
-        ('AD sync and HR data (read-only)', {
+        ('AD sync and HR data (read-only, except GUID)', {
             'fields': (
+                'ad_guid',
                 'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
                 'o365_licence', 'shared_account',
                 'org_data_pretty', 'ad_data_pretty', 'alesco_data_pretty',

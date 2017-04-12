@@ -54,7 +54,8 @@ class DepartmentUser(MPTTModel):
         "organisation.OrgUnit", related_name="org_units_secondary", blank=True, editable=False,
         help_text='NOTE: this provides email distribution group access.')
     extra_data = JSONField(null=True, blank=True)
-    ad_guid = models.CharField(max_length=48, unique=True, editable=False)
+    ad_guid = models.CharField(max_length=48, unique=True, editable=True,
+        help_text='Locally stored GUID. This field must match GUID in the AD object for sync to be successful')
     ad_dn = models.CharField(max_length=512, unique=True, editable=False)
     ad_data = JSONField(null=True, blank=True, editable=False)
     org_data = JSONField(null=True, blank=True, editable=False)
