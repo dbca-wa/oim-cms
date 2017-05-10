@@ -2,15 +2,25 @@ from __future__ import unicode_literals
 from datetime import datetime
 from django.contrib.postgres.fields import JSONField
 from django.contrib.gis.db import models
+from django.core.exceptions import ValidationError
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from json2html import json2html
 from mptt.models import MPTTModel, TreeForeignKey
 import os
+import re
 
 from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp
 
+
+def validate_employee_id(value):
+    if value == '':
+        return
+    if re.match('^[0-9N]{1}[0-9]{5}$', value):
+        return
+    raise ValidationError('Employee ID must be of format 123456, N12345, or blank')
+    
 
 @python_2_unicode_compatible
 class DepartmentUser(MPTTModel):
@@ -61,7 +71,7 @@ class DepartmentUser(MPTTModel):
     org_data = JSONField(null=True, blank=True, editable=False)
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
-        help_text="HR Employee ID, use 'n/a' if a contractor")
+        help_text="HR Employee ID", validators=[validate_employee_id])
     email = models.EmailField(unique=True, editable=False)
     username = models.CharField(
         max_length=128, editable=False, unique=True,
@@ -171,10 +181,9 @@ class DepartmentUser(MPTTModel):
     def save(self, *args, **kwargs):
         """Override the save method with additional business logic.
         """
-        if self.employee_id and self.employee_id.lower() == "n/a":
-            self.employee_id = None
         if self.employee_id:
-            self.employee_id = "{0:06d}".format(int(self.employee_id))
+            if (self.employee_id.lower() == "n/a") or (self.employee_id.strip() == ''):
+                self.employee_id = None
         self.in_sync = True if self.date_ad_updated else False
         # If the CC is set but not the OrgUnit, use the CC's OrgUnit.
         if self.cost_centre and not self.org_unit:
