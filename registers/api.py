@@ -126,7 +126,7 @@ class ITSystemResource(CSVDjangoResource):
                 'criticality': i.get_criticality_display(),
                 'custodian__name': i.itsystem.custodian.name if i.itsystem.custodian else '',
                 'custodian__email': i.itsystem.custodian.email if i.itsystem.custodian else '',
-            } for i in ITSystemDependency.objects.filter(dependency=data)],
+            } for i in data.dependency.all()],
             'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
             'contingency_plan_url': domain + settings.MEDIA_URL + data.contingency_plan.name if data.contingency_plan else '',
             'contingency_plan_status': data.get_contingency_plan_status_display(),
@@ -171,7 +171,16 @@ class ITSystemResource(CSVDjangoResource):
             FILTERS["name"] = self.request.GET["name"]
         if "pk" in self.request.GET:
             FILTERS["pk"] = self.request.GET["pk"]
-        return ITSystem.objects.filter(**FILTERS)
+        return ITSystem.objects.filter(**FILTERS).prefetch_related(
+            'cost_centre', 'cost_centre__division', 
+            'org_unit', 
+            'owner', 'owner__cost_centre', 'owner__cost_centre__division',
+            'preferred_contact',
+            'custodian', 'data_custodian', 'bh_support', 'ah_support', 'user_groups',
+            'itsystemdependency_set', 'itsystemdependency_set__dependency',
+            'itsystemdependency_set__dependency__custodian', 'dependency__itsystem',
+            'dependency__itsystem__custodian'
+        )
 
     def list(self):
         return list(self.list_qs())
