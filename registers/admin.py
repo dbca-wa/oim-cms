@@ -116,7 +116,7 @@ class ITSystemAdmin(VersionAdmin):
         'hardwares',
         'user_groups',
         'system_reqs',
-        'system_type',
+        ('system_type','oim_internal_only'),
         'request_access',
         ('vulnerability_docs', 'recovery_docs'),
         'workaround',

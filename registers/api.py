@@ -162,6 +162,8 @@ class ITSystemResource(CSVDjangoResource):
     def list_qs(self):
         # Only return production apps
         FILTERS = {"status": 0}
+        if not self.request.user.groups.filter(name="OIM Staff").exists():
+            FILTERS["oim_internal_only"] = False
         if "all" in self.request.GET:
             del FILTERS["status"]
         if "system_id" in self.request.GET:

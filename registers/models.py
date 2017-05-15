@@ -113,11 +113,13 @@ class ITSystem(CommonFields):
         (2, 'Department core business hours'),
     )
     SYSTEM_TYPE_CHOICES = (
-        (1, 'Web application'),
-        (2, 'Client application'),
-        (3, 'Mobile application'),
+        (1, 'System - Web application'),
+        (2, 'System - Client application'),
+        (3, 'System - Mobile application'),
         (4, 'Service'),
-        (5, 'Externally hosted application'),
+        (5, 'System - Externally hosted application'),
+        (6, 'Platform'),
+        (7, 'Infrastructure'),
     )
     HEALTH_CHOICES = (
         (0, 'Healthy'),
@@ -315,6 +317,8 @@ class ITSystem(CommonFields):
     biller_code = models.CharField(
         max_length=64, null=True, blank=True,
         help_text='BPAY biller code for this IT System (must be unique).')
+    oim_internal_only = models.BooleanField(
+        default=False, help_text='For OIM use only')
 
     class Meta:
         verbose_name = 'IT System'
