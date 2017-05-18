@@ -116,8 +116,8 @@ class ITSystem(CommonFields):
         (1, 'System - Web application'),
         (2, 'System - Client application'),
         (3, 'System - Mobile application'),
-        (4, 'Service'),
         (5, 'System - Externally hosted application'),
+        (4, 'Service'),
         (6, 'Platform'),
         (7, 'Infrastructure'),
     )

@@ -15,11 +15,13 @@ from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp
 
 
 def validate_employee_id(value):
-    if value == '':
+    if value.lower() == 'n/a':
+        return
+    if value is None:
         return
     if re.match('^[0-9N]{1}[0-9]{5}$', value):
         return
-    raise ValidationError('Employee ID must be of format 123456, N12345, or blank')
+    raise ValidationError('Employee ID must be of format 123456, N12345, or n/a')
     
 
 @python_2_unicode_compatible
@@ -71,7 +73,7 @@ class DepartmentUser(MPTTModel):
     org_data = JSONField(null=True, blank=True, editable=False)
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
-        help_text="HR Employee ID", validators=[validate_employee_id])
+        help_text="HR Employee ID. Enter n/a if no ID provided", validators=[validate_employee_id])
     email = models.EmailField(unique=True, editable=False)
     username = models.CharField(
         max_length=128, editable=False, unique=True,
@@ -324,6 +326,14 @@ class DepartmentUser(MPTTModel):
             except:
                 pass
         return None
+
+    def clean_employee_id(self):
+        logger = logger_setup('model_updates')
+        logger.info("{}".format("In clean method"))
+        if self.cleaned_data['employee_id'] == '':
+            return None
+        else:
+            return self.cleaned_data['employee_id']
 
 
 @python_2_unicode_compatible
