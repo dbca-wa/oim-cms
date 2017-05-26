@@ -6,6 +6,7 @@ from django.http import (
 from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 import json
+from restless.constants import OK
 from restless.dj import DjangoResource
 from restless.exceptions import BadRequest
 from restless.resources import skip_prepare
@@ -84,6 +85,13 @@ class DepartmentUserResource(DjangoResource):
             url(r'^$', self.as_list(), name=self.build_url_name('list', name_prefix)),
             url(r'^(?P<guid>[0-9a-z-]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
         ]
+
+    def build_response(self, data, status=OK):
+        resp = super(DepartmentUserResource, self).build_response(data, status)
+        # Require no caching for certain request types.
+        if any(k in self.request.GET for k in ['email', 'compact', 'minimal']):
+            resp['Cache-Control'] = 'no-cache'
+        return resp
 
     def is_authenticated(self):
         """This method is currently required for create/update to work via the
