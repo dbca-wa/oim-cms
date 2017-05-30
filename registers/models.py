@@ -61,8 +61,7 @@ class UserGroup(models.Model):
 
 @python_2_unicode_compatible
 class ITSystemHardware(models.Model):
-    """A model to represent the relationship between an IT System and a
-    Computer.
+    """A model to represent the relationship between an IT System and a Computer.
     """
     ROLE_CHOICES = (
         (1, 'Application server'),
@@ -81,6 +80,35 @@ class ITSystemHardware(models.Model):
 
     def __str__(self):
         return '{} ({})'.format(self.computer.hostname, self.role)
+
+
+@python_2_unicode_compatible
+class Platform(models.Model):
+    """A model to represent an IT System Platform Service, as defined in the
+    Department IT Strategy.
+    """
+    PLATFORM_CATEGORY_CHOICES = (
+        ('db', 'Database'),
+        ('dns', 'DNS'),
+        ('email', 'Email'),
+        ('idam', 'Identity & access management'),
+        ('middle', 'Middleware'),
+        ('phone', 'Phone system'),
+        ('proxy', 'Reverse proxy'),
+        ('storage', 'Storage'),
+        ('vpn', 'VPN'),
+        ('vm', 'Virtualisation'),
+        ('web', 'Web server'),
+    )
+    category = models.CharField(max_length=64, choices=PLATFORM_CATEGORY_CHOICES, db_index=True)
+    name = models.CharField(max_length=512)
+
+    class Meta:
+        ordering = ('category', 'name')
+        unique_together = ('category', 'name')
+
+    def __str__(self):
+        return '{} - {}'.format(self.get_category_display(), self.name)
 
 
 @python_2_unicode_compatible
@@ -319,6 +347,7 @@ class ITSystem(CommonFields):
         help_text='BPAY biller code for this IT System (must be unique).')
     oim_internal_only = models.BooleanField(
         default=False, help_text='For OIM use only')
+    platforms = models.ManyToManyField(Platform, blank=True)
 
     class Meta:
         verbose_name = 'IT System'

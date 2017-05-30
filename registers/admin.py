@@ -7,7 +7,7 @@ from reversion.admin import VersionAdmin
 from six import BytesIO
 import unicodecsv
 from .models import (
-    UserGroup, ITSystemHardware, ITSystem, ITSystemDependency,
+    UserGroup, ITSystemHardware, Platform, ITSystem, ITSystemDependency,
     Backup, BusinessService, BusinessFunction, BusinessProcess,
     ProcessITSystemRelationship)
 
@@ -64,6 +64,13 @@ class ITSystemHardwareAdmin(VersionAdmin):
         return response
 
 
+@register(Platform)
+class PlatformAdmin(VersionAdmin):
+    list_display = ('name', 'category')
+    list_filter = ('category',)
+    search_fields = ('name',)
+
+
 class ITSystemForm(forms.ModelForm):
 
     class Meta:
@@ -81,15 +88,12 @@ class ITSystemForm(forms.ModelForm):
 
 @register(ITSystem)
 class ITSystemAdmin(VersionAdmin):
+    filter_horizontal = ('platforms', 'hardwares', 'user_groups')
     list_display = (
         'system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian',
         'preferred_contact', 'access', 'authentication')
     list_filter = (
-        'access',
-        'authentication',
-        'status',
-        'contingency_plan_status',
-        'system_type')
+        'access', 'authentication', 'status', 'contingency_plan_status', 'system_type', 'platforms')
     search_fields = (
         'system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description',
         'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
@@ -105,6 +109,7 @@ class ITSystemAdmin(VersionAdmin):
         ('custodian', 'data_custodian'),
         'preferred_contact',
         ('bh_support', 'ah_support'),
+        'platforms',
         'documentation',
         'technical_documentation',
         'status_html',
@@ -116,7 +121,7 @@ class ITSystemAdmin(VersionAdmin):
         'hardwares',
         'user_groups',
         'system_reqs',
-        ('system_type','oim_internal_only'),
+        ('system_type', 'oim_internal_only'),
         'request_access',
         ('vulnerability_docs', 'recovery_docs'),
         'workaround',
