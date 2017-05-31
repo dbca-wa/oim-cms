@@ -4,7 +4,7 @@ from django.conf import settings
 import itertools
 from oim_cms.utils import CSVDjangoResource
 
-from .models import ITSystem, ITSystemDependency
+from .models import ITSystem
 
 
 class ITSystemResource(CSVDjangoResource):
@@ -156,6 +156,7 @@ class ITSystemResource(CSVDjangoResource):
             'other_projects': data.other_projects,
             'sla': data.sla,
             'biller_code': data.biller_code,
+            'platforms': [{'name': i.name, 'category': i.get_category_display()} for i in data.platforms.all()],
         }
         return prepped
 
@@ -174,8 +175,7 @@ class ITSystemResource(CSVDjangoResource):
         if "pk" in self.request.GET:
             FILTERS["pk"] = self.request.GET["pk"]
         return ITSystem.objects.filter(**FILTERS).prefetch_related(
-            'cost_centre', 'cost_centre__division', 
-            'org_unit', 
+            'cost_centre', 'cost_centre__division', 'org_unit',
             'owner', 'owner__cost_centre', 'owner__cost_centre__division',
             'preferred_contact',
             'custodian', 'data_custodian', 'bh_support', 'ah_support', 'user_groups',
