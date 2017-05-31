@@ -88,9 +88,9 @@ class DepartmentUserResource(DjangoResource):
 
     def build_response(self, data, status=OK):
         resp = super(DepartmentUserResource, self).build_response(data, status)
-        # Require no caching for certain request types.
+        # Require a short caching expiry for certain request types (one hour).
         if any(k in self.request.GET for k in ['email', 'compact', 'minimal']):
-            resp['Cache-Control'] = 'no-cache'
+            resp['Cache-Control'] = 'max-age=3600, public'
         return resp
 
     def is_authenticated(self):

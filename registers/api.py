@@ -4,7 +4,7 @@ from django.conf import settings
 import itertools
 from oim_cms.utils import CSVDjangoResource
 
-from .models import ITSystem, ITSystemDependency
+from .models import ITSystem
 
 
 class ITSystemResource(CSVDjangoResource):
