@@ -88,9 +88,10 @@ class DepartmentUserResource(DjangoResource):
 
     def build_response(self, data, status=OK):
         resp = super(DepartmentUserResource, self).build_response(data, status)
-        # Require a short caching expiry for certain request types (one hour).
-        if any(k in self.request.GET for k in ['email', 'compact', 'minimal']):
-            resp['Cache-Control'] = 'max-age=3600, public'
+        # Require a short caching expiry for certain request types (if defined).
+        if settings.API_RESPONSE_CACHE_SECONDS:
+            if any(k in self.request.GET for k in ['email', 'compact', 'minimal']):
+                resp['Cache-Control'] = 'max-age={}, public'.format(settings.API_RESPONSE_CACHE_SECONDS)
         return resp
 
     def is_authenticated(self):
