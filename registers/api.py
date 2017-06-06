@@ -8,6 +8,7 @@ from .models import ITSystem
 
 
 class ITSystemResource(CSVDjangoResource):
+    VALUES_ARGS = ()
 
     def prepare(self, data):
         """Prepare a custom API response for ITSystemResource objects.
