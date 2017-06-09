@@ -162,18 +162,18 @@ class ITSystemResource(CSVDjangoResource):
         return prepped
 
     def list_qs(self):
-        # Only return production apps
-        FILTERS = {"status": 0}
-        if not self.request.user.groups.filter(name="OIM Staff").exists():
-            FILTERS["oim_internal_only"] = False
+        # Only return production/production legacy apps by default.
+        FILTERS = {"status__in": [0, 2]}
         if "all" in self.request.GET:
-            del FILTERS["status"]
+            FILTERS.pop("status__in")
         if "system_id" in self.request.GET:
-            del FILTERS["status"]
+            FILTERS.pop("status__in")
             FILTERS["system_id__icontains"] = self.request.GET["system_id"]
         if "name" in self.request.GET:
+            FILTERS.pop("status__in")
             FILTERS["name"] = self.request.GET["name"]
         if "pk" in self.request.GET:
+            FILTERS.pop("status__in")
             FILTERS["pk"] = self.request.GET["pk"]
         return ITSystem.objects.filter(**FILTERS).prefetch_related(
             'cost_centre', 'cost_centre__division', 'org_unit',
