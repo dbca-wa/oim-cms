@@ -32,7 +32,6 @@ def pdq_load_computers():
     data = csv_data(csv_path)
     num_created = 0
     num_updated = 0
-    num_skipped = 0
     num_errors = 0
 
     for row in data:
@@ -100,7 +99,7 @@ def pdq_load_computers():
             num_errors += 1
             continue
 
-    logger.info('Created {}, updated {}, skipped {}, errors {}'.format(num_created, num_updated, num_skipped, num_errors))
+    logger.info('Created {}, updated {}, errors {}'.format(num_created, num_updated, num_errors))
 
 
 def pdq_load_logins():
