@@ -22,7 +22,7 @@ def validate_employee_id(value):
     if re.match('^[0-9N]{1}[0-9]{5}$', value):
         return
     raise ValidationError('Employee ID must be of format 123456, N12345, or n/a')
-    
+
 
 @python_2_unicode_compatible
 class DepartmentUser(MPTTModel):
@@ -66,7 +66,7 @@ class DepartmentUser(MPTTModel):
         "organisation.OrgUnit", related_name="org_units_secondary", blank=True, editable=False,
         help_text='NOTE: this provides email distribution group access.')
     extra_data = JSONField(null=True, blank=True)
-    ad_guid = models.CharField(max_length=48, unique=True, editable=True,
+    ad_guid = models.CharField(max_length=48, unique=True, null=True,
         help_text='Locally stored GUID. This field must match GUID in the AD object for sync to be successful')
     ad_dn = models.CharField(max_length=512, unique=True, editable=False)
     ad_data = JSONField(null=True, blank=True, editable=False)
@@ -140,7 +140,7 @@ class DepartmentUser(MPTTModel):
     working_hours = models.TextField(
         default="N/A", null=True, blank=True,
         help_text="Description of normal working hours")
-    secondary_locations = models.ManyToManyField("organisation.Location", blank=True, 
+    secondary_locations = models.ManyToManyField("organisation.Location", blank=True,
         help_text="Only to be used for staff working in additional loactions from their cost centre")
     populate_primary_group = models.BooleanField(
         default=True,

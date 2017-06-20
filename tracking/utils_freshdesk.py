@@ -95,8 +95,8 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
         logger.exception(e)
         return False
 
-    # Filter DepartmentUsers: valid email (contains @), not -admin, DN contains 'OU=Users'
-    d_users = DepartmentUser.objects.filter(email__contains='@', ad_dn__contains='OU=Users').exclude(email__contains='-admin')
+    # Filter DepartmentUsers: valid email (contains @), not -admin, DN contains 'OU=Users', active
+    d_users = DepartmentUser.objects.filter(email__contains='@', ad_dn__contains='OU=Users', active=True).exclude(email__contains='-admin')
     logger.info('Syncing details for {} DepartmentUsers to Freshdesk'.format(d_users.count()))
     for user in d_users:
         if user.email.lower() in contacts:
@@ -105,10 +105,14 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
             data = {}
             user_sync = False
             # use extra attributes from org_data, if available
-            cost_centre = user.org_data.get('cost_centre', {}).get('code', "") if user.org_data else ""
-            physical_location = user.org_data.get('location', {}).get('name', "") if user.org_data else ""
+            cost_centre = user.org_data.get('cost_centre', {}).get('code', '') if user.org_data else None
+            try:
+                cost_centre = int(cost_centre)  # The cost_centre custom field in FD must be an integer.
+            except:
+                cost_centre = None
+            physical_location = user.org_data.get('location', {}).get('name', '') if user.org_data else None
             department = user.org_data.get('units', []) if user.org_data else []
-            department = department[0].get('name', "") if len(department) > 0 else ""
+            department = department[0].get('name', '') if len(department) > 0 else None
             changes = []
 
             if user.name != fd['name']:
@@ -128,18 +132,18 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
                 data['company_id'] = companies[department]['id']
                 changes.append('company_id')
             # Custom fields in Freshdesk: Cost Centre no.
-            if 'custom_field' in fd:  # Field may not exist in the API obj.
-                if fd['custom_field']['cf_cost_centre'] != cost_centre:
+            if 'custom_fields' in fd:  # Field may not exist in the API obj.
+                if cost_centre and fd['custom_fields']['cost_centre'] != cost_centre:
                     user_sync = True
-                    data['custom_field'] = {'cf_cost_centre': cost_centre}
+                    data['custom_fields'] = {'cost_centre': cost_centre}
                     changes.append('cost_centre')
                 # Custom fields in Freshdesk: Physical location
-                if fd['custom_field']['cf_location'] != physical_location:
+                if physical_location and fd['custom_fields']['location'] != physical_location:
                     user_sync = True
-                    if 'custom_field' in data:
-                        data['custom_field']['cf_location'] = physical_location
+                    if 'custom_fields' in data:
+                        data['custom_fields']['location'] = physical_location
                     else:
-                        data['custom_field'] = {'cf_location': physical_location}
+                        data['custom_fields'] = {'location': physical_location}
                     changes.append('physical_location')
             if user_sync:  # Sync user details to their Freshdesk contact.
                 r = update_freshdesk_object('contacts', data, fd['id'])
@@ -160,6 +164,8 @@ def freshdesk_sync_contacts(contacts=None, companies=None, agents=None):
             # The DepartmentUser does not exist in Freshdesk; create them as a Contact.
             data = {'name': user.name, 'email': user.email.lower(),
                     'phone': user.telephone, 'job_title': user.title}
+            department = user.org_data.get('units', []) if user.org_data else []
+            department = department[0].get('name', '') if len(department) > 0 else None
             if department and department in companies:
                 data['company_id'] = companies[department]['id']
             r = update_freshdesk_object('contacts', data)
