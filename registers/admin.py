@@ -3,8 +3,12 @@ from django import forms
 from django.conf.urls import url
 from django.contrib.admin import register
 from django.http import HttpResponse
+from django.template.response import TemplateResponse
 from reversion.admin import VersionAdmin
-from six import BytesIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 import unicodecsv
 from .models import (
     UserGroup, ITSystemHardware, Platform, ITSystem, ITSystemDependency,
@@ -48,7 +52,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
             'it_system_name', 'itsystem_availability', 'itsystem_criticality']
 
         # Write data for ITSystemHardware objects to the CSV.
-        stream = BytesIO()
+        stream = StringIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
         for i in ITSystemHardware.objects.all():
@@ -176,7 +180,7 @@ class ITSystemAdmin(VersionAdmin):
             'workaround', 'recovery_docs', 'date_updated']
 
         # Write data for ITSystem objects to the CSV:
-        stream = BytesIO()
+        stream = StringIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)
         for i in ITSystem.objects.all().order_by(
@@ -193,6 +197,70 @@ class ITSystemDependencyAdmin(VersionAdmin):
     list_display = ('itsystem', 'dependency', 'criticality')
     list_filter = ('criticality',)
     search_fields = ('itsystem__name', 'dependency__name')
+    # Override the default reversion/change_list.html template:
+    change_list_template = 'admin/registers/itsystemdependency/change_list.html'
+
+    def get_urls(self):
+        urls = super(ITSystemDependencyAdmin, self).get_urls()
+        extra_urls = [
+            url(
+                r'^reports/$',
+                self.admin_site.admin_view(self.itsystem_dependency_reports),
+                name='itsystem_dependency_reports'
+            ),
+            url(
+                r'^reports/all/$',
+                self.admin_site.admin_view(self.itsystem_dependency_report_all),
+                name='itsystem_dependency_report_all'
+            ),
+            url(
+                r'^reports/no-deps/$',
+                self.admin_site.admin_view(self.itsystem_dependency_report_nodeps),
+                name='itsystem_dependency_report_nodeps'
+            ),
+        ]
+        return extra_urls + urls
+
+    def itsystem_dependency_reports(self, request):
+        context = {'title': 'IT System dependency reports'}
+        return TemplateResponse(
+            request, 'admin/itsystemdependency_reports.html', context)
+
+    def itsystem_dependency_report_all(self, request):
+        """Returns a CSV containing all recorded dependencies.
+        """
+        fields = [
+            'IT System', 'System status', 'Dependency', 'Dependency status',
+            'Criticality']
+        # Write data for ITSystemHardware objects to the CSV.
+        stream = StringIO()
+        wr = unicodecsv.writer(stream, encoding='utf-8')
+        wr.writerow(fields)  # CSV header row.
+        for i in ITSystemDependency.objects.all():
+            wr.writerow([
+                i.itsystem.name, i.itsystem.get_status_display(),
+                i.dependency.name, i.dependency.get_status_display(),
+                i.get_criticality_display()])
+
+        response = HttpResponse(stream.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=itsystemdependency_all.csv'
+        return response
+
+    def itsystem_dependency_report_nodeps(self, request):
+        """Returns a CSV containing all systems without dependencies recorded.
+        """
+        fields = ['IT System', 'System status']
+        # Write data for ITSystemHardware objects to the CSV.
+        stream = StringIO()
+        wr = unicodecsv.writer(stream, encoding='utf-8')
+        wr.writerow(fields)  # CSV header row.
+        deps = ITSystemDependency.objects.all().values_list('pk')
+        for i in ITSystem.objects.all().exclude(pk__in=deps):
+            wr.writerow([i.name, i.get_status_display()])
+
+        response = HttpResponse(stream.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=itsystem_no_deps.csv'
+        return response
 
 
 @register(Backup)
