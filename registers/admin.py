@@ -31,6 +31,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
     change_list_template = 'admin/registers/itsystemhardware/change_list.html'
 
     def affected_itsystems(self, obj):
+        # Exclude decommissioned systems from the count.
         return obj.itsystem_set.all().exclude(status=3).count()
     affected_itsystems.short_description = 'IT Systems'
 

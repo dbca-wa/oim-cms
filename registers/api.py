@@ -4,7 +4,7 @@ from django.conf import settings
 import itertools
 from oim_cms.utils import CSVDjangoResource
 
-from .models import ITSystem
+from .models import ITSystem, ITSystemHardware
 
 
 class ITSystemResource(CSVDjangoResource):
@@ -188,3 +188,19 @@ class ITSystemResource(CSVDjangoResource):
 
     def list(self):
         return list(self.list_qs())
+
+
+class ITSystemHardwareResource(CSVDjangoResource):
+    VALUES_ARGS = ()
+
+    def prepare(self, data):
+        # Exclude decommissioned systems from the list of systems returned.
+        it_systems = data.itsystem_set.all().exclude(status=3)
+        return {
+            'hostname': data.computer.hostname,
+            'role': data.get_role_display(),
+            'it_systems': [i.name for i in it_systems],
+        }
+
+    def list(self):
+        return ITSystemHardware.objects.all()
