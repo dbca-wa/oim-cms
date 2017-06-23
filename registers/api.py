@@ -158,6 +158,7 @@ class ITSystemResource(CSVDjangoResource):
             'sla': data.sla,
             'biller_code': data.biller_code,
             'platforms': [{'name': i.name, 'category': i.get_category_display()} for i in data.platforms.all()],
+            'oim_internal': data.oim_internal_only,
         }
         return prepped
 

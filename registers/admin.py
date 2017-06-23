@@ -97,7 +97,8 @@ class ITSystemAdmin(VersionAdmin):
         'system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian',
         'preferred_contact', 'access', 'authentication')
     list_filter = (
-        'access', 'authentication', 'status', 'contingency_plan_status', 'system_type', 'platforms')
+        'access', 'authentication', 'status', 'contingency_plan_status',
+        'system_type', 'platforms', 'oim_internal_only')
     search_fields = (
         'system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description',
         'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
