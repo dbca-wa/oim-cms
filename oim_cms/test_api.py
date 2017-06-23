@@ -83,6 +83,8 @@ class ApiTestCase(TestCase):
         # Generate some IT Systems.
         self.it1 = mixer.blend(ITSystem, status=0, owner=self.user1)
         self.it2 = mixer.blend(ITSystem, status=1, owner=self.user2)
+        self.it_leg = mixer.blend(ITSystem, status=2, owner=self.user2)
+        self.it_dec = mixer.blend(ITSystem, status=3, owner=self.user2)
         # Generate a test user for endpoint responses.
         self.testuser = User.objects.create_user(
             username='testuser', email='user@dpaw.wa.gov.au.com', password='pass')
@@ -420,8 +422,9 @@ class ITSystemResourceTestCase(ApiTestCase):
         url = '/api/itsystems/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        # The 'development' IT system won't be in the response.
+        # The 'development' & decommissioned IT systems won't be in the response.
         self.assertNotContains(response, self.it2.name)
+        self.assertNotContains(response, self.it_dec.name)
         # Test all request parameter.
         url = '/api/itsystems/?all'
         response = self.client.get(url)
@@ -434,6 +437,16 @@ class ITSystemResourceTestCase(ApiTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.it1.name)
         self.assertNotContains(response, self.it2.name)
+
+
+class ITSystemHardwareResourceTestCase(ApiTestCase):
+
+    def test_list(self):
+        url = '/api/itsystem-hardware/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # The 'decommissioned' IT system won't be in the response.
+        self.assertNotContains(response, self.it_dec.name)
 
 
 class FreshdeskTicketResourceTestCase(ApiTestCase):
