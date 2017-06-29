@@ -478,11 +478,9 @@ class OrgUnit(MPTTModel):
 
     def get_descendants_active(self, *args, **kwargs):
         """Exclude 'inactive' OrgUnit objects from get_descendants() queryset.
-        Also exclude OrgUnit objects with 0 members.
         Returns a list of OrgUnits.
         """
         descendants = self.get_descendants(*args, **kwargs).exclude(active=False)
-        descendants = [o for o in descendants if o.members().count() > 0]
         return descendants
 
 
