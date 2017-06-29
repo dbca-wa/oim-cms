@@ -121,19 +121,22 @@ def departmentuser_csv_report():
     header += org_fields.keys()
     header += alesco_fields
 
-    # Get a DepartmentUser with non-null org_data field, for keys.
-    du = DepartmentUser.objects.filter(org_data__isnull=False)[0]
-    cc_keys = du.org_data['cost_centre'].keys()
-    header += ['cost_centre_{}'.format(k) for k in cc_keys]
-    location_keys = du.org_data['location'].keys()
-    header += ['location_{}'.format(k) for k in location_keys]
-    header.append('secondary_location')
+    # Get any DepartmentUser with non-null org_data field for the keys.
+    if DepartmentUser.objects.filter(org_data__isnull=False).exists():
+        du = DepartmentUser.objects.filter(org_data__isnull=False)[0]
+        cc_keys = du.org_data['cost_centre'].keys()
+        header += ['cost_centre_{}'.format(k) for k in cc_keys]
+        location_keys = du.org_data['location'].keys()
+        header += ['location_{}'.format(k) for k in location_keys]
+        header.append('secondary_location')
 
-    # Get a DepartmentUser with non-null ad_data field, for keys.
-    du = DepartmentUser.objects.filter(ad_data__isnull=False)[0]
-    ad_keys = du.ad_data.keys()
-    ad_keys.remove('mailbox')  # Remove the nested object.
-    header += ['ad_{}'.format(k) for k in ad_keys]
+    # Get any DepartmentUser with non-null ad_data field for the keys.
+    if DepartmentUser.objects.filter(ad_data__isnull=False).exists():
+        du = DepartmentUser.objects.filter(ad_data__isnull=False)[0]
+        ad_keys = du.ad_data.keys()
+        if 'mailbox' in ad_keys:
+            ad_keys.remove('mailbox')  # Remove the nested object.
+        header += ['ad_{}'.format(k) for k in ad_keys]
 
     # Write data for all DepartmentUser objects to the CSV
     stream = BytesIO()
