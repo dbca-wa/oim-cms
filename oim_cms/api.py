@@ -40,7 +40,7 @@ class OptionResource(DjangoResource):
         return getattr(self, 'data_' + self.request.GET['list'])()
 
     def data_org_structure(self):
-        return [recursive_node_to_dict(cache_tree_children(dept.get_descendants(include_self=True))[0])
+        return [recursive_node_to_dict(cache_tree_children(dept.get_descendants_active(include_self=True))[0])
                 for dept in OrgUnit.objects.filter(unit_type=0).order_by('name')]
 
     def data_cost_centre(self):
