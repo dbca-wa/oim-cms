@@ -132,7 +132,7 @@ class OptionResourceTestCase(ApiTestCase):
     def test_data_org_structure(self):
         """Test the data_org_structure API endpoint
         """
-        url = '/api/options?list=org_structure'
+        url = '/api/options/?list=org_structure'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Division 1 will be present in the response.
@@ -160,7 +160,7 @@ class OptionResourceTestCase(ApiTestCase):
     def test_data_cost_centre(self):
         """Test the data_cost_centre API endpoint
         """
-        url = '/api/options?list=cost_centre'
+        url = '/api/options/?list=cost_centre'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # 001 will be present in the response.
@@ -176,7 +176,7 @@ class OptionResourceTestCase(ApiTestCase):
     def test_data_org_unit(self):
         """Test the data_org_unit API endpoint
         """
-        url = '/api/options?list=org_unit'
+        url = '/api/options/?list=org_unit'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Org unit names will be present in the response.
@@ -187,7 +187,7 @@ class OptionResourceTestCase(ApiTestCase):
     def test_data_dept_user(self):
         """Test the data_dept_user API endpoint
         """
-        url = '/api/options?list=dept_user'
+        url = '/api/options/?list=dept_user'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # User 1 will be present in the response.
