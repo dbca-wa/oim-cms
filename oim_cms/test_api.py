@@ -132,7 +132,7 @@ class OptionResourceTestCase(ApiTestCase):
     def test_data_org_structure(self):
         """Test the data_org_structure API endpoint
         """
-        url = '/api/options?list=org_structure'
+        url = '/api/options/?list=org_structure'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Division 1 will be present in the response.
@@ -142,16 +142,9 @@ class OptionResourceTestCase(ApiTestCase):
         self.assertTrue(isinstance(r, dict))
         # Deserialised response contains a list.
         self.assertTrue(isinstance(r['objects'], list))
-        # Remove all members from an org unit to test exclusion.
-        self.user1.org_unit = None
-        self.user1.cost_centre = None
-        self.user1.save()
-        self.user3.org_unit = None
-        self.user3.cost_centre = None
-        self.user3.save()
-        self.shared.org_unit = None
-        self.shared.cost_centre = None
-        self.shared.save()
+        # Make OrgUnit inactive to test exclusion.
+        self.div1.active = False
+        self.div1.save()
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Division 1 won't be present in the response.
@@ -160,7 +153,7 @@ class OptionResourceTestCase(ApiTestCase):
     def test_data_cost_centre(self):
         """Test the data_cost_centre API endpoint
         """
-        url = '/api/options?list=cost_centre'
+        url = '/api/options/?list=cost_centre'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # 001 will be present in the response.
@@ -176,7 +169,7 @@ class OptionResourceTestCase(ApiTestCase):
     def test_data_org_unit(self):
         """Test the data_org_unit API endpoint
         """
-        url = '/api/options?list=org_unit'
+        url = '/api/options/?list=org_unit'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Org unit names will be present in the response.
@@ -187,7 +180,7 @@ class OptionResourceTestCase(ApiTestCase):
     def test_data_dept_user(self):
         """Test the data_dept_user API endpoint
         """
-        url = '/api/options?list=dept_user'
+        url = '/api/options/?list=dept_user'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # User 1 will be present in the response.

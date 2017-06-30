@@ -489,7 +489,7 @@ class CostCentre(models.Model):
     """Models the details of a Department cost centre.
     """
     name = models.CharField(max_length=25, unique=True, editable=False)
-    code = models.CharField(max_length=5, unique=True)
+    code = models.CharField(max_length=16, unique=True)
     division = models.ForeignKey(
         OrgUnit, null=True, editable=False,
         related_name='costcentres_in_division')
