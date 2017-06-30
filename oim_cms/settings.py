@@ -9,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG', False)
 if not DEBUG:
-    ALLOWED_HOSTS = [env('ALLOWED_DOMAIN'), ]
+    ALLOWED_HOSTS = env('ALLOWED_DOMAINS').split(',')
 else:
     ALLOWED_HOSTS = ['*']
 INTERNAL_IPS = ['127.0.0.1', '::1']
