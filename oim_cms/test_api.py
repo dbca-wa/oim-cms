@@ -142,16 +142,9 @@ class OptionResourceTestCase(ApiTestCase):
         self.assertTrue(isinstance(r, dict))
         # Deserialised response contains a list.
         self.assertTrue(isinstance(r['objects'], list))
-        # Remove all members from an org unit to test exclusion.
-        self.user1.org_unit = None
-        self.user1.cost_centre = None
-        self.user1.save()
-        self.user3.org_unit = None
-        self.user3.cost_centre = None
-        self.user3.save()
-        self.shared.org_unit = None
-        self.shared.cost_centre = None
-        self.shared.save()
+        # Make OrgUnit inactive to test exclusion.
+        self.div1.active = False
+        self.div1.save()
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Division 1 won't be present in the response.
