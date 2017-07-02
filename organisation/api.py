@@ -336,13 +336,14 @@ class DepartmentUserResource(DjangoResource):
 
 class LocationResource(CSVDjangoResource):
     VALUES_ARGS = (
-        'pk', 'name', 'address', 'phone', 'fax', 'email', 'point', 'url',
-        'bandwidth_url')
+        'pk', 'name', 'address', 'phone', 'fax', 'email', 'point', 'url', 'bandwidth_url', 'active')
 
     def list_qs(self):
         FILTERS = {}
         if 'location_id' in self.request.GET:
             FILTERS['pk'] = self.request.GET['location_id']
+        else:
+            FILTERS['active'] = True
         return Location.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
 
     @skip_prepare

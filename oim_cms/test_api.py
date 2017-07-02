@@ -398,13 +398,26 @@ class LocationResourceTestCase(ApiTestCase):
     def test_list(self):
         """Test the LocationResource list response
         """
+        loc_inactive = mixer.blend(Location, manager=None, active=False)
         url = '/api/locations/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        # Test filtering by location_id.
+        # Response should not contain the inactive Location.
+        self.assertNotContains(response, loc_inactive.name)
+
+    def test_filter(self):
+        """Test the LocationResource filtered response
+        """
         url = '/api/locations/?location_id={}'.format(self.loc1.pk)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.loc1.name)
+        # We can still return inactive locations by ID
+        loc_inactive = mixer.blend(Location, manager=None, active=False)
+        url = '/api/locations/?location_id={}'.format(loc_inactive.pk)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, loc_inactive.name)
 
 
 class ITSystemResourceTestCase(ApiTestCase):

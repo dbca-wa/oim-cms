@@ -362,6 +362,7 @@ class Location(models.Model):
         help_text='URL to prtg graph of bw utilisation',
         null=True,
         blank=True)
+    active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ('name',)
