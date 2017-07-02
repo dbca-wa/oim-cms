@@ -471,10 +471,10 @@ class OrgUnit(MPTTModel):
         self.details.update({
             'type': self.get_unit_type_display(),
         })
-        if not getattr(self, 'cheap_save', False):
-            for user in self.departmentuser_set.all():
-                user.save()
         super(OrgUnit, self).save(*args, **kwargs)
+        if not getattr(self, 'cheap_save', False):
+            for user in self.members():
+                user.save()
 
     def get_descendants_active(self, *args, **kwargs):
         """Exclude 'inactive' OrgUnit objects from get_descendants() queryset.
