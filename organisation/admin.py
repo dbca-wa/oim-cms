@@ -24,8 +24,19 @@ def delayed_save(obj):
     obj.save()
 
 
+class DepartmentUserForm(forms.ModelForm):
+
+    class Meta:
+        model = DepartmentUser
+        exclude = []
+
+    def clean_ad_guid(self):
+        return self.cleaned_data['ad_guid'] or None
+
+
 @register(DepartmentUser)
 class DepartmentUserAdmin(ModelAdmin):
+    form = DepartmentUserForm
     list_display = [
         'email', 'employee_id', 'username', 'active', 'vip', 'executive',
         'cost_centre', 'account_type', 'o365_licence']

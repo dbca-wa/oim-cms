@@ -11,10 +11,12 @@ from mptt.models import MPTTModel, TreeForeignKey
 import os
 import re
 
-from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp
+from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp, logger_setup
 
 
 def validate_employee_id(value):
+    """NOT: deprecated, but retain (otherwise migrations are broken).
+    """
     if value.lower() == 'n/a':
         return
     if value is None:
@@ -66,14 +68,15 @@ class DepartmentUser(MPTTModel):
         "organisation.OrgUnit", related_name="org_units_secondary", blank=True, editable=False,
         help_text='NOTE: this provides email distribution group access.')
     extra_data = JSONField(null=True, blank=True)
-    ad_guid = models.CharField(max_length=48, unique=True, null=True,
+    ad_guid = models.CharField(
+        max_length=48, unique=True, null=True, blank=True,
         help_text='Locally stored GUID. This field must match GUID in the AD object for sync to be successful')
     ad_dn = models.CharField(max_length=512, unique=True, editable=False)
     ad_data = JSONField(null=True, blank=True, editable=False)
     org_data = JSONField(null=True, blank=True, editable=False)
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
-        help_text="HR Employee ID. Enter n/a if no ID provided", validators=[validate_employee_id])
+        help_text="HR Employee ID. Enter n/a if no ID provided")
     email = models.EmailField(unique=True, editable=False)
     username = models.CharField(
         max_length=128, editable=False, unique=True,
@@ -471,10 +474,10 @@ class OrgUnit(MPTTModel):
         self.details.update({
             'type': self.get_unit_type_display(),
         })
-        if not getattr(self, 'cheap_save', False):
-            for user in self.departmentuser_set.all():
-                user.save()
         super(OrgUnit, self).save(*args, **kwargs)
+        if not getattr(self, 'cheap_save', False):
+            for user in self.members():
+                user.save()
 
     def get_descendants_active(self, *args, **kwargs):
         """Exclude 'inactive' OrgUnit objects from get_descendants() queryset.
