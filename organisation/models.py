@@ -15,6 +15,8 @@ from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp, logg
 
 
 def validate_employee_id(value):
+    """NOT: deprecated, but retain (otherwise migrations are broken).
+    """
     if value.lower() == 'n/a':
         return
     if value is None:
@@ -73,7 +75,7 @@ class DepartmentUser(MPTTModel):
     org_data = JSONField(null=True, blank=True, editable=False)
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
-        help_text="HR Employee ID. Enter n/a if no ID provided", validators=[validate_employee_id])
+        help_text="HR Employee ID. Enter n/a if no ID provided")
     email = models.EmailField(unique=True, editable=False)
     username = models.CharField(
         max_length=128, editable=False, unique=True,
