@@ -11,7 +11,7 @@ from mptt.models import MPTTModel, TreeForeignKey
 import os
 import re
 
-from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp
+from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp, logger_setup
 
 
 def validate_employee_id(value):
