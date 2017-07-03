@@ -511,6 +511,7 @@ class CostCentre(models.Model):
     tech_contact = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, related_name='tech_ccs',
         help_text='Technical Contact', null=True, blank=True)
+    active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ('code',)

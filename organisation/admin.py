@@ -196,7 +196,7 @@ class OrgUnitAdmin(DjangoMpttAdmin):
         'manager')
     search_fields = ('name', 'acronym', 'manager__name', 'location__name')
     raw_id_fields = ('manager', 'parent', 'location')
-    list_filter = ('unit_type',)
+    list_filter = ('unit_type', 'active')
 
     def users(self, obj):
         from organisation.models import DepartmentUser
@@ -226,16 +226,13 @@ class OrgUnitAdmin(DjangoMpttAdmin):
 class CostCentreAdmin(ModelAdmin):
     list_display = (
         'code', 'name', 'org_position', 'division', 'users', 'manager',
-        'business_manager', 'admin', 'tech_contact')
+        'business_manager', 'admin', 'tech_contact', 'active')
     search_fields = (
         'code', 'name', 'org_position__name', 'division__name',
         'org_position__acronym', 'division__acronym')
+    list_filter = ('active',)
     raw_id_fields = (
-        'org_position',
-        'manager',
-        'business_manager',
-        'admin',
-        'tech_contact')
+        'org_position', 'manager', 'business_manager', 'admin', 'tech_contact')
 
     def users(self, obj):
         return format_html(
