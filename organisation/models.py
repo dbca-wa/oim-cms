@@ -413,6 +413,7 @@ class OrgUnit(MPTTModel):
     TYPE_CHOICES = (
         (0, 'Department'),
         (1, 'Division'),
+        (11, 'Sub-Division'),
         (2, 'Branch'),
         (3, 'Region'),
         (4, 'Cost Centre'),
