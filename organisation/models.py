@@ -338,6 +338,16 @@ class DepartmentUser(MPTTModel):
         else:
             return self.cleaned_data['employee_id']
 
+    def get_gal_department(self):
+        """Return a string to place into the "Department" field for the Global Address List.
+        """
+        s = ''
+        if self.org_data and 'units' in self.org_data:
+            s = self.org_data['units'][0]['acronym']
+            if len(self.org_data['units']) > 1:
+                s += ' - {}'.format(self.org_data['units'][1]['name'])
+        return s
+
 
 @python_2_unicode_compatible
 class Location(models.Model):
@@ -494,8 +504,7 @@ class CostCentre(models.Model):
     name = models.CharField(max_length=128, unique=True, editable=False)
     code = models.CharField(max_length=16, unique=True)
     chart_acct_name = models.CharField(
-        max_length=256, unique=True, blank=True, null=True,
-        verbose_name='chart of accounts name')
+        max_length=256, blank=True, null=True, verbose_name='chart of accounts name')
     division = models.ForeignKey(
         OrgUnit, null=True, editable=False, related_name='costcentres_in_division')
     org_position = models.OneToOneField(
