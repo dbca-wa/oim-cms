@@ -271,6 +271,7 @@ class DepartmentUserResource(DjangoResource):
         Includes OrgUnits, cost centres, locations and secondary locations.
         """
         qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
+        qs = qs.exclude(account_type__in=[5, 9])  # Exclude shared & role-based accounts.
         if exclude_populate_groups:  # Exclude objects where populate_primary_group == False
             qs = qs.exclude(populate_primary_group=False)
         structure = []
