@@ -174,8 +174,9 @@ class DepartmentUserAdmin(ModelAdmin):
 
 @register(Location)
 class LocationAdmin(LeafletGeoAdmin):
-    list_display = ('name', 'address', 'phone', 'fax', 'email', 'point')
-    search_fields = ('name', 'address', 'phone', 'fax', 'email')
+    list_display = ('name', 'address', 'phone', 'fax', 'email', 'manager')
+    list_filter = ('active',)
+    search_fields = ('name', 'address', 'phone', 'fax', 'email', 'manager__email')
     settings_overrides = {
         'DEFAULT_CENTER': (-31.0, 115.0),
         'DEFAULT_ZOOM': 5
