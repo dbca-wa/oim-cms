@@ -76,6 +76,13 @@ class DepartmentUserResource(DjangoResource):
         'account_type': format_account_type,
     })
 
+    def prepare(self, data):
+        """Modify the returned object to append the GAL Department value.
+        """
+        prepped = super(DepartmentUserResource, self).prepare(data)
+        prepped['gal_department'] = DepartmentUser.objects.get(pk=data['pk']).get_gal_department()
+        return prepped
+
     @classmethod
     def urls(self, name_prefix=None):
         """Override the DjangoResource ``urls`` class method so the detail view
