@@ -174,8 +174,9 @@ class DepartmentUserAdmin(ModelAdmin):
 
 @register(Location)
 class LocationAdmin(LeafletGeoAdmin):
-    list_display = ('name', 'address', 'phone', 'fax', 'email', 'point')
-    search_fields = ('name', 'address', 'phone', 'fax', 'email')
+    list_display = ('name', 'address', 'phone', 'fax', 'email', 'manager')
+    list_filter = ('active',)
+    search_fields = ('name', 'address', 'phone', 'fax', 'email', 'manager__email')
     settings_overrides = {
         'DEFAULT_CENTER': (-31.0, 115.0),
         'DEFAULT_ZOOM': 5
@@ -225,10 +226,10 @@ class OrgUnitAdmin(DjangoMpttAdmin):
 @register(CostCentre)
 class CostCentreAdmin(ModelAdmin):
     list_display = (
-        'code', 'name', 'org_position', 'division', 'users', 'manager',
+        'name', 'code', 'chart_acct_name', 'org_position', 'division', 'users', 'manager',
         'business_manager', 'admin', 'tech_contact', 'active')
     search_fields = (
-        'code', 'name', 'org_position__name', 'division__name',
+        'name', 'code', 'chart_acct_name', 'org_position__name', 'division__name',
         'org_position__acronym', 'division__acronym')
     list_filter = ('active',)
     raw_id_fields = (

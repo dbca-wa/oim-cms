@@ -422,11 +422,9 @@ class OrgUnit(MPTTModel):
         (8, 'Unit'),
         (5, 'Office'),
         (10, 'Work centre'),
-        (4, 'Cost Centre'),
     )
     TYPE_CHOICES_DICT = dict(TYPE_CHOICES)
-    unit_type = models.PositiveSmallIntegerField(
-        choices=TYPE_CHOICES, default=4)
+    unit_type = models.PositiveSmallIntegerField(choices=TYPE_CHOICES)
     ad_guid = models.CharField(
         max_length=48, unique=True, null=True, editable=False)
     ad_dn = models.CharField(
@@ -491,13 +489,15 @@ class OrgUnit(MPTTModel):
 
 @python_2_unicode_compatible
 class CostCentre(models.Model):
-    """Models the details of a Department cost centre.
+    """Models the details of a Department cost centre / chart of accounts.
     """
-    name = models.CharField(max_length=25, unique=True, editable=False)
+    name = models.CharField(max_length=128, unique=True, editable=False)
     code = models.CharField(max_length=16, unique=True)
+    chart_acct_name = models.CharField(
+        max_length=256, unique=True, blank=True, null=True,
+        verbose_name='chart of accounts name')
     division = models.ForeignKey(
-        OrgUnit, null=True, editable=False,
-        related_name='costcentres_in_division')
+        OrgUnit, null=True, editable=False, related_name='costcentres_in_division')
     org_position = models.OneToOneField(
         OrgUnit, unique=True, blank=True, null=True)
     manager = models.ForeignKey(
@@ -519,22 +519,25 @@ class CostCentre(models.Model):
 
     def save(self, *args, **kwargs):
         self.name = str(self)
+        # If the CC is linked to an OrgUnit, link it to that unit's Division.
         if self.org_position:
             division = self.org_position.get_ancestors(
                 include_self=True).filter(unit_type=1)
-        else:
-            division = None
-        if division:
             self.division = division.first()
-        for user in self.departmentuser_set.all():
+        else:
+            self.division = None
+        # Iterate through each DepartmentUser assigned to this CC to cache
+        # any org stucture/CC changes on that object.
+        for user in self.departmentuser_set.filter(active=True):
             user.save()
         super(CostCentre, self).save(*args, **kwargs)
 
     def __str__(self):
-        name = '{}'.format(self.code)
+        output = '{}'.format(self.code)
         if self.org_position:
-            dept = self.org_position.get_ancestors(
-                include_self=True).filter(unit_type=0)
+            # If the CC is linked to an OrgUnit, include that unit's Department
+            # acronym in the output.
+            dept = self.org_position.get_ancestors(include_self=True).filter(unit_type=0)
             if dept:
-                name += ' ({})'.format(dept.first().acronym)
-        return name
+                output += ' ({})'.format(dept.first().acronym)
+        return output
