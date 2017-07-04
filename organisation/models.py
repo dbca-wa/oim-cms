@@ -71,7 +71,7 @@ class DepartmentUser(MPTTModel):
     ad_guid = models.CharField(
         max_length=48, unique=True, null=True, blank=True,
         help_text='Locally stored GUID. This field must match GUID in the AD object for sync to be successful')
-    ad_dn = models.CharField(max_length=512, unique=True, editable=False)
+    ad_dn = models.CharField(max_length=512, unique=True, null=True, blank=True, editable=False)
     ad_data = JSONField(null=True, blank=True, editable=False)
     org_data = JSONField(null=True, blank=True, editable=False)
     employee_id = models.CharField(
