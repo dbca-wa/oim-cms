@@ -277,12 +277,12 @@ class DepartmentUserResource(DjangoResource):
         if sync_o365:  # Exclude certain things from populating O365/AD
             orgunits = OrgUnit.objects.filter(unit_type__in=[0, 1], sync_o365=True)
             costcentres = []
-            locations = Location.objects.all()
+            locations = Location.objects.filter(active=True)
             slocations = []
         else:
-            orgunits = OrgUnit.objects.all()
-            costcentres = CostCentre.objects.all()
-            locations = Location.objects.all()
+            orgunits = OrgUnit.objects.filter(active=True)
+            costcentres = CostCentre.objects.filter(active=True)
+            locations = Location.objects.filter(active=True)
             slocations = SecondaryLocation.objects.all()
         defaultowner = 'support@dpaw.wa.gov.au'
         for obj in orgunits:

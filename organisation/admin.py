@@ -226,10 +226,10 @@ class OrgUnitAdmin(DjangoMpttAdmin):
 @register(CostCentre)
 class CostCentreAdmin(ModelAdmin):
     list_display = (
-        'code', 'name', 'org_position', 'division', 'users', 'manager',
+        'name', 'code', 'chart_acct_name', 'org_position', 'division', 'users', 'manager',
         'business_manager', 'admin', 'tech_contact', 'active')
     search_fields = (
-        'code', 'name', 'org_position__name', 'division__name',
+        'name', 'code', 'chart_acct_name', 'org_position__name', 'division__name',
         'org_position__acronym', 'division__acronym')
     list_filter = ('active',)
     raw_id_fields = (
