@@ -411,9 +411,9 @@ class OrgUnit(MPTTModel):
     """Represents an element within the Department organisational hierarchy.
     """
     TYPE_CHOICES = (
-        (0, 'Department'),
+        (0, 'Department (Tier one)'),
         (1, 'Division (Tier two)'),
-        (11, 'Division (Tier three)'),
+        (11, 'Division'),
         (9, 'Group'),
         (2, 'Branch'),
         (7, 'Section'),
