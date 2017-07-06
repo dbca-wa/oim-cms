@@ -3,6 +3,7 @@ from datetime import datetime
 from django.contrib.postgres.fields import JSONField
 from django.contrib.gis.db import models
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -106,8 +107,7 @@ class DepartmentUser(MPTTModel):
         related_name='children', editable=True, verbose_name='Reports to',
         help_text='Person that this employee reports to')
     expiry_date = models.DateTimeField(
-        null=True, editable=False,
-        help_text='Date that the AD account is set to expire.')
+        null=True, blank=True, help_text='Date that the AD account is set to expire.')
     date_ad_updated = models.DateTimeField(
         null=True, editable=False, verbose_name='Date AD updated',
         help_text='The date when the AD account was last updated.')
@@ -330,6 +330,12 @@ class DepartmentUser(MPTTModel):
             except:
                 pass
         return None
+
+    @property
+    def ad_expired(self):
+        if self.expiry_date and self.expiry_date < timezone.now():
+            return True
+        return False
 
     def clean_employee_id(self):
         logger = logger_setup('model_updates')

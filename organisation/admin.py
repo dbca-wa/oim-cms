@@ -48,7 +48,7 @@ class DepartmentUserAdmin(ModelAdmin):
     filter_horizontal = ['secondary_locations']
     readonly_fields = [
         'username', 'email', 'org_data_pretty', 'ad_data_pretty',
-        'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
+        'active', 'in_sync', 'ad_deleted', 'date_ad_updated',
         'alesco_data_pretty', 'o365_licence', 'shared_account']
     fieldsets = (
         ('Email/username', {
@@ -61,7 +61,7 @@ class DepartmentUserAdmin(ModelAdmin):
             'fields': (
                 'given_name', 'surname', 'name', 'employee_id',
                 'cost_centre', 'org_unit', 'security_clearance',
-                'name_update_reference'),
+                'expiry_date', 'name_update_reference'),
         }),
         ('Other details', {
             'fields': (
@@ -75,7 +75,7 @@ class DepartmentUserAdmin(ModelAdmin):
         ('AD sync and HR data (read-only, except GUID)', {
             'fields': (
                 'ad_guid',
-                'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
+                'active', 'in_sync', 'ad_deleted', 'date_ad_updated',
                 'o365_licence', 'shared_account',
                 'org_data_pretty', 'ad_data_pretty', 'alesco_data_pretty',
             )

@@ -3,6 +3,7 @@ from django.conf import settings
 from django.conf.urls import url
 from django.http import (
     HttpResponse, HttpResponseForbidden, HttpResponseBadRequest)
+from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -58,7 +59,8 @@ class DepartmentUserResource(DjangoResource):
         'org_unit__location__name', 'org_unit__location__address',
         'org_unit__location__pobox', 'org_unit__location__phone',
         'org_unit__location__fax', 'ad_guid',
-        'org_unit__secondary_location__name', 'preferred_name')
+        'org_unit__secondary_location__name', 'preferred_name',
+        'expiry_date')
     VALUES_ARGS = COMPACT_ARGS + (
         'ad_dn', 'ad_data', 'date_updated', 'date_ad_updated', 'active',
         'ad_deleted', 'in_sync', 'given_name', 'surname', 'home_phone',
@@ -82,6 +84,11 @@ class DepartmentUserResource(DjangoResource):
         prepped = super(DepartmentUserResource, self).prepare(data)
         if 'pk' in data:
             prepped['gal_department'] = DepartmentUser.objects.get(pk=data['pk']).get_gal_department()
+        if 'expiry_date' in data:
+            if data['expiry_date'] and data['expiry_date'] < timezone.now():
+                data['ad_expired'] = True
+            else:
+                data['ad_expired'] = False
         return prepped
 
     @classmethod
