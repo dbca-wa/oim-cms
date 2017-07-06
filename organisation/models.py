@@ -12,7 +12,7 @@ from mptt.models import MPTTModel, TreeForeignKey
 import os
 import re
 
-from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp, logger_setup
+from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp
 
 
 def validate_employee_id(value):
@@ -48,6 +48,10 @@ class DepartmentUser(MPTTModel):
         (5, 'L1 Group (shared) Mailbox - Shared account'),
         (9, 'L1 Role Account - Role-based account'),
         #(4, 'Resigned'),
+        (4, 'Terminated'),
+        (14, 'Unknown - AD disabled'),
+        (15, 'Cleanup - Permanent'),
+        (16, 'Unknown - AD active'),
     )
     POSITION_TYPE_CHOICES = (
         (0, 'Full time'),
@@ -80,7 +84,7 @@ class DepartmentUser(MPTTModel):
     org_data = JSONField(null=True, blank=True, editable=False)
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
-        help_text="HR Employee ID. Enter n/a if no ID provided")
+        help_text='HR Employee ID.')
     email = models.EmailField(unique=True, editable=False)
     username = models.CharField(
         max_length=128, editable=False, unique=True,
@@ -338,14 +342,6 @@ class DepartmentUser(MPTTModel):
         if self.expiry_date and self.expiry_date < timezone.now():
             return True
         return False
-
-    def clean_employee_id(self):
-        logger = logger_setup('model_updates')
-        logger.info("{}".format("In clean method"))
-        if self.cleaned_data['employee_id'] == '':
-            return None
-        else:
-            return self.cleaned_data['employee_id']
 
     def get_gal_department(self):
         """Return a string to place into the "Department" field for the Global Address List.

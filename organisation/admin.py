@@ -33,6 +33,12 @@ class DepartmentUserForm(forms.ModelForm):
     def clean_ad_guid(self):
         return self.cleaned_data['ad_guid'] or None
 
+    def clean_employee_id(self):
+        if self.cleaned_data['employee_id'] == '':
+            return None
+        else:
+            return self.cleaned_data['employee_id']
+
 
 @register(DepartmentUser)
 class DepartmentUserAdmin(ModelAdmin):
@@ -59,16 +65,17 @@ class DepartmentUserAdmin(ModelAdmin):
             without written permission from People Services or the cost centre manager
             (forms are required).</p>''',
             'fields': (
-                'given_name', 'surname', 'name', 'employee_id',
-                'cost_centre', 'org_unit', 'security_clearance',
-                'expiry_date', 'name_update_reference'),
+                'given_name', 'surname', 'name', 'employee_id', 'cost_centre',
+                'org_unit', 'parent', 'security_clearance', 'name_update_reference'),
+        }),
+        ('Account fields', {
+            'fields': ('account_type', 'expiry_date', 'contractor'),
         }),
         ('Other details', {
             'fields': (
-                'preferred_name', 'photo', 'title', 'parent',
-                'account_type', 'position_type',
+                'vip', 'executive', 'populate_primary_group',
+                'preferred_name', 'photo', 'title', 'position_type',
                 'telephone', 'mobile_phone', 'extension', 'other_phone',
-                'populate_primary_group', 'vip', 'executive', 'contractor',
                 'secondary_locations', 'notes', 'working_hours', 'extra_data',
             )
         }),
