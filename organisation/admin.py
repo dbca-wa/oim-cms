@@ -38,7 +38,7 @@ class DepartmentUserForm(forms.ModelForm):
 class DepartmentUserAdmin(ModelAdmin):
     form = DepartmentUserForm
     list_display = [
-        'email', 'employee_id', 'username', 'active', 'vip', 'executive',
+        'email', 'title', 'employee_id', 'username', 'active', 'vip', 'executive',
         'cost_centre', 'account_type', 'o365_licence']
     list_filter = [
         'account_type', 'active', 'vip', 'executive', 'shared_account',

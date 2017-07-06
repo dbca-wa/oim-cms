@@ -34,16 +34,17 @@ class DepartmentUser(MPTTModel):
                      "cost_centre__isnull": False, "contractor": False}
     # The following choices are intended to match options in Alesco.
     ACCOUNT_TYPE_CHOICES = (
-        (3, 'Agency contract'),
-        (0, 'Department fixed-term contract'),
-        (1, 'Other'),
-        (2, 'Permanent'),
-        (4, 'Resigned'),
-        (9, 'Role-based account'),
-        (8, 'Seasonal'),
-        (5, 'Shared account'),
-        (6, 'Vendor'),
-        (7, 'Volunteer'),
+        (2, 'L1 User Account - Permanent'),
+        (3, 'L1 User Account - Agency contract'),
+        (0, 'L1 User Account - Department fixed-term contract'),
+        (8, 'L1 User Account - Seasonal'),
+        (6, 'L1 User Account - Vendor'),
+        (7, 'L1 User Account - Volunteer'),
+        (1, 'L1 User Account - Other/Alumni'),
+        (10, 'L2 Service Account - System'),
+        (5, 'L1 Group (shared) Mailbox - Shared account'),
+        (9, 'L1 Role Account - Role-based account'),
+        #(4, 'Resigned'),
     )
     POSITION_TYPE_CHOICES = (
         (0, 'Full time'),
