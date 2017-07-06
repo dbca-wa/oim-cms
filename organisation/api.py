@@ -80,7 +80,8 @@ class DepartmentUserResource(DjangoResource):
         """Modify the returned object to append the GAL Department value.
         """
         prepped = super(DepartmentUserResource, self).prepare(data)
-        prepped['gal_department'] = DepartmentUser.objects.get(pk=data['pk']).get_gal_department()
+        if 'pk' in data:
+            prepped['gal_department'] = DepartmentUser.objects.get(pk=data['pk']).get_gal_department()
         return prepped
 
     @classmethod
@@ -90,7 +91,7 @@ class DepartmentUserResource(DjangoResource):
         """
         return [
             url(r'^$', self.as_list(), name=self.build_url_name('list', name_prefix)),
-            url(r'^(?P<guid>[0-9a-z-]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
+            url(r'^(?P<guid>[0-9A-Za-z-@\'&\.]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
         ]
 
     def build_response(self, data, status=OK):
@@ -176,6 +177,8 @@ class DepartmentUserResource(DjangoResource):
         """Detail view for a single DepartmentUser object.
         """
         user = DepartmentUser.objects.filter(ad_guid=guid)
+        if not user:
+            user = DepartmentUser.objects.filter(email__iexact=guid.lower())
         user_values = list(user.values(*self.VALUES_ARGS))
         return self.formatters.format(self.request, user_values)[0]
 
@@ -222,7 +225,10 @@ class DepartmentUserResource(DjangoResource):
         try:
             user = DepartmentUser.objects.get(ad_guid=guid)
         except DepartmentUser.DoesNotExist:
-            raise BadRequest('Object not found')
+            try:
+                user = DepartmentUser.objects.get(email__iexact=guid.lower())
+            except DepartmentUser.DoesNotExist:
+                raise BadRequest('Object not found')
 
         try:
             if 'ObjectGUID' in self.data and self.data['ObjectGUID']:
