@@ -42,6 +42,8 @@ class DepartmentUser(MPTTModel):
         (6, 'L1 User Account - Vendor'),
         (7, 'L1 User Account - Volunteer'),
         (1, 'L1 User Account - Other/Alumni'),
+        (11, 'L1 User Account - RoomMailbox'),
+        (12, 'L1 User Account - EquipmentMailbox'),
         (10, 'L2 Service Account - System'),
         (5, 'L1 Group (shared) Mailbox - Shared account'),
         (9, 'L1 Role Account - Role-based account'),
