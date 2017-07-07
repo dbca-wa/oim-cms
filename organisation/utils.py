@@ -96,11 +96,14 @@ def departmentuser_csv_report():
     """
     from .models import DepartmentUser
     FIELDS = [
-        'email', 'username', 'given_name', 'surname', 'name', 'employee_id',
-        'cost_centre', 'org_unit', 'name_update_reference',
-        'telephone', 'mobile_phone', 'other_phone', 'title', 'preferred_name',
-        'security_clearance']
-    TYPE_CHOICES = {x[0]: x[1] for x in DepartmentUser.ACCOUNT_TYPE_CHOICES}
+        'email', 'username', 'given_name', 'surname', 'name', 'preferred_name', 'title',
+        'name_update_reference', 'employee_id', 'active', 'telephone', 'home_phone',
+        'mobile_phone', 'other_phone', 'extension', 'expiry_date', 'org_unit',
+        'cost_centre', 'parent', 'executive', 'vip', 'security_clearance',
+        'in_sync', 'contractor', 'ad_deleted', 'o365_licence', 'shared_account',
+        'populate_primary_group', 'notes', 'working_hours', 'sso_roles', 'org_data', 'alesco_data',
+        'ad_data', 'extra_data', 'date_created', 'date_ad_updated', 'date_updated', 'ad_dn',
+        'ad_guid']
 
     # Get any DepartmentUser with non-null alesco_data field.
     # alesco_data structure should be consistent to all (or null).
@@ -109,15 +112,16 @@ def departmentuser_csv_report():
     alesco_fields.sort()
     org_fields = {
         'department': ('units', 0, 'name'),
-        'division': ('units', 1, 'name'),
-        'branch': ('units', 2, 'name')
+        'tier_2': ('units', 1, 'name'),
+        'tier_3': ('units', 2, 'name'),
+        'tier_4': ('units', 3, 'name'),
+        'tier_5': ('units', 4, 'name')
     }
 
     header = [f for f in FIELDS]
     # These fields appended manually:
     header.append('account_type')
     header.append('position_type')
-    header.append('reports_to')
     header += org_fields.keys()
     header += alesco_fields
 
@@ -147,14 +151,13 @@ def departmentuser_csv_report():
         for f in FIELDS:
             record.append(getattr(u, f))
         try:  # Append account_type display value.
-            record.append(TYPE_CHOICES[u.account_type])
+            record.append(u.get_account_type_display())
         except:
             record.append('')
         try:  # Append position_type display value.
-            record.append(TYPE_CHOICES[u.position_type])
+            record.append(u.get_position_type_display())
         except:
             record.append('')
-        record.append(u.parent)  # Append parent field.
         for o in org_fields:
             try:
                 src = u.org_data
