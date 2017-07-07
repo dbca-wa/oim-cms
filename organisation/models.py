@@ -146,7 +146,8 @@ class DepartmentUser(MPTTModel):
     sso_roles = models.TextField(
         null=True, editable=False, help_text="Groups/roles separated by semicolon")
     notes = models.TextField(
-        null=True, blank=True, help_text="Officer secondary roles, etc.")
+        null=True, blank=True,
+        help_text='Records relevant to any AD account extension, expiry or deletion (e.g. ticket #).')
     working_hours = models.TextField(
         default="N/A", null=True, blank=True,
         help_text="Description of normal working hours")
