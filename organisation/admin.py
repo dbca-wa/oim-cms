@@ -69,14 +69,14 @@ class DepartmentUserAdmin(ModelAdmin):
                 'org_unit', 'parent', 'security_clearance', 'name_update_reference'),
         }),
         ('Account fields', {
-            'fields': ('account_type', 'expiry_date', 'contractor'),
+            'fields': ('account_type', 'expiry_date', 'contractor', 'notes' ),
         }),
         ('Other details', {
             'fields': (
                 'vip', 'executive', 'populate_primary_group',
                 'preferred_name', 'photo', 'title', 'position_type',
                 'telephone', 'mobile_phone', 'extension', 'other_phone',
-                'secondary_locations', 'notes', 'working_hours', 'extra_data',
+                'secondary_locations', 'working_hours', 'extra_data',
             )
         }),
         ('AD sync and HR data (read-only, except GUID)', {
