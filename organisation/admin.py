@@ -125,6 +125,11 @@ class DepartmentUserAdmin(ModelAdmin):
                 obj.email, 'org_unit', obj._DepartmentUser__original_org_unit, obj.org_unit,
                 request.user.username, obj.name_update_reference
             ))
+        if obj._DepartmentUser__original_expiry_date != obj.expiry_date:
+            logger.info(l.format(
+                obj.email, 'expiry_date', obj._DepartmentUser__original_expiry_date, obj.expiry_date,
+                request.user.username, obj.name_update_reference
+            ))
         obj.save()
         # NOTE: following a change to a DepartmentUser object, we need to call
         # save a second time so that the org_data field is correct. The lines

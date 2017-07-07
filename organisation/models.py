@@ -186,6 +186,7 @@ class DepartmentUser(MPTTModel):
         self.__original_cost_centre = self.cost_centre
         self.__original_name = self.name
         self.__original_org_unit = self.org_unit
+        self.__original_expiry_date = self.expiry_date
 
     def __str__(self):
         return self.email
