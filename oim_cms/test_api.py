@@ -33,13 +33,13 @@ class ApiTestCase(TestCase):
         self.loc2 = mixer.blend(Location, manager=None)
         # Generate a basic org structure.
         # NOTE: don't use mixer to create OrgUnit objects (it breaks MPTT).
-        self.dept = OrgUnit.objects.create(name='Department 1', unit_type=0)
+        self.dept = OrgUnit.objects.create(name='Department 1', unit_type=0, acronym='DEPT')
         self.div1 = OrgUnit.objects.create(
-            name='Divison 1', unit_type=1, parent=self.dept, location=self.loc1)
+            name='Divison 1', unit_type=1, parent=self.dept, location=self.loc1, acronym='D1')
         self.cc1 = CostCentre.objects.create(
             name='Cost centre 1', code='001', division=self.div1, org_position=self.div1)
         self.div2 = OrgUnit.objects.create(
-            name='Divison 2', unit_type=1, parent=self.dept, location=self.loc2)
+            name='Divison 2', unit_type=1, parent=self.dept, location=self.loc2, acronym='D2')
         self.cc2 = CostCentre.objects.create(
             name='Cost centre 2', code='002', division=self.div2, org_position=self.div2)
         # Give each of the divisions some members.
@@ -274,7 +274,14 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         self.assertNotContains(response, self.user2.email)
 
     def test_detail(self):
+        """Test the DepartmentUserResource detail response
+        """
+        # Test detail URL using ad_guid.
         url = '/api/users/{}/'.format(self.user1.ad_guid)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # Test URL using email also.
+        url = '/api/users/{}/'.format(self.user1.email.lower())
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
