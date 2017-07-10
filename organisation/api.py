@@ -161,7 +161,7 @@ class DepartmentUserResource(DjangoResource):
             # No other filtering:
             # Return 'active' DU objects, excluding predefined account types and contractors.
             FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
-            users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[4, 5, 9, 10, 11, 12, 14, 15, 16])
+            users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[4, 5, 9, 10, 11, 12, 14, 16])
             users = users.exclude(expiry_date__lte=timezone.now())
         # Non-mutually-exclusive filters:
         if 'o365_licence' in self.request.GET:
@@ -292,7 +292,7 @@ class DepartmentUserResource(DjangoResource):
         """
         qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
         # Exclude predefined account types:
-        qs = qs.exclude(account_type__in=[4, 5, 9, 10, 11, 12, 14, 15, 16])
+        qs = qs.exclude(account_type__in=[4, 5, 9, 10, 11, 12, 14, 16])
         if exclude_populate_groups:  # Exclude objects where populate_primary_group == False
             qs = qs.exclude(populate_primary_group=False)
         structure = []
