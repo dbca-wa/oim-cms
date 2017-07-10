@@ -479,7 +479,7 @@ class OrgUnit(MPTTModel):
         if self.acronym:
             name = '{} - {}'.format(self.acronym, name)
         if self.cc():
-            return '{} - CC{}'.format(name, self.cc())
+            return '{} - CC {}'.format(name, self.cc())
         return name
 
     def members(self):

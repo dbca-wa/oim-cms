@@ -10,6 +10,7 @@ from django.template.response import TemplateResponse
 from django.utils.html import format_html
 from django_mptt_admin.admin import DjangoMpttAdmin
 from leaflet.admin import LeafletGeoAdmin
+from reversion.admin import VersionAdmin
 from threading import Thread
 import time
 
@@ -41,7 +42,9 @@ class DepartmentUserForm(forms.ModelForm):
 
 
 @register(DepartmentUser)
-class DepartmentUserAdmin(ModelAdmin):
+class DepartmentUserAdmin(VersionAdmin):
+    # Override the default reversion/change_list.html template:
+    change_list_template = 'admin/organisation/departmentuser/change_list.html'
     form = DepartmentUserForm
     list_display = [
         'email', 'title', 'employee_id', 'username', 'active', 'vip', 'executive',
@@ -243,7 +246,7 @@ class CostCentreAdmin(ModelAdmin):
     search_fields = (
         'name', 'code', 'chart_acct_name', 'org_position__name', 'division__name',
         'org_position__acronym', 'division__acronym')
-    list_filter = ('active',)
+    list_filter = ('active', 'chart_acct_name')
     raw_id_fields = (
         'org_position', 'manager', 'business_manager', 'admin', 'tech_contact')
 
