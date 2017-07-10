@@ -243,7 +243,7 @@ class CostCentreAdmin(ModelAdmin):
     search_fields = (
         'name', 'code', 'chart_acct_name', 'org_position__name', 'division__name',
         'org_position__acronym', 'division__acronym')
-    list_filter = ('active',)
+    list_filter = ('active', 'chart_acct_name')
     raw_id_fields = (
         'org_position', 'manager', 'business_manager', 'admin', 'tech_contact')
 
