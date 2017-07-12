@@ -11,7 +11,7 @@ from core.models import UserSession
 from mudmap.models import MudMap
 from organisation.api import DepartmentUserResource, LocationResource, profile
 from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
-from registers.api import ITSystemResource, ITSystemHardwareResource
+from registers.api import ITSystemResource, ITSystemHardwareResource, ITSystemEventResource
 from registers.models import ITSystem
 from tracking.api import EC2InstanceResource, FreshdeskTicketResource
 from .utils import CSVDjangoResource
@@ -178,4 +178,5 @@ api_urlpatterns = [
     url(r'^profile/', profile, name='api_profile'),
     url(r'^options/', include(OptionResource.urls())),
     url(r'^whoami', WhoAmIResource.as_detail(), name='api_whoami'),
+    url(r'^events/', include(ITSystemEventResource.urls())),
 ]

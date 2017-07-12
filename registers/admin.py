@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, absolute_import
 from django import forms
 from django.conf.urls import url
-from django.contrib.admin import register
+from django.contrib.admin import register, ModelAdmin
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
 from reversion.admin import VersionAdmin
@@ -13,7 +13,8 @@ import unicodecsv
 from .models import (
     UserGroup, ITSystemHardware, Platform, ITSystem, ITSystemDependency,
     Backup, BusinessService, BusinessFunction, BusinessProcess,
-    ProcessITSystemRelationship)
+    ProcessITSystemRelationship, ITSystemEvent)
+from .utils import smart_truncate
 
 
 @register(UserGroup)
@@ -305,3 +306,16 @@ class ProcessITSystemRelationshipAdmin(VersionAdmin):
     list_display = ('process', 'itsystem', 'importance')
     list_filter = ('importance', 'process', 'itsystem')
     search_fields = ('process__name', 'itsystem__name')
+
+
+@register(ITSystemEvent)
+class ITSystemEventAdmin(ModelAdmin):
+    list_display = ('id', 'event_type', 'description_trunc', 'start', 'duration', 'end')
+    list_filter = ('event_type', 'planned', 'current')
+    search_fields = ('description',)
+    date_hierarchy = 'start'
+    # TODO: define a clean method to require end and/or duration.
+
+    def description_trunc(self, obj):
+        return smart_truncate(obj.description)
+    description_trunc.short_description = 'description'

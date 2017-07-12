@@ -297,7 +297,7 @@ class DepartmentUserResource(DjangoResource):
             qs = qs.exclude(populate_primary_group=False)
         structure = []
         if sync_o365:  # Exclude certain things from populating O365/AD
-            orgunits = OrgUnit.objects.filter(unit_type__in=[0, 1], sync_o365=True)
+            orgunits = OrgUnit.objects.filter(active=True, unit_type__in=[0, 1], sync_o365=True)
             costcentres = []
             locations = Location.objects.filter(active=True)
             slocations = []
