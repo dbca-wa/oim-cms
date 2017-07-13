@@ -59,7 +59,7 @@ class DepartmentUser(MPTTModel):
         (2, 'Casual'),
         (3, 'Other'),
     )
-    # These fields are populated from Active Directory.
+
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
     cost_centre = models.ForeignKey(
@@ -79,6 +79,8 @@ class DepartmentUser(MPTTModel):
     ad_guid = models.CharField(
         max_length=48, unique=True, null=True, blank=True,
         help_text='Locally stored GUID. This field must match GUID in the AD object for sync to be successful')
+    azure_guid = models.CharField(
+        max_length=48, unique=True, null=True, blank=True, help_text='Azure AD GUID.')
     ad_dn = models.CharField(max_length=512, unique=True, null=True, blank=True, editable=False)
     ad_data = JSONField(null=True, blank=True, editable=False)
     org_data = JSONField(null=True, blank=True, editable=False)

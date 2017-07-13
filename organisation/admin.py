@@ -58,7 +58,8 @@ class DepartmentUserAdmin(VersionAdmin):
     readonly_fields = [
         'username', 'email', 'org_data_pretty', 'ad_data_pretty',
         'active', 'in_sync', 'ad_deleted', 'date_ad_updated',
-        'alesco_data_pretty', 'o365_licence', 'shared_account']
+        'alesco_data_pretty', 'o365_licence', 'shared_account',
+        'azure_guid']
     fieldsets = (
         ('Email/username', {
             'fields': ('email', 'username'),
@@ -82,9 +83,10 @@ class DepartmentUserAdmin(VersionAdmin):
                 'secondary_locations', 'working_hours', 'extra_data',
             )
         }),
-        ('AD sync and HR data (read-only, except GUID)', {
+        ('AD sync and HR data (read-only, except AD GUID)', {
             'fields': (
                 'ad_guid',
+                'azure_guid',
                 'active', 'in_sync', 'ad_deleted', 'date_ad_updated',
                 'o365_licence', 'shared_account',
                 'org_data_pretty', 'ad_data_pretty', 'alesco_data_pretty',
