@@ -72,9 +72,14 @@ class ITSystemHardwareAdmin(VersionAdmin):
 
 @register(Platform)
 class PlatformAdmin(VersionAdmin):
-    list_display = ('name', 'category')
+    list_display = ('name', 'category', 'it_systems')
     list_filter = ('category',)
     search_fields = ('name',)
+
+    def it_systems(self, obj):
+        # Exclude decommissioned systems from the count.
+        return obj.itsystem_set.all().exclude(status=3).count()
+    it_systems.short_description = 'IT Systems'
 
 
 class ITSystemForm(forms.ModelForm):
