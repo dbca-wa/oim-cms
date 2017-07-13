@@ -315,12 +315,22 @@ class ProcessITSystemRelationshipAdmin(VersionAdmin):
 
 @register(ITSystemEvent)
 class ITSystemEventAdmin(ModelAdmin):
-    list_display = ('id', 'event_type', 'description_trunc', 'start', 'duration', 'end')
+    filter_horizontal = ('it_systems', 'locations')
+    list_display = (
+        'id', 'event_type', 'description_trunc', 'start', 'duration', 'end',
+        'it_systems_affected', 'locations_affected')
     list_filter = ('event_type', 'planned', 'current')
-    search_fields = ('description',)
+    search_fields = ('description', 'it_systems__name', 'locations__name')
     date_hierarchy = 'start'
-    # TODO: define a clean method to require end and/or duration.
 
     def description_trunc(self, obj):
         return smart_truncate(obj.description)
     description_trunc.short_description = 'description'
+
+    def it_systems_affected(self, obj):
+        return ', '.join([i.name for i in obj.it_systems.all()])
+    it_systems_affected.short_description = 'IT Systems'
+
+    def locations_affected(self, obj):
+        return ', '.join([i.name for i in obj.locations.all()])
+    locations_affected.short_description = 'locations'

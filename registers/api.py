@@ -233,6 +233,14 @@ class ITSystemEventResource(DjangoResource):
             prepped['duration_sec'] = data.duration.seconds
         else:
             prepped['duration_sec'] = None
+        if data.it_systems:
+            prepped['it_systems'] = [i.name for i in data.it_systems.all()]
+        else:
+            prepped['it_systems'] = None
+        if data.locations:
+            prepped['locations'] = [i.name for i in data.locations.all()]
+        else:
+            prepped['locations'] = None
         return prepped
 
     @skip_prepare

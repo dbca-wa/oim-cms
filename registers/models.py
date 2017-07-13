@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 
-from organisation.models import DepartmentUser
+from organisation.models import DepartmentUser, Location
 from tracking.models import CommonFields, Computer
 from .utils import smart_truncate
 
@@ -596,9 +596,9 @@ class ITSystemEvent(models.Model):
     duration = models.DurationField(null=True, blank=True, help_text='Optional: duration of the event (hh:mm:ss).')
     end = models.DateTimeField(null=True, blank=True, help_text='Optional: event end (date & time)')
     current = models.BooleanField(default=True, editable=False)
+    it_systems = models.ManyToManyField(ITSystem, blank=True, help_text='IT System(s) affect by this event')
+    locations = models.ManyToManyField(Location, blank=True, help_text='Location(s) affect by this event')
     # TODO: incident type (optional: P1, P2, P3, P4)
-    # TODO: IT systems (optional)
-    # TODO: locations (optional)
     # TODO: FD ticket (optional)
 
     class Meta:
