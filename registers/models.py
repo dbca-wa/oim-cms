@@ -614,4 +614,6 @@ class ITSystemEvent(models.Model):
             self.current = False
         elif self.duration and (self.start + self.duration) < timezone.now():
             self.current = False
+        else:
+            self.current = True
         super(ITSystemEvent, self).save(*args, **kwargs)
