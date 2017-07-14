@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls import url
 import itertools
 from oim_cms.utils import CSVDjangoResource
+import pytz
 from restless.dj import DjangoResource
 from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
@@ -221,14 +222,19 @@ class ITSystemEventResource(DjangoResource):
         'id': 'id',
         'description': 'description',
         'planned': 'planned',
-        'start': 'start',
-        'end': 'end',
         'current': 'current',
     })
 
     def prepare(self, data):
         prepped = super(ITSystemEventResource, self).prepare(data)
         prepped['event_type'] = data.get_event_type_display()
+        # Output times as the local timezone.
+        tz = pytz.timezone(settings.TIME_ZONE)
+        prepped['start'] = data.start.astimezone(tz)
+        if data.end:
+            prepped['end'] = data.end.astimezone(tz)
+        else:
+            prepped['end'] = None
         if data.duration:
             prepped['duration_sec'] = data.duration.seconds
         else:

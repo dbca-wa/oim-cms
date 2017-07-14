@@ -318,7 +318,7 @@ class ITSystemEventAdmin(ModelAdmin):
     filter_horizontal = ('it_systems', 'locations')
     list_display = (
         'id', 'event_type', 'description_trunc', 'start', 'duration', 'end',
-        'it_systems_affected', 'locations_affected')
+        'current', 'it_systems_affected', 'locations_affected')
     list_filter = ('event_type', 'planned', 'current')
     search_fields = ('description', 'it_systems__name', 'locations__name')
     date_hierarchy = 'start'
