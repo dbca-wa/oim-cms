@@ -8,8 +8,9 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 
-from organisation.models import DepartmentUser
+from organisation.models import DepartmentUser, Location
 from tracking.models import CommonFields, Computer
+from .utils import smart_truncate
 
 
 CRITICALITY_CHOICES = (
@@ -576,3 +577,41 @@ class ProcessITSystemRelationship(models.Model):
     def __str__(self):
         return '{} - {} ({})'.format(
             self.itsystem.name, self.process.name, self.get_importance_display())
+
+
+@python_2_unicode_compatible
+class ITSystemEvent(models.Model):
+    """Represents information about an event that affects one or more IT Systems
+    or networked locations.
+    """
+    EVENT_TYPE_CHOICES = (
+        (1, 'Incident'),
+        (2, 'Maintenance'),
+        (3, 'Information'),
+    )
+    event_type = models.PositiveSmallIntegerField(choices=EVENT_TYPE_CHOICES)
+    description = models.TextField()
+    planned = models.BooleanField(default=False, help_text='Was this event planned?')
+    start = models.DateTimeField(help_text='Event start (date & time)')
+    duration = models.DurationField(null=True, blank=True, help_text='Optional: duration of the event (hh:mm:ss).')
+    end = models.DateTimeField(null=True, blank=True, help_text='Optional: event end (date & time)')
+    current = models.BooleanField(default=True, editable=False)
+    it_systems = models.ManyToManyField(ITSystem, blank=True, help_text='IT System(s) affect by this event')
+    locations = models.ManyToManyField(Location, blank=True, help_text='Location(s) affect by this event')
+    # TODO: incident type (optional: P1, P2, P3, P4)
+    # TODO: FD ticket (optional)
+
+    class Meta:
+        verbose_name = 'IT System event'
+
+    def __str__(self):
+        return '{}: {}'.format(self.get_event_type_display(), smart_truncate(self.description))
+
+    def save(self, *args, **kwargs):
+        # On save, set the `current` boolean field value correctly for the this instant.
+        # An event needs either an end datestamp and/or a duration to set `current`.
+        if self.end and self.end < timezone.now():
+            self.current = False
+        elif self.duration and (self.start + self.duration) < timezone.now():
+            self.current = False
+        super(ITSystemEvent, self).save(*args, **kwargs)
