@@ -22,7 +22,7 @@ class ApiTestCase(TestCase):
 
     def setUp(self):
         # Generate some other DepartmentUser objects.
-        mixer.cycle(6).blend(
+        mixer.cycle(8).blend(
             DepartmentUser, photo=None, active=True,
             email=random_dpaw_email, org_unit=None,
             cost_centre=None, ad_guid=uuid1, o365_licence=False, in_sync=False)
@@ -31,16 +31,20 @@ class ApiTestCase(TestCase):
         self.loc2 = mixer.blend(Location, manager=None)
         # Generate a basic org structure.
         # NOTE: don't use mixer to create OrgUnit objects (it breaks MPTT).
-        self.dept = OrgUnit.objects.create(name='Department 1', unit_type=0, acronym='DEPT')
+        self.dept = OrgUnit.objects.create(name='Department 1', unit_type=0, acronym='DEPT', active=True)
         self.div1 = OrgUnit.objects.create(
-            name='Divison 1', unit_type=1, parent=self.dept, location=self.loc1, acronym='D1')
+            name='Divison 1', unit_type=1, parent=self.dept, location=self.loc1, acronym='DIV1', active=True)
+        self.branch1 = OrgUnit.objects.create(
+            name='Branch 1', unit_type=2, parent=self.div1, location=self.loc1, acronym='BRANCH1', active=True)
         self.cc1 = CostCentre.objects.create(
             name='Cost centre 1', code='001', division=self.div1, org_position=self.div1)
         self.div2 = OrgUnit.objects.create(
-            name='Divison 2', unit_type=1, parent=self.dept, location=self.loc2, acronym='D2')
+            name='Divison 2', unit_type=1, parent=self.dept, location=self.loc2, acronym='DIV2', active=True)
+        self.branch2 = OrgUnit.objects.create(
+            name='Branch 2', unit_type=2, parent=self.div2, location=self.loc2, acronym='BRANCH2', active=True)
         self.cc2 = CostCentre.objects.create(
             name='Cost centre 2', code='002', division=self.div2, org_position=self.div2)
-        # Give each of the divisions some members.
+        # Give each of the org units some members.
         users = DepartmentUser.objects.all()
         self.user1 = users[0]
         self.user1.org_unit = self.div1
@@ -54,6 +58,14 @@ class ApiTestCase(TestCase):
         self.user2.save()
         self.div2.manager = self.user2
         self.div2.save()
+        self.user3 = users[2]
+        self.user3.org_unit = self.branch1
+        self.user3.cost_centre = self.cc1
+        self.user3.save()
+        self.user4 = users[3]
+        self.user4.org_unit = self.branch2
+        self.user4.cost_centre = self.cc2
+        self.user4.save()
         # Mark a user as inactive and deleted in AD.
         self.del_user = users[2]
         self.del_user.active = False

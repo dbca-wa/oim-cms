@@ -55,13 +55,12 @@ class OptionResourceTestCase(ApiTestCase):
         # Deserialised response contains a list.
         self.assertTrue(isinstance(r['objects'], list))
         # Make OrgUnit inactive to test exclusion.
-        self.div1.active = False
-        self.div1.save()
+        self.branch1.active = False
+        self.branch1.save()
         response = self.client.get(url)
-        # FIXME: this is busted.
-        #self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
         # Division 1 won't be present in the response.
-        #self.assertNotContains(response, self.div1.name)
+        self.assertNotContains(response, self.branch1.name)
 
     def test_data_cost_centre(self):
         """Test the data_cost_centre API endpoint
