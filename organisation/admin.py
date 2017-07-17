@@ -56,10 +56,10 @@ class DepartmentUserAdmin(VersionAdmin):
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
     filter_horizontal = ['secondary_locations']
     readonly_fields = [
-        'username', 'email', 'org_data_pretty', 'ad_data_pretty',
+        'username', 'ad_guid', 'org_data_pretty', 'ad_data_pretty',
         'active', 'in_sync', 'ad_deleted', 'date_ad_updated',
         'alesco_data_pretty', 'o365_licence', 'shared_account',
-        'azure_guid']
+        'azure_guid', 'ad_dn']
     fieldsets = (
         ('Email/username', {
             'fields': ('email', 'username'),
@@ -83,9 +83,10 @@ class DepartmentUserAdmin(VersionAdmin):
                 'secondary_locations', 'working_hours', 'extra_data',
             )
         }),
-        ('AD sync and HR data (read-only, except AD GUID)', {
+        ('AD sync and HR data', {
             'fields': (
                 'ad_guid',
+                'ad_dn',
                 'azure_guid',
                 'active', 'in_sync', 'ad_deleted', 'date_ad_updated',
                 'o365_licence', 'shared_account',
