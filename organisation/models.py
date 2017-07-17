@@ -77,17 +77,20 @@ class DepartmentUser(MPTTModel):
         help_text='NOTE: this provides email distribution group access.')
     extra_data = JSONField(null=True, blank=True)
     ad_guid = models.CharField(
-        max_length=48, unique=True, null=True, blank=True,
-        help_text='Locally stored GUID. This field must match GUID in the AD object for sync to be successful')
+        max_length=48, unique=True, null=True, blank=True, verbose_name='AD GUID',
+        help_text='Locally stored AD GUID. This field must match GUID in the AD object for sync to be successful')
     azure_guid = models.CharField(
-        max_length=48, unique=True, null=True, blank=True, help_text='Azure AD GUID.')
-    ad_dn = models.CharField(max_length=512, unique=True, null=True, blank=True, editable=False)
+        max_length=48, unique=True, null=True, blank=True, verbose_name='Azure GUID',
+        help_text='Azure AD GUID.')
+    ad_dn = models.CharField(
+        max_length=512, unique=True, null=True, blank=True, verbose_name='AD DN',
+        help_text='AD DistinguishedName value.')
     ad_data = JSONField(null=True, blank=True, editable=False)
     org_data = JSONField(null=True, blank=True, editable=False)
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
         help_text='HR Employee ID.')
-    email = models.EmailField(unique=True, editable=False)
+    email = models.EmailField(unique=True)
     username = models.CharField(
         max_length=128, editable=False, unique=True,
         help_text='Pre-Windows 2000 login username.')
@@ -129,7 +132,7 @@ class DepartmentUser(MPTTModel):
         default=True, editable=False,
         help_text='Account is active within Active Directory.')
     ad_deleted = models.BooleanField(
-        default=False, editable=False,
+        default=False, editable=False, verbose_name='AD deleted',
         help_text='Account has been deleted in Active Directory.')
     in_sync = models.BooleanField(
         default=False, editable=False,
