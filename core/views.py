@@ -146,8 +146,13 @@ def auth(request):
 
     # store the access IP in the current user session
     if request.user.is_authenticated():
-        usersession = UserSession.objects.get(
-            session_id=request.session.session_key)
+        try:
+            usersession = UserSession.objects.get(
+                session_id=request.session.session_key)
+        except UserSession.DoesNotExist:
+            # If the user does not have a UserSession, log them out and return 401 Unauthorised.
+            logout(request)
+            return HttpResponse('Unauthorized', status=401)
         current_ip = get_ip(request)
         if usersession.ip != current_ip:
             usersession.ip = current_ip

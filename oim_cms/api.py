@@ -11,7 +11,7 @@ from core.models import UserSession
 from mudmap.models import MudMap
 from organisation.api import DepartmentUserResource, LocationResource, profile
 from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
-from registers.api import ITSystemResource
+from registers.api import ITSystemResource, ITSystemHardwareResource, ITSystemEventResource
 from registers.models import ITSystem
 from tracking.api import EC2InstanceResource, FreshdeskTicketResource
 from .utils import CSVDjangoResource
@@ -40,14 +40,15 @@ class OptionResource(DjangoResource):
         return getattr(self, 'data_' + self.request.GET['list'])()
 
     def data_org_structure(self):
+        # Return the current org structure, excluding inactive OrgUnits.
         return [recursive_node_to_dict(cache_tree_children(dept.get_descendants_active(include_self=True))[0])
-                for dept in OrgUnit.objects.filter(unit_type=0).order_by('name')]
+                for dept in OrgUnit.objects.filter(unit_type=0, active=True).order_by('name')]
 
     def data_cost_centre(self):
         return ['CC{} / {}'.format(*c) for c in CostCentre.objects.all().exclude(org_position__name__icontains='inactive').values_list('code', 'org_position__name')]
 
     def data_org_unit(self):
-        return [{'name': i.name, 'id': i.pk} for i in OrgUnit.objects.all()]
+        return [{'name': i.name, 'id': i.pk, 'active': i.active} for i in OrgUnit.objects.all()]
 
     def data_dept_user(self):
         return [u[0] for u in DepartmentUser.objects.filter(
@@ -168,12 +169,14 @@ api_urlpatterns = [
     url(r'^freshdesk_tickets/', include(FreshdeskTicketResource.urls())),
     url(r'^itsystems/', include(ITSystemResource.urls())),
     url(r'^itsystems.csv', ITSystemResource.as_csv),
+    url(r'^itsystem-hardware/', include(ITSystemHardwareResource.urls())),
     url(r'^mudmaps', include(MudMapResource.urls())),
     url(r'^mudmaps.csv', MudMapResource.as_csv),
     url(r'^locations/', include(LocationResource.urls())),
     url(r'^locations.csv', LocationResource.as_csv),
     url(r'^users/', include(DepartmentUserResource.urls())),
     url(r'^profile/', profile, name='api_profile'),
-    url(r'^options', include(OptionResource.urls())),
+    url(r'^options/', include(OptionResource.urls())),
     url(r'^whoami', WhoAmIResource.as_detail(), name='api_whoami'),
+    url(r'^events/', include(ITSystemEventResource.urls())),
 ]

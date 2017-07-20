@@ -118,9 +118,7 @@ for row in rows:
     print "RevID:"+str(lastrev[0])
 #    print row[tablemap['revision_id']]
     #    print row[tablemap['serialized_data']]
-
     content_type_id = '123'
-
     #rowjsonstring = json.dumps(rowjson);
     sqlcommand = "insert into reversion_version (object_id, object_id_int, format, serialized_data, object_repr, content_type_id, revision_id ) values ( '"+str(row[tablemap['object_id']])+"','"+str(row[tablemap['object_id']])+"','"+str(row[tablemap['format']])+"','"+string.replace(str(row[tablemap['serialized_data']]),"'","''")+"','"+str(row[tablemap['object_repr']])+"','"+content_type_id+"','"+str(lastrev[0])+"'  )"
 

@@ -4,11 +4,16 @@ from django.conf import settings
 from django.conf.urls import url
 import itertools
 from oim_cms.utils import CSVDjangoResource
+import pytz
+from restless.dj import DjangoResource
+from restless.preparers import FieldsPreparer
+from restless.resources import skip_prepare
 
-from .models import ITSystem, ITSystemDependency
+from .models import ITSystem, ITSystemHardware, ITSystemEvent
 
 
 class ITSystemResource(CSVDjangoResource):
+    VALUES_ARGS = ()
 
     def prepare(self, data):
         """Prepare a custom API response for ITSystemResource objects.
@@ -127,7 +132,7 @@ class ITSystemResource(CSVDjangoResource):
                 'criticality': i.get_criticality_display(),
                 'custodian__name': i.itsystem.custodian.name if i.itsystem.custodian else '',
                 'custodian__email': i.itsystem.custodian.email if i.itsystem.custodian else '',
-            } for i in ITSystemDependency.objects.filter(dependency=data)],
+            } for i in data.dependency.all()],
             'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
             'contingency_plan_url': domain + settings.MEDIA_URL + data.contingency_plan.name if data.contingency_plan else '',
             'contingency_plan_status': data.get_contingency_plan_status_display(),
@@ -156,37 +161,112 @@ class ITSystemResource(CSVDjangoResource):
             'legal_need_to_retain': 'Unknown' if data.legal_need_to_retain is None else data.legal_need_to_retain,
             'other_projects': data.other_projects,
             'sla': data.sla,
+            'biller_code': data.biller_code,
+            'platforms': [{'name': i.name, 'category': i.get_category_display()} for i in data.platforms.all()],
+            'oim_internal': data.oim_internal_only,
         }
         return prepped
 
-    @classmethod
-    def urls(self, name_prefix=None):
-        """Override the DjangoResource ``urls`` class method so the detail view
-        accepts a System ID parameter instead of PK.
-        """
-        return [
-            url(r'^$', self.as_list(), name=self.build_url_name('list', name_prefix)),
-            url(r'^(?P<system_id>[\w\d]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
-        ]
-
     def list_qs(self):
-        # Only return production apps
-        FILTERS = {"status": 0}
+        # Only return production/production legacy apps by default.
+        FILTERS = {"status__in": [0, 2]}
         if "all" in self.request.GET:
-            del FILTERS["status"]
+            FILTERS.pop("status__in")
         if "system_id" in self.request.GET:
-            del FILTERS["status"]
+            FILTERS.pop("status__in")
             FILTERS["system_id__icontains"] = self.request.GET["system_id"]
         if "name" in self.request.GET:
+            FILTERS.pop("status__in")
             FILTERS["name"] = self.request.GET["name"]
         if "pk" in self.request.GET:
+            FILTERS.pop("status__in")
             FILTERS["pk"] = self.request.GET["pk"]
-        return ITSystem.objects.filter(**FILTERS)
+        return ITSystem.objects.filter(**FILTERS).prefetch_related(
+            'cost_centre', 'cost_centre__division', 'org_unit',
+            'owner', 'owner__cost_centre', 'owner__cost_centre__division',
+            'preferred_contact',
+            'custodian', 'data_custodian', 'bh_support', 'ah_support', 'user_groups',
+            'itsystemdependency_set', 'itsystemdependency_set__dependency',
+            'itsystemdependency_set__dependency__custodian', 'dependency__itsystem',
+            'dependency__itsystem__custodian'
+        )
 
     def list(self):
         return list(self.list_qs())
 
-    def detail(self, system_id):
-        """Detail view for a single ITSystem object.
-        """
-        return ITSystem.objects.get(system_id=system_id)
+
+class ITSystemHardwareResource(CSVDjangoResource):
+    VALUES_ARGS = ()
+
+    def prepare(self, data):
+        # Exclude decommissioned systems from the list of systems returned.
+        it_systems = data.itsystem_set.all().exclude(status=3)
+        return {
+            'hostname': data.computer.hostname,
+            'role': data.get_role_display(),
+            'it_systems': [i.name for i in it_systems],
+        }
+
+    def list(self):
+        return ITSystemHardware.objects.all()
+
+
+class ITSystemEventResource(DjangoResource):
+    def __init__(self, *args, **kwargs):
+        super(ITSystemEventResource, self).__init__(*args, **kwargs)
+        self.http_methods.update({
+            'current': {'GET': 'current'}
+        })
+
+    preparer = FieldsPreparer(fields={
+        'id': 'id',
+        'description': 'description',
+        'planned': 'planned',
+        'current': 'current',
+    })
+
+    def prepare(self, data):
+        prepped = super(ITSystemEventResource, self).prepare(data)
+        prepped['event_type'] = data.get_event_type_display()
+        # Output times as the local timezone.
+        tz = pytz.timezone(settings.TIME_ZONE)
+        prepped['start'] = data.start.astimezone(tz)
+        if data.end:
+            prepped['end'] = data.end.astimezone(tz)
+        else:
+            prepped['end'] = None
+        if data.duration:
+            prepped['duration_sec'] = data.duration.seconds
+        else:
+            prepped['duration_sec'] = None
+        if data.it_systems:
+            prepped['it_systems'] = [i.name for i in data.it_systems.all()]
+        else:
+            prepped['it_systems'] = None
+        if data.locations:
+            prepped['locations'] = [i.name for i in data.locations.all()]
+        else:
+            prepped['locations'] = None
+        return prepped
+
+    @skip_prepare
+    def current(self):
+        # Slightly-expensive query: iterate over each 'current' event and call save().
+        # This should automatically expire any events that need to be non-current.
+        for i in ITSystemEvent.objects.filter(current=True):
+            i.save()
+        # Return prepared data.
+        return {'objects': [self.prepare(data) for data in ITSystemEvent.objects.filter(current=True)]}
+
+    def list(self):
+        return ITSystemEvent.objects.all()
+
+    def detail(self, pk):
+        return ITSystemEvent.objects.get(pk=pk)
+
+    @classmethod
+    def urls(self, name_prefix=None):
+        urlpatterns = super(ITSystemEventResource, self).urls(name_prefix=name_prefix)
+        return [
+            url(r'^current/$', self.as_view('current'), name=self.build_url_name('current', name_prefix)),
+        ] + urlpatterns

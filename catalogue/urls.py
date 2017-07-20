@@ -1,11 +1,10 @@
 from django.conf.urls import include, url
-from django.contrib import admin
 from rest_framework import routers
 from .api import RecordViewSet
 from . import views
 
 router = routers.DefaultRouter()
-router.register(r'^records',RecordViewSet)
+router.register(r'^records', RecordViewSet)
 
 api_patterns = [
     url(r'^', include(router.urls))

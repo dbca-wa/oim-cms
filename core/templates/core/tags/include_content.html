@@ -9,9 +9,7 @@
     {% elif block.block_type == 'include_content' %}
         {% include_content block.value %}
     {% elif block.block_type == 'content_list' %}
-	        {% content_list block.value %}
-	{% elif block.block_type == 'background_image' %}
-		{% content_list block.value %}
+        {% content_list block.value %}
     {% else %}
         {{ block }}
     {% endif %}

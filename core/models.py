@@ -14,16 +14,16 @@ from modelcluster.fields import ParentalKey
 from modelcluster.contrib.taggit import ClusterTaggableManager
 import os
 from taggit.models import TaggedItemBase
-from wagtail.wagtailimages.models import Image
 from wagtail.wagtailadmin.edit_handlers import FieldPanel, StreamFieldPanel
-from wagtail.wagtailimages.edit_handlers import ImageChooserPanel
 from wagtail.wagtailcore.models import Page
 from wagtail.wagtailcore import blocks
 from wagtail.wagtailcore.fields import StreamField
 from wagtail.wagtailimages.formats import Format, register_image_format
 from wagtail.wagtailsearch import index
-from wagtail.wagtailimages.blocks import ImageChooserBlock
-from wagtail.wagtailcore.fields import RichTextField
+
+from wagtail.wagtailcore import hooks
+from django.shortcuts import render
+from django.core.mail import send_mail
 
 from organisation.models import DepartmentUser
 
@@ -88,46 +88,25 @@ class Content(Page):
         ('include_content', blocks.CharBlock()),
         ('content_list', blocks.CharBlock()),
     ], null=True, blank=True)
-	#    body_simple = StreamField([('rich_text', blocks.RichTextBlock())],null=True, blank=True)
-    body_simple = RichTextField(null=True, blank=True)
     date = models.DateField('Content updated date', default=timezone.now)
-    background_image = models.ForeignKey(
-                       'wagtailimages.Image',
-                       null=True,
-                       blank=True,
-                       on_delete=models.SET_NULL,
-                       related_name='+'
-                    )
-
     template_filename = models.CharField(max_length=64, choices=(
         ('content.html', 'content.html'),
         ('f6-content.html', 'f6-content.html'),
         ('f6-vue.html', 'f6-vue.html'),
-    ), default='content.html')
+    ), default='f6-content.html')
     tags = ClusterTaggableManager(through=ContentTag, blank=True)
 
     def get_template(self, request, *args, **kwargs):
         template_name = request.GET.get('template', self.template_filename)
-		#force_template  = request.COOKIES.get('force_template');
-
-		#if force_template == 'f6': 
-		#   template_name = 'f6-content.html'
-
-        if self.body_simple is not None:
-           if len(self.body_simple) > 1: 
-                  template_name = 'f6-content.html'
-
         return '{}/{}'.format(self.__class__._meta.app_label, template_name)
 
     promote_panels = Page.promote_panels + [
         FieldPanel('date'),
-        FieldPanel('tags'),
+        FieldPanel('tags')
     ]
 
     content_panels = Page.content_panels + [
         StreamFieldPanel('body'),
-		FieldPanel('body_simple'),
-        ImageChooserPanel('background_image')
     ]
 
     settings_panels = Page.settings_panels + [
@@ -136,8 +115,7 @@ class Content(Page):
 
     search_fields = Page.search_fields + [
         index.SearchField('body'),
-		index.SearchField('body_simple'),
-        index.FilterField('url_path')
+        index.FilterField('url_path'),
     ]
 
     def serve(self, request):
@@ -151,3 +129,15 @@ class Content(Page):
 
     class Meta:
         ordering = ('date',)
+
+
+@hooks.register('before_serve_page')
+def submit_form(page, request, serve_args, serve_kwargs):
+    if request.method == 'POST':
+        subject = request.POST.get('Subject', "OIM Extranet Form")
+        postdata = sorted(request.POST.items())
+        email = render(request, "emailform.html", {"subject": subject, "email": True, "postdata": postdata}).content
+        send_mail("{} ( {} )".format(subject, request.path), email, "OIM Extranet <oimsupport@dpaw.wa.gov.au>", 
+            [request.user.email], html_message=email, fail_silently=False)
+        response = render(request, "emailform.html", {"subject": subject, "postdata": postdata})
+        return response

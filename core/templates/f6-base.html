@@ -1,262 +1,102 @@
 {% load core_tags static wagtailcore_tags wagtailuserbar %}
-{% load wagtailimages_tags %}
-
-{% image self.background_image original as background_photo_cover %}
 
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-		<title>{% block title %}{% if self.seo_title %}{{ self.seo_title }}{% else %}{{ self.title }}{% endif %}{% endblock %}{% block title_suffix %} - Office for Information Management - Department of Parks and Wildlife{% endblock %}</title>
-		<meta name="description" content="" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <title>{% block title %}{% if self.seo_title %}{{ self.seo_title }}{% else %}{{ self.title }}{% endif %}{% endblock %}{% block title_suffix %} - Office for Information Management - Department of Parks and Wildlife{% endblock %}</title>
+        <meta name="description" content="" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-		{% block head_js %}
-		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/modernizr/2.8.3/modernizr.min.js?version={{ application_version }}"></script>
-		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/jquery/2.2.0/jquery.min.js?version={{ application_version }}"></script>
-		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/localforage/1.3.1/localforage.min.js?version={{ application_version }}"></script>
-		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/handlebars.js/4.0.5/handlebars.min.js?version={{ application_version }}"></script>
-		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation/6.1.2/foundation.min.js?version={{ application_version }}"></script>
-		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js?version={{ application_version }}"></script>
-		<script type="text/javascript" src="//static.dpaw.wa.gov.au/static/js/egg.js?version={{ application_version }}"></script>
-		<script type="text/javascript" src="{% static 'js/f6_oim_cms.js?version=' %}{{ application_version }}"></script>
-		<script type="text/javascript" src="{% static 'js/oim_cms_useradmin.js?version=' %}{{ application_version }}"></script>
-		<script type="text/javascript" src="{% static 'js/selectize.js?version=' %}{{ application_version }}"></script>
-		<script type="text/javascript" src="{% static 'js/notification.js?version=' %}{{ application_version }}"></script>
-		<script type="text/javascript" src="{% static 'js/validation.js?version=' %}{{ application_version }}"></script>
-		<script type="text/javascript" src="{% static 'js/utils.js?version=' %}{{ application_version }}"></script>
-		<script type="text/javascript" src="{% static 'js/topbar.js?version=' %}{{ application_version }}"></script>
-		<script type="text/javascript" src="{% static 'js/common.js?version=' %}{{ application_version }}"></script>
-		{% endblock %}
+        {% block head_js %}
+        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/modernizr/2.8.3/modernizr.min.js"></script>
+        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/jquery/2.2.0/jquery.min.js"></script>
+        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/localforage/1.3.1/localforage.min.js"></script>
+        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
+        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation/6.1.2/foundation.min.js"></script>
+        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js"></script>
+        <script type="text/javascript" src="//static.dpaw.wa.gov.au/static/js/egg.js"></script>
+        <script type="text/javascript" src="{% static 'js/f6_oim_cms.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/oim_cms_useradmin.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/selectize.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/notification.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/validation.js' %}"></script>
+		<script type="text/javascript" src="{% static 'js/utils.js' %}"></script>
+        {% endblock %}
 
-		{% block head_css %}
-		<link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon.png' %}">
-		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css?version={{ application_version }}" />
-		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation/6.1.2/foundation-flex.css?version={{ application_version }}">
-		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/cdnjs/ajax/libs/foundicons/3.0.0/foundation-icons.css?version={{ application_version }}" />
-		<link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css?version={{ application_version }}" />
-		<link rel="stylesheet" type="text/css" media="all" href="{% static 'css/f6_oim_cms.css?version=' %}{{ application_version }}" />
-		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/selectsize.default.css?version=' %}{{ application_version }}" />
-		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/dpawforms.css?version=' %}{{ application_version }}" />
-		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/notification.css?version=' %}{{ application_version }}" />
-		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/topbar.css?version=' %}{{ application_version }}" />
-		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/maincontent.css?version=' %}{{ application_version }}" />
-		<link rel="stylesheet" type="text/css" media="all" href="{% static '/static/css/mobilemenu.css?version=' %}{{ application_version }}" />
+        {% block head_css %}
+        <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon.png' %}">
+        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
+        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation/6.1.2/foundation-flex.css">
+        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/cdnjs/ajax/libs/foundicons/3.0.0/foundation-icons.css" />
+        <link rel="stylesheet" type="text/css" media="all" href="//static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css" />
+        <link rel="stylesheet" type="text/css" media="all" href="{% static 'css/f6_oim_cms.css' %}" />
+        {% endblock %}
 
-		{% endblock %}
-
-		{% block extra_css %}{% endblock %}
-	</head>
-	<div id='notification-topbar' style='display:none;'></div>
-	<body class="{% block body_class %}{% endblock %}">
-		{% if request.user.is_authenticated %}
-		<input type='hidden' id='authed' value='True'>
-		{% else %}
-		<input type='hidden' id='authed' value='False'>
-		{% endif %}
-
-
-		{% wagtailuserbar %}
-		<div class="inner-wrap">
-			<div class="content background-content" style="background: url('{{ background_photo_cover.url }}') no-repeat center center fixed;";>
-				{% if 'fullscreen' not in request.GET %}
-				{% block header %}
-				<div class="main_menu" >
-					<div class="row menusize">
-						<div class="appmenu-section" >
-							<div class='has-dropdown appmenu' >
-								<img SRC='/static/images/appicon.png' onclick="topbar.toggleAppMenu()" id='appbutton' >
-								<div id='appmenu' class='appmenu-dropdown appmenu-section-ul' >
-									<div id='applist'>
-										<div  id='appsdiv' >
-											<h5  id='apph2' >Apps</h5>
-											<div id='applistitems'>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					<div class="row show-for-large show-for-medium hide-for-small topbarlogo" >
-						<a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a>
-					</div>
-					<div class="row show-for-small hide-for-large topbarlogomobile" >
-						<a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a>
-					</div>
-
-					{% get_site_root as site_root %}
-					{% f6_top_menu parent=site_root calling_page=self %}
-			
-					</div>
-				</div>
-
-				<div class="row breadcrumbs_row align-middle" style='margin-bottom: 0px;'>
-					{% breadcrumbs_f6 calling_page=self %}
-
-					<ul class="breadcrumbs columns large-9" style='display: none'>
-						{% get_site_root as site_root %}
-
-						{% for menuitem in menuitems %}
-
-						<li {% if forloop.last %}class="current"{% endif %}><a href="{% pageurl menuitem %}">{{ menuitem.title }}</a></li>
-						{% endfor %}
-
-						{% page_menuitems self as menuitems %}
-						{{ page_menuitems }}	
-						{% for menuitem in menuitems %}
-						<li style='font-size: 13px;'>{% if not forloop.last %}<a style='font-size: 13px;' href="{% pageurl menuitem %}">{{ menuitem.title }}</a>{% else %}{{ menuitem.title }}{% endif %}</li>
-						{% endfor %}
-						<li><a title="Open fullscreen in new tab" style='font-size: 13px;' target="_blank" href="{{ request.get_full_path }}{% if '?' in request.get_full_path %}&amp;{% else %}?{% endif %}fullscreen">
-								<i class="fi-arrows-expand"></i></a>
-						</li>
-					</ul>
-					<div class="columns large-3">
-						<ul class="breadcrumbs float-right">
-						</ul>
-					</div>
-				</div>
-
-
-				{% endblock %}
-				{% endif %}
-			<div class='row hide-for-large'>
-			<div class='myprofileboxmobile' id='myprofileinfomobile'>
-                    <div class='myprofilebox2'  id='myprofileinfosub'>
-                        <div class='myprofilebox-textimg' id='myprofileinfosub'>
-                            <div class='myprofilebox-img' >
-                                <img src="/static/images/busmanwomen2.png" style="height: 85px; width: 85px; border: 1px solid #f3f0f0; padding: 5px;" id='myprofileimage2'>
-                                <div>
-                                    <a style='font-size: 12px; font-weight: normal; text-align: center; width: 100%; float: left; padding-top: 5px; background: none; color: #004d88' href=''>change</a>
-                                </div>
-                            </div>
-                            <div class='myprofilebox-text' id='myprofileinfosub'>
-                                <div  class='myprofilebox-text-area' id='myprofileinfosub' >
-                                    <div class='myprofilebox-text-name' id='myprofileinfosub'> <span style='text-transform: uppercase;' id='myprofileinfosub' >{{ request.user.last_name }}</span>, <span id='myprofileinfosub' style=' text-transform: capitalize;'>{{ request.user.first_name }}</span></div>
-                                    <div class='myprofilebox-text-email' id='myprofileinfosub'> {{ request.user.email }}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class='myprofilebox-item' >
-                            <A style='background: none; color: #004d88; font-weight: bold;' HREF=''>About Me</A>
-                        </div>
-                        <div  class='myprofilebox-item'>
-                            <A HREF='/profile/'>My Profile</A>
-                        </div>
-                        <div class='myprofilebox-item-end' >
-                            <A style='background: none; color: #004d88; font-weight: bold;' HREF='{% url 'logout' %}'>Log Out</A>
+        {% block extra_css %}{% endblock %}
+    </head>
+	<div id='notification-topbar'></div>
+    <body class="{% block body_class %}{% endblock %}">
+        {% wagtailuserbar %}
+        <div class="inner-wrap">
+            <div class="content">
+                {% if 'fullscreen' not in request.GET %}
+                    {% block header %}
+                    <div class="row header_row align-justify">
+                        <div class="columns show-for-large hide-for-print"><a target="_blank" href="//www.dbca.wa.gov.au"><img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife"></a></div>
+                        <div class="columns"><a href="/"><img src="//static.dpaw.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a></div>
+                        <div class="columns show-for-large hide-for-print"><a class="float-right" href="/"><img src="//static.dpaw.wa.gov.au/images/oim_tree.svg"></a></div>
+                    </div>
+                    <div class="main_menu">
+                        <div class="row">
+                            {% get_site_root as site_root %}
+                            {% f6_top_menu parent=site_root calling_page=self %}
                         </div>
                     </div>
+                    <div class="row breadcrumbs_row align-middle">
+                        <ul class="breadcrumbs columns large-9">
+                        {% page_menuitems self as menuitems %}
+                        {% for menuitem in menuitems %}
+                            <li>{% if not forloop.last %}<a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>{% else %}{{ menuitem.title }}{% endif %}</li>
+                        {% endfor %}
+                            <li><a title="Open fullscreen in new tab" target="_blank" href="{{ request.get_full_path }}{% if '?' in request.get_full_path %}&amp;{% else %}?{% endif %}fullscreen">
+                                <i class="fi-arrows-expand"></i></a>
+                            </li>
+                        </ul>
+                        <div class="columns large-3">
+                            <ul class="breadcrumbs float-right">
+                                <li>{{ request.user.first_name }}</li>
+                                <li><a href="/profile/">My Profile</a></li>
+                                <li><a title="Logout" href="{% url 'logout' %}">Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% endblock %}
+                {% endif %}
+                <div class="main">
+                    {% block content %}{% endblock %}
                 </div>
-			</div>
-
-				<div class="main" >
-					{% if 'Home' in self.title %}	
-					<div class="row main-content" style='background-color: rgb(255, 255, 255); padding-bottom: 20px; min-height: 914px;'>
-						<div class="large-12">
-							{% if self.body_simple|length >  0 %}
-							<div id='maincontentarea'>
-								<div id='maincontentbox'>
-									{{ self.body_simple|safe }}
-									<div class="large-12" istyle='padding: 15px'>
-										<h3>How can we help you? </h3>
-										<p>Choose a category to find the help you need</p>
-										<div onclick="window.location.href='/support/';" class="large-3 float-left caption-box" >
-											<div class="large-12">
-												<IMG SRC='/static/images/enduser.png'>
-
-											</div>
-											<div class="large-12 caption-box-text" >
-												Request Support	
-											</div>
-
-										</div>
-
-
-										<div onclick="window.location.href='/support/cost-centres/';" class="large-3 float-left caption-box">
-                                            <div class="large-12">
-                                                <IMG SRC='/static/images/costcentre.png'>
-
-                                            </div>
-                                            <div class="large-12 caption-box-text"  >
-													Cost Centre
-                                            </div>
-
-                                        </div>
-										<div onclick="window.location.href='/support/system-owners/';"  class="large-3 small-12 float-left caption-box">
-                                            <div class="large-12">
-                                                <IMG SRC='/static/images/custodian.png' style='height: 64px;'>
-                                            </div>
-                                            <div class="large-12 caption-box-text">
-                                                   System Owner & Custodian 
-                                            </div>
-
-                                        </div>
-										<div onclick="window.location.href='/governance/';" class="large-3 small-12 float-left caption-box"> 
-                                            <div class="large-12">
-                                                <IMG SRC='/static/images/filecabinet.png'>
-
-                                            </div>
-                                            <div class="large-12 caption-box-text" >
-                                                    IT Governance
-                                            </div>
-
-                                        </div>
-
-
-
-									</div>
-								</div>
-							</div>
-							{% else %}
-							{% include_content "home" %}
-							{% endif %}
-
-						</div>
-							
-
-
-						<div class='hide' iclass="large-3" >
-							<div id='maincontentarea'>
-								<div id='maincontentright' >
-									<h3>Latest OIM News</h3>
-									{% content_list '{"tags": "OIMnews", "limit": 3}' %}
-								</div>
-							</div>
-						</div>
-					</div>
-					{% else %}
-					{% if self.body_simple|length >  1 %}
-					<div class="row body-simple-content" >
-					<div class="large-12">
-					<div id='maincontentarea'>
-						<div id='maincontentbox'>
-							{{ self.body_simple|safe }}
-						</div>
-					</div>
-					</div>
-					</div>
-					{% else %}
-					{% block content %}{% endblock %}
-					{% endif %}
-					{% endif %}
-				</div>
-			</div>
-
-			<div class="footer">
-				{% if 'fullscreen' in request.GET %}
-				<div class="hide">{% include_content "footer" %}</div>
-				<style type="text/css">.row {min-width:100% !important;}</style>
-				{% else %}
-				{% block footer %}{% include_content "f6-footer" %}{% endblock %}
-				<div class="row">
-					<div class="columns end text-left"><small>v{{ application_version }}</small></div>
-					<div class="columns end text-right footer-copyright"><small class="right">All contents copyright © Government of Western Australia. All rights reserved.</small></div>
-				</div>
-				{% endif %}
-			</div>
-		</div>
-		{% block extra_js %}
-		{% endblock %}
-	</body>
+            </div>
+            <div class="footer">
+                {% if 'fullscreen' in request.GET %}
+                    <div class="hide">{% include_content "footer" %}</div>
+                    <style type="text/css">.row {min-width:100% !important;}</style>
+                {% else %}
+                    {% block footer %}{% include_content "f6-footer" %}{% endblock %}
+                    <div class="row">
+                        <div class="columns end text-right"><small>v{{ application_version }}</small></div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% block extra_js %}
+        {% endblock %}
+        <script>
+            $(document).ready(function() {
+                // setup csrf token on page rendered forms
+                $('form[method="POST"]').prepend("{% csrf_token %}");
+            });
+        </script>
+    </body>
 </html>

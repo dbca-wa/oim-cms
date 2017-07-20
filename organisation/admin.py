@@ -10,6 +10,7 @@ from django.template.response import TemplateResponse
 from django.utils.html import format_html
 from django_mptt_admin.admin import DjangoMpttAdmin
 from leaflet.admin import LeafletGeoAdmin
+from reversion.admin import VersionAdmin
 from threading import Thread
 import time
 
@@ -24,22 +25,41 @@ def delayed_save(obj):
     obj.save()
 
 
+class DepartmentUserForm(forms.ModelForm):
+
+    class Meta:
+        model = DepartmentUser
+        exclude = []
+
+    def clean_ad_guid(self):
+        return self.cleaned_data['ad_guid'] or None
+
+    def clean_employee_id(self):
+        if self.cleaned_data['employee_id'] == '':
+            return None
+        else:
+            return self.cleaned_data['employee_id']
+
+
 @register(DepartmentUser)
-class DepartmentUserAdmin(ModelAdmin):
+class DepartmentUserAdmin(VersionAdmin):
+    # Override the default reversion/change_list.html template:
+    change_list_template = 'admin/organisation/departmentuser/change_list.html'
+    form = DepartmentUserForm
     list_display = [
-        'email', 'employee_id', 'username', 'active', 'vip', 'executive',
+        'email', 'title', 'employee_id', 'username', 'active', 'vip', 'executive',
         'cost_centre', 'account_type', 'o365_licence']
     list_filter = [
         'account_type', 'active', 'vip', 'executive', 'shared_account',
         'o365_licence']
     search_fields = ['name', 'email', 'username', 'employee_id', 'preferred_name']
     raw_id_fields = ['parent', 'cost_centre', 'org_unit']
-    filter_horizontal = [
-        'cost_centres_secondary', 'org_units_secondary', 'secondary_locations']
+    filter_horizontal = ['secondary_locations']
     readonly_fields = [
-        'username', 'email', 'org_data_pretty', 'ad_data_pretty',
-        'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
-        'alesco_data_pretty', 'o365_licence', 'shared_account']
+        'username', 'ad_guid', 'org_data_pretty', 'ad_data_pretty',
+        'active', 'in_sync', 'ad_deleted', 'date_ad_updated',
+        'alesco_data_pretty', 'o365_licence', 'shared_account',
+        'azure_guid', 'ad_dn']
     fieldsets = (
         ('Email/username', {
             'fields': ('email', 'username'),
@@ -49,23 +69,26 @@ class DepartmentUserAdmin(ModelAdmin):
             without written permission from People Services or the cost centre manager
             (forms are required).</p>''',
             'fields': (
-                'given_name', 'surname', 'name', 'employee_id',
-                'cost_centre', 'org_unit', 'security_clearance',
-                'name_update_reference'),
+                'given_name', 'surname', 'name', 'employee_id', 'cost_centre',
+                'org_unit', 'parent', 'security_clearance', 'name_update_reference'),
+        }),
+        ('Account fields', {
+            'fields': ('account_type', 'expiry_date', 'contractor', 'notes' ),
         }),
         ('Other details', {
             'fields': (
-                'preferred_name', 'photo', 'title', 'parent',
-                'account_type', 'position_type',
-                'cost_centres_secondary', 'org_units_secondary',
+                'vip', 'executive', 'populate_primary_group',
+                'preferred_name', 'photo', 'title', 'position_type',
                 'telephone', 'mobile_phone', 'extension', 'other_phone',
-                'populate_primary_group', 'vip', 'executive', 'contractor',
-                'secondary_locations', 'notes', 'working_hours', 'extra_data',
+                'secondary_locations', 'working_hours', 'extra_data',
             )
         }),
-        ('AD sync and HR data (read-only)', {
+        ('AD sync and HR data', {
             'fields': (
-                'active', 'in_sync', 'ad_deleted', 'date_ad_updated', 'expiry_date',
+                'ad_guid',
+                'ad_dn',
+                'azure_guid',
+                'active', 'in_sync', 'ad_deleted', 'date_ad_updated',
                 'o365_licence', 'shared_account',
                 'org_data_pretty', 'ad_data_pretty', 'alesco_data_pretty',
             )
@@ -106,6 +129,11 @@ class DepartmentUserAdmin(ModelAdmin):
         if obj._DepartmentUser__original_org_unit != obj.org_unit:
             logger.info(l.format(
                 obj.email, 'org_unit', obj._DepartmentUser__original_org_unit, obj.org_unit,
+                request.user.username, obj.name_update_reference
+            ))
+        if obj._DepartmentUser__original_expiry_date != obj.expiry_date:
+            logger.info(l.format(
+                obj.email, 'expiry_date', obj._DepartmentUser__original_expiry_date, obj.expiry_date,
                 request.user.username, obj.name_update_reference
             ))
         obj.save()
@@ -164,8 +192,9 @@ class DepartmentUserAdmin(ModelAdmin):
 
 @register(Location)
 class LocationAdmin(LeafletGeoAdmin):
-    list_display = ('name', 'address', 'phone', 'fax', 'email', 'point')
-    search_fields = ('name', 'address', 'phone', 'fax', 'email')
+    list_display = ('name', 'address', 'phone', 'fax', 'email', 'manager')
+    list_filter = ('active',)
+    search_fields = ('name', 'address', 'phone', 'fax', 'email', 'manager__email')
     settings_overrides = {
         'DEFAULT_CENTER': (-31.0, 115.0),
         'DEFAULT_ZOOM': 5
@@ -186,7 +215,7 @@ class OrgUnitAdmin(DjangoMpttAdmin):
         'manager')
     search_fields = ('name', 'acronym', 'manager__name', 'location__name')
     raw_id_fields = ('manager', 'parent', 'location')
-    list_filter = ('unit_type',)
+    list_filter = ('unit_type', 'active')
 
     def users(self, obj):
         from organisation.models import DepartmentUser
@@ -215,17 +244,14 @@ class OrgUnitAdmin(DjangoMpttAdmin):
 @register(CostCentre)
 class CostCentreAdmin(ModelAdmin):
     list_display = (
-        'code', 'name', 'org_position', 'division', 'users', 'manager',
-        'business_manager', 'admin', 'tech_contact')
+        'name', 'code', 'chart_acct_name', 'org_position', 'division', 'users', 'manager',
+        'business_manager', 'admin', 'tech_contact', 'active')
     search_fields = (
-        'code', 'name', 'org_position__name', 'division__name',
+        'name', 'code', 'chart_acct_name', 'org_position__name', 'division__name',
         'org_position__acronym', 'division__acronym')
+    list_filter = ('active', 'chart_acct_name')
     raw_id_fields = (
-        'org_position',
-        'manager',
-        'business_manager',
-        'admin',
-        'tech_contact')
+        'org_position', 'manager', 'business_manager', 'admin', 'tech_contact')
 
     def users(self, obj):
         return format_html(

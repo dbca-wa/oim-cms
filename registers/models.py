@@ -8,8 +8,9 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 
-from organisation.models import DepartmentUser
+from organisation.models import DepartmentUser, Location
 from tracking.models import CommonFields, Computer
+from .utils import smart_truncate
 
 
 CRITICALITY_CHOICES = (
@@ -61,8 +62,7 @@ class UserGroup(models.Model):
 
 @python_2_unicode_compatible
 class ITSystemHardware(models.Model):
-    """A model to represent the relationship between an IT System and a
-    Computer.
+    """A model to represent the relationship between an IT System and a Computer.
     """
     ROLE_CHOICES = (
         (1, 'Application server'),
@@ -70,7 +70,8 @@ class ITSystemHardware(models.Model):
         (3, 'Network file storage'),
         (4, 'Reverse proxy'),
     )
-    computer = models.ForeignKey(Computer, on_delete=models.PROTECT)
+    computer = models.ForeignKey(
+        Computer, blank=True, null=True, on_delete=models.PROTECT)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
 
     class Meta:
@@ -80,6 +81,35 @@ class ITSystemHardware(models.Model):
 
     def __str__(self):
         return '{} ({})'.format(self.computer.hostname, self.role)
+
+
+@python_2_unicode_compatible
+class Platform(models.Model):
+    """A model to represent an IT System Platform Service, as defined in the
+    Department IT Strategy.
+    """
+    PLATFORM_CATEGORY_CHOICES = (
+        ('db', 'Database'),
+        ('dns', 'DNS'),
+        ('email', 'Email'),
+        ('idam', 'Identity & access management'),
+        ('middle', 'Middleware'),
+        ('phone', 'Phone system'),
+        ('proxy', 'Reverse proxy'),
+        ('storage', 'Storage'),
+        ('vpn', 'VPN'),
+        ('vm', 'Virtualisation'),
+        ('web', 'Web server'),
+    )
+    category = models.CharField(max_length=64, choices=PLATFORM_CATEGORY_CHOICES, db_index=True)
+    name = models.CharField(max_length=512)
+
+    class Meta:
+        ordering = ('category', 'name')
+        unique_together = ('category', 'name')
+
+    def __str__(self):
+        return '{} - {}'.format(self.get_category_display(), self.name)
 
 
 @python_2_unicode_compatible
@@ -112,11 +142,13 @@ class ITSystem(CommonFields):
         (2, 'Department core business hours'),
     )
     SYSTEM_TYPE_CHOICES = (
-        (1, 'Web application'),
-        (2, 'Client application'),
-        (3, 'Mobile application'),
+        (1, 'System - Web application'),
+        (2, 'System - Client application'),
+        (3, 'System - Mobile application'),
+        (5, 'System - Externally hosted application'),
         (4, 'Service'),
-        (5, 'Externally hosted application'),
+        (6, 'Platform'),
+        (7, 'Infrastructure'),
     )
     HEALTH_CHOICES = (
         (0, 'Healthy'),
@@ -311,6 +343,12 @@ class ITSystem(CommonFields):
         null=True, blank=True, verbose_name='Service Level Agreement',
         help_text='''Details of any Service Level Agreement that exists for'''
         ''' this IT System (typically with an external vendor).''')
+    biller_code = models.CharField(
+        max_length=64, null=True, blank=True,
+        help_text='BPAY biller code for this IT System (must be unique).')
+    oim_internal_only = models.BooleanField(
+        default=False, help_text='For OIM use only')
+    platforms = models.ManyToManyField(Platform, blank=True)
 
     class Meta:
         verbose_name = 'IT System'
@@ -339,6 +377,7 @@ class ITSystem(CommonFields):
         self.criticality_display = self.get_criticality_display()
         self.availability_display = self.get_availability_display()
         self.system_type_display = self.get_system_type_display()
+        # Note that biller_code uniqueness is checked in the admin ModelForm.
         super(ITSystem, self).save(*args, **kwargs)
 
     @property
@@ -538,3 +577,43 @@ class ProcessITSystemRelationship(models.Model):
     def __str__(self):
         return '{} - {} ({})'.format(
             self.itsystem.name, self.process.name, self.get_importance_display())
+
+
+@python_2_unicode_compatible
+class ITSystemEvent(models.Model):
+    """Represents information about an event that affects one or more IT Systems
+    or networked locations.
+    """
+    EVENT_TYPE_CHOICES = (
+        (1, 'Incident'),
+        (2, 'Maintenance'),
+        (3, 'Information'),
+    )
+    event_type = models.PositiveSmallIntegerField(choices=EVENT_TYPE_CHOICES)
+    description = models.TextField()
+    planned = models.BooleanField(default=False, help_text='Was this event planned?')
+    start = models.DateTimeField(help_text='Event start (date & time)')
+    duration = models.DurationField(null=True, blank=True, help_text='Optional: duration of the event (hh:mm:ss).')
+    end = models.DateTimeField(null=True, blank=True, help_text='Optional: event end (date & time)')
+    current = models.BooleanField(default=True, editable=False)
+    it_systems = models.ManyToManyField(ITSystem, blank=True, help_text='IT System(s) affect by this event')
+    locations = models.ManyToManyField(Location, blank=True, help_text='Location(s) affect by this event')
+    # TODO: incident type (optional: P1, P2, P3, P4)
+    # TODO: FD ticket (optional)
+
+    class Meta:
+        verbose_name = 'IT System event'
+
+    def __str__(self):
+        return '{}: {}'.format(self.get_event_type_display(), smart_truncate(self.description))
+
+    def save(self, *args, **kwargs):
+        # On save, set the `current` boolean field value correctly for the this instant.
+        # An event needs either an end datestamp and/or a duration to set `current`.
+        if self.end and self.end < timezone.now():
+            self.current = False
+        elif self.duration and (self.start + self.duration) < timezone.now():
+            self.current = False
+        else:
+            self.current = True
+        super(ITSystemEvent, self).save(*args, **kwargs)

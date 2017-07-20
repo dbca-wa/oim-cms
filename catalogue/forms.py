@@ -7,15 +7,15 @@ class Select(forms.Select):
     def __init__(self, attrs=None, choices=()):
         super(Select, self).__init__(attrs)
 
-    def render(self, name, value, attrs=None, choices=()):
+    def render(self, name, value, attrs=None):
         if self.attrs.get('readonly', False):
             self.attrs["disabled"] = True
             del self.attrs['readonly']
-            return mark_safe('\n'.join(["<input type='hidden' name='{}' value='{}'>".format(name, value or ''), super(Select, self).render(name, value, attrs, choices)]))
+            return mark_safe('\n'.join(["<input type='hidden' name='{}' value='{}'>".format(name, value or ''), super(Select, self).render(name, value, attrs)]))
         else:
             if 'readonly' in self.attrs: del self.attrs['readonly']
             if 'disabled' in self.attrs: del self.attrs['disabled']
-            return super(Select, self).render(name, value, attrs, choices)
+            return super(Select, self).render(name, value, attrs)
     
 class RecordForm(forms.ModelForm):
     """

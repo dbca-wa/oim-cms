@@ -3,9 +3,11 @@ from django.conf import settings
 from django.conf.urls import url
 from django.http import (
     HttpResponse, HttpResponseForbidden, HttpResponseBadRequest)
+from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 import json
+from restless.constants import OK
 from restless.dj import DjangoResource
 from restless.exceptions import BadRequest
 from restless.resources import skip_prepare
@@ -17,7 +19,7 @@ from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCe
 
 
 ACCOUNT_TYPE_DICT = dict(DepartmentUser.ACCOUNT_TYPE_CHOICES)
-logger = logging.getLogger('ad_sync')
+LOGGER = logging.getLogger('ad_sync')
 
 
 def format_fileField(request, value):
@@ -57,7 +59,8 @@ class DepartmentUserResource(DjangoResource):
         'org_unit__location__name', 'org_unit__location__address',
         'org_unit__location__pobox', 'org_unit__location__phone',
         'org_unit__location__fax', 'ad_guid',
-        'org_unit__secondary_location__name', 'preferred_name')
+        'org_unit__secondary_location__name', 'preferred_name',
+        'expiry_date')
     VALUES_ARGS = COMPACT_ARGS + (
         'ad_dn', 'ad_data', 'date_updated', 'date_ad_updated', 'active',
         'ad_deleted', 'in_sync', 'given_name', 'surname', 'home_phone',
@@ -75,6 +78,19 @@ class DepartmentUserResource(DjangoResource):
         'account_type': format_account_type,
     })
 
+    def prepare(self, data):
+        """Modify the returned object to append the GAL Department value.
+        """
+        prepped = super(DepartmentUserResource, self).prepare(data)
+        if 'pk' in data:
+            prepped['gal_department'] = DepartmentUser.objects.get(pk=data['pk']).get_gal_department()
+        if 'expiry_date' in data:
+            if data['expiry_date'] and data['expiry_date'] < timezone.now():
+                data['ad_expired'] = True
+            else:
+                data['ad_expired'] = False
+        return prepped
+
     @classmethod
     def urls(self, name_prefix=None):
         """Override the DjangoResource ``urls`` class method so the detail view
@@ -82,8 +98,16 @@ class DepartmentUserResource(DjangoResource):
         """
         return [
             url(r'^$', self.as_list(), name=self.build_url_name('list', name_prefix)),
-            url(r'^(?P<guid>[0-9a-z-]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
+            url(r'^(?P<guid>[0-9A-Za-z-@\'&\.]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
         ]
+
+    def build_response(self, data, status=OK):
+        resp = super(DepartmentUserResource, self).build_response(data, status)
+        # Require a short caching expiry for certain request types (if defined).
+        if settings.API_RESPONSE_CACHE_SECONDS:
+            if any(k in self.request.GET for k in ['email', 'compact', 'minimal']):
+                resp['Cache-Control'] = 'max-age={}, public'.format(settings.API_RESPONSE_CACHE_SECONDS)
+        return resp
 
     def is_authenticated(self):
         """This method is currently required for create/update to work via the
@@ -135,10 +159,10 @@ class DepartmentUserResource(DjangoResource):
             users = DepartmentUser.objects.filter(cost_centre__code=self.request.GET['cost_centre'])
         else:
             # No other filtering:
-            # Return 'active' DU objects, excluding shared/role-based accounts
-            # and contractors.
+            # Return 'active' DU objects, excluding predefined account types and contractors.
             FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
-            users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[5, 9])
+            users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[4, 5, 9, 10, 11, 12, 14, 16])
+            users = users.exclude(expiry_date__lte=timezone.now())
         # Non-mutually-exclusive filters:
         if 'o365_licence' in self.request.GET:
             if self.request.GET['o365_licence'].lower() == 'true':
@@ -160,42 +184,85 @@ class DepartmentUserResource(DjangoResource):
         """Detail view for a single DepartmentUser object.
         """
         user = DepartmentUser.objects.filter(ad_guid=guid)
+        if not user:
+            user = DepartmentUser.objects.filter(email__iexact=guid.lower())
         user_values = list(user.values(*self.VALUES_ARGS))
         return self.formatters.format(self.request, user_values)[0]
 
     @skip_prepare
     def create(self):
-        """Create view for a new DepartmentUserObject.
-        BUSINESS RULE: we call this endpoint from AD, and require a
-        complete request body that includes a GUID.
+        """Call this endpoint from on-prem AD or from Azure AD.
+        Match either AD-object key values or Departmentuser field names.
         """
-        if 'ObjectGUID' not in self.data:
-            raise BadRequest('Missing ObjectGUID parameter')
+        user = DepartmentUser()
+        # Check for essential request params.
+        if 'EmailAddress' not in self.data and 'email' not in self.data:
+            raise BadRequest('Missing email parameter value')
+        if 'DisplayName' not in self.data and 'name' not in self.data:
+            raise BadRequest('Missing name parameter value')
+        if 'SamAccountName' not in self.data and 'username' not in self.data:
+            raise BadRequest('Missing account name parameter value')
+        # Required: email, name and sAMAccountName.
+        if 'EmailAddress' in self.data:
+            user.email = self.data['EmailAddress'].lower()
+        elif 'email' in self.data:
+            user.email = self.data['email'].lower()
+        if 'DisplayName' in self.data:
+            user.name = self.data['DisplayName']
+        elif 'name' in self.data:
+            user.name = self.data['name']
+        if 'SamAccountName' in self.data:
+            user.username = self.data['SamAccountName']
+        elif 'username' in self.data:
+            user.username = self.data['username']
+        # Optional fields.
+        if 'Enabled' in self.data:
+            user.active = self.data['Enabled']
+        elif 'active' in self.data:
+            user.active = self.data['active']
+        if 'ObjectGUID' in self.data:
+            user.ad_guid = self.data['ObjectGUID']
+        elif 'ad_guid' in self.data:
+            user.ad_guid = self.data['ad_guid']
+        if 'azure_guid' in self.data:  # Exception to the if/elif rule.
+            user.azure_guid = self.data['azure_guid']
+        if 'Distinguishedname' in self.data:
+            user.ad_dn = self.data['DistinguishedName']
+        elif 'ad_dn' in self.data:
+            user.ad_dn = self.data['ad_dn']
+        if 'AccountExpirationDate' in self.data:
+            user.expiry_date = self.data['AccountExpirationDate']
+        elif 'expiry_date' in self.data:
+            user.expiry_date = self.data['expiry_date']
+        if 'Title' in self.data:
+            user.title = self.data['Title']
+        elif 'title' in self.data:
+            user.title = self.data['title']
+        if 'GivenName' in self.data:
+            user.given_name = self.data['GivenName']
+        elif 'given_name' in self.data:
+            user.given_name = self.data['given_name']
+        if 'Surname' in self.data:
+            user.surname = self.data['Surname']
+        elif 'given_name' in self.data:
+            user.surname = self.data['surname']
+        if 'Modified' in self.data:
+            user.date_ad_updated = self.data['Modified']
+        elif 'date_ad_updated' in self.data:
+            user.date_ad_updated = self.data['date_ad_updated']
+
         try:
-            user = DepartmentUser.objects.create(
-                ad_guid=self.data['ObjectGUID'],
-                email=self.data['EmailAddress'],
-                ad_dn=self.data['DistinguishedName'],
-                username=self.data['SamAccountName'],
-                expiry_date=self.data['AccountExpirationDate'],
-                active=self.data['Enabled'],
-                name=self.data['DisplayName'],
-                title=self.data['Title'],
-                given_name=self.data['GivenName'],
-                surname=self.data['Surname'],
-                date_ad_updated=self.data['Modified'],
-            )
+            user.save()
         except Exception as e:
             data = self.data
             data['Error'] = repr(e)
-            logger.error(repr(e))
+            LOGGER.error(repr(e))
             return self.formatters.format(self.request, {'Error': repr(e)})
 
         # Serialise the newly-created DepartmentUser.
         data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-        logger.info('Created user {}'.format(user.email))
-        logger.info('{} '.format(self.formatters.format(self.request, data)))
-
+        LOGGER.info('Created user {}'.format(user.email))
+        LOGGER.info('{} '.format(self.formatters.format(self.request, data)))
         return self.formatters.format(self.request, data)
 
     def update(self, guid):
@@ -206,38 +273,66 @@ class DepartmentUserResource(DjangoResource):
         try:
             user = DepartmentUser.objects.get(ad_guid=guid)
         except DepartmentUser.DoesNotExist:
-            raise BadRequest('Object not found')
+            try:
+                user = DepartmentUser.objects.get(email__iexact=guid.lower())
+            except DepartmentUser.DoesNotExist:
+                raise BadRequest('Object not found')
 
         try:
-            if 'ObjectGUID' in self.data and self.data['ObjectGUID']:
-                user.ad_guid = self.data['ObjectGUID']
             if 'EmailAddress' in self.data and self.data['EmailAddress']:
-                user.email = self.data['EmailAddress']
-            if 'DistinguishedName' in self.data and self.data['DistinguishedName']:
-                user.ad_dn = self.data['DistinguishedName']
-            if 'SamAccountName' in self.data and self.data['SamAccountName']:
-                user.username = self.data['SamAccountName']
-            if 'AccountExpirationDate' in self.data and self.data['AccountExpirationDate']:
-                user.expiry_date = self.data['AccountExpirationDate']
-            if 'Enabled' in self.data:  # Boolean; don't only work on True!
-                user.active = self.data['Enabled']
+                user.email = self.data['EmailAddress'].lower()
+            if 'email' in self.data and self.data['email']:
+                user.email = self.data['email'].lower()
             if 'DisplayName' in self.data and self.data['DisplayName']:
                 user.name = self.data['DisplayName']
+            if 'name' in self.data and self.data['name']:
+                user.name = self.data['name']
+            if 'SamAccountName' in self.data and self.data['SamAccountName']:
+                user.username = self.data['SamAccountName']
+            if 'username' in self.data and self.data['username']:
+                user.username = self.data['username']
+            if 'ObjectGUID' in self.data and self.data['ObjectGUID']:
+                user.ad_guid = self.data['ObjectGUID']
+            if 'ad_guid' in self.data and self.data['ad_guid']:
+                user.ad_guid = self.data['ad_guid']
+            if 'DistinguishedName' in self.data and self.data['DistinguishedName']:
+                user.ad_dn = self.data['DistinguishedName']
+            if 'ad_dn' in self.data and self.data['ad_dn']:
+                user.ad_dn = self.data['ad_dn']
+            if 'AccountExpirationDate' in self.data and self.data['AccountExpirationDate']:
+                user.expiry_date = self.data['AccountExpirationDate']
+            if 'expiry_date' in self.data and self.data['expiry_date']:
+                user.expiry_date = self.data['expiry_date']
+            if 'Enabled' in self.data:  # Boolean; don't only work on True!
+                user.active = self.data['Enabled']
+            if 'active' in self.data:  # Boolean; don't only work on True!
+                user.active = self.data['active']
             if 'Title' in self.data and self.data['Title']:
                 user.title = self.data['Title']
+            if 'title' in self.data and self.data['title']:
+                user.title = self.data['title']
             if 'GivenName' in self.data and self.data['GivenName']:
                 user.given_name = self.data['GivenName']
+            if 'given_name' in self.data and self.data['given_name']:
+                user.given_name = self.data['given_name']
             if 'Surname' in self.data and self.data['Surname']:
                 user.surname = self.data['Surname']
+            if 'surname' in self.data and self.data['surname']:
+                user.surname = self.data['surname']
             if 'Modified' in self.data and self.data['Modified']:
                 user.date_ad_updated = self.data['Modified']
+            if 'date_ad_updated' in self.data and self.data['date_ad_updated']:
+                user.date_ad_updated = self.data['date_ad_updated']
             if 'o365_licence' in self.data:  # Boolean; don't only work on True!
                 user.o365_licence = self.data['o365_licence']
+            if 'azure_guid' in self.data and self.data['azure_guid']:
+                user.azure_guid = self.data['azure_guid']
             if 'Deleted' in self.data and self.data['Deleted']:
                 user.active = False
                 user.ad_deleted = True
+                user.ad_guid, user.azure_guid = None, None
                 data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-                logger.info('Set user {} as deleted in AD'.format(user.name))
+                LOGGER.info('Set user {} as deleted in AD'.format(user.name))
             else:
                 user.ad_deleted = False
             user.ad_data = self.data  # Store the raw request data.
@@ -246,12 +341,12 @@ class DepartmentUserResource(DjangoResource):
         except Exception as e:
             data = self.data
             data['Error'] = repr(e)
-            logger.error(repr(e))
+            LOGGER.error(repr(e))
             return self.formatters.format(self.request, {'Error': repr(e)})
 
         data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-        logger.info('Updated user {}'.format(user.email))
-        logger.info('{}'.format(self.formatters.format(self.request, data)))
+        LOGGER.info('Updated user {}'.format(user.email))
+        LOGGER.info('{}'.format(self.formatters.format(self.request, data)))
 
         return self.formatters.format(self.request, data)
 
@@ -261,16 +356,21 @@ class DepartmentUserResource(DjangoResource):
         Includes OrgUnits, cost centres, locations and secondary locations.
         """
         qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
+        # Exclude predefined account types:
+        qs = qs.exclude(account_type__in=[4, 5, 9, 10, 11, 12, 14, 16])
         if exclude_populate_groups:  # Exclude objects where populate_primary_group == False
             qs = qs.exclude(populate_primary_group=False)
         structure = []
-        if sync_o365:
-            orgunits = OrgUnit.objects.filter(sync_o365=True)
+        if sync_o365:  # Exclude certain things from populating O365/AD
+            orgunits = OrgUnit.objects.filter(active=True, unit_type__in=[0, 1], sync_o365=True)
+            costcentres = []
+            locations = Location.objects.filter(active=True)
+            slocations = []
         else:
-            orgunits = OrgUnit.objects.all()
-        costcentres = CostCentre.objects.all()
-        locations = Location.objects.all()
-        slocations = SecondaryLocation.objects.all()
+            orgunits = OrgUnit.objects.filter(active=True)
+            costcentres = CostCentre.objects.filter(active=True)
+            locations = Location.objects.filter(active=True)
+            slocations = SecondaryLocation.objects.all()
         defaultowner = 'support@dpaw.wa.gov.au'
         for obj in orgunits:
             members = [d[0] for d in qs.filter(org_unit__in=obj.get_descendants(include_self=True)).values_list('email')]
@@ -323,13 +423,14 @@ class DepartmentUserResource(DjangoResource):
 
 class LocationResource(CSVDjangoResource):
     VALUES_ARGS = (
-        'pk', 'name', 'address', 'phone', 'fax', 'email', 'point', 'url',
-        'bandwidth_url')
+        'pk', 'name', 'address', 'phone', 'fax', 'email', 'point', 'url', 'bandwidth_url', 'active')
 
     def list_qs(self):
         FILTERS = {}
         if 'location_id' in self.request.GET:
             FILTERS['pk'] = self.request.GET['location_id']
+        else:
+            FILTERS['active'] = True
         return Location.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
 
     @skip_prepare

@@ -8,7 +8,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # Define the following in the environment:
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG', False)
-ALLOWED_HOSTS = [env('ALLOWED_DOMAIN'), ]
+if not DEBUG:
+    ALLOWED_HOSTS = env('ALLOWED_DOMAINS', '').split(',')
+else:
+    ALLOWED_HOSTS = ['*']
 INTERNAL_IPS = ['127.0.0.1', '::1']
 
 # Base URL to use when referring to full URLs within the Wagtail admin backend
@@ -36,7 +39,6 @@ INSTALLED_APPS = (
     'mptt',
     'django_mptt_admin',
     'leaflet',
-    'django_cron',
 
     'wagtail.wagtailcore',
     'wagtail.wagtailadmin',
@@ -49,6 +51,7 @@ INSTALLED_APPS = (
     'wagtail.wagtailsearch',
     'wagtail.wagtailredirects',
     'wagtail.wagtailforms',
+    'wagtail.contrib.postgres_search',
     'wagtailtinymce',
     'django_uwsgi',
 
@@ -112,11 +115,8 @@ MIDDLEWARE_CLASSES = (
     'wagtail.wagtailredirects.middleware.RedirectMiddleware',
     'dpaw_utils.middleware.SSOLoginMiddleware',
 )
-CRON_CLASSES = (
-    'organisation.cron.PasswordReminderCronJob',
-)
 ROOT_URLCONF = 'oim_cms.urls'
-APPLICATION_VERSION = '1.3.2'
+APPLICATION_VERSION = '1.4'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
 
 # Database configuration
@@ -197,6 +197,7 @@ FRESHDESK_ENDPOINT = env('FRESHDESK_ENDPOINT', None)
 FRESHDESK_AUTH = (env('FRESHDESK_KEY'), 'X')
 POSTGREST_ROLE = env('POSTGREST_ROLE', 'postgrest')
 POSTGREST_BINARY = env('POSTGREST_BINARY', '/usr/local/bin/postgrest')
+API_RESPONSE_CACHE_SECONDS = env('API_RESPONSE_CACHE_SECONDS', None)
 
 # Email settings
 EMAIL_HOST = env('EMAIL_HOST', None)
@@ -209,27 +210,20 @@ else:
 
 # Wagtail settings
 WAGTAIL_SITE_NAME = "OIM Content Management System"
-
-# Use Elasticsearch as the search backend for extra performance and better search results:
-# http://wagtail.readthedocs.org/en/latest/howto/performance.html#search
-# http://wagtail.readthedocs.org/en/latest/core_components/search/backends.html#elasticsearch-backend
-#
-# WAGTAILSEARCH_BACKENDS = {
-#     'default': {
-#         'BACKEND': 'wagtail.wagtailsearch.backends.elasticsearch.ElasticSearch',
-#         'INDEX': 'oim_cms',
-#     },
-# }
-
-# Whether to use face/feature detection to improve image cropping - requires OpenCV
+# Use Postgres as the search backend:
+# http://docs.wagtail.io/en/v1.10.1/reference/contrib/postgres_search.html#postgres-search
+WAGTAILSEARCH_BACKENDS = {
+    'default': {
+        'BACKEND': 'wagtail.contrib.postgres_search.backend',
+        'SEARCH_CONFIG': 'english',
+    },
+}
+# Use face/feature detection to improve image cropping (requires OpenCV)
 WAGTAILIMAGES_FEATURE_DETECTION_ENABLED = False
-
-# enable image usage stats in the admin
+# Enable image usage stats in the admin
 WAGTAIL_USAGE_COUNT_ENABLED = True
-
-# we want a custom search result template
+# We want a custom search result template
 WAGTAILSEARCH_RESULTS_TEMPLATE = 'core/search_results.html'
-
 WAGTAILADMIN_RICH_TEXT_EDITORS = {
     'default': {
         #'WIDGET': 'wagtailtinymce.rich_text.TinyMCERichTextArea'
@@ -266,7 +260,7 @@ LOGGING = {
             'maxBytes': 1024 * 1024 * 5,
             'backupCount': 5,
         },
-        'ad_file' : {
+        'ad_file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'ad_sync_actions.log'),
@@ -284,16 +278,17 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'INFO'
         },
-        'organisation' : {
+        'organisation': {
             'handlers': ['file'],
             'level': 'DEBUG'
         },
-        'ad_sync' : {
-            'handlers' : ['ad_file'],
+        'ad_sync': {
+            'handlers': ['ad_file'],
             'level': 'INFO'
         }
     }
 }
+
 
 # Alter some settings in debug mode.
 if DEBUG:

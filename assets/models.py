@@ -5,7 +5,6 @@ from django.utils.encoding import python_2_unicode_compatible
 
 from organisation.models import DepartmentUser, Location
 from tracking.models import CommonFields
-from datetime import datetime    
 
 
 @python_2_unicode_compatible
@@ -20,42 +19,6 @@ class Vendor(models.Model):
     contact_phone = models.CharField(max_length=50, null=True, blank=True)
     website = models.URLField(null=True, blank=True)
     extra_data = JSONField(default=dict, null=True, blank=True)
-
-    class Meta:
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
-
-@python_2_unicode_compatible
-class Suppliers(models.Model):
-    """Represents a list of suppliers per asset model
-    """
-    STATE_CHOICES = (
-			('N/A','N/A'),
-            ('ACT','ACT'),
-            ('NSW','NSW'),
-            ('NT','NT'),
-            ('QLD','QLD'),
-            ('VIC','VIC'),
-            ('TAS','TAS'),
-            ('SA','SA'),
-            ('WA','WA')
-    )
-
-
-    name = models.CharField(max_length=255, unique=True)
-    address1 = models.CharField(max_length=255, unique=False,null=True)
-    address2 = models.CharField(max_length=255, unique=False, null=True)
-    address3 = models.CharField(max_length=255, unique=False, null=True)
-    suburb = models.CharField(max_length=255, unique=False, null=True)
-    postcode = models.CharField(max_length=255, unique=False, null=True)
-    state = models.CharField(max_length=5,null=True,choices=STATE_CHOICES,default='N/A')
-    effective_from = models.DateField(null=True)
-    effective_to = models.DateField(null=True)
-    date_modified = models.DateField(default=datetime.now, blank=True)
-    date_created = models.DateTimeField(default=datetime.now, blank=True)
-
 
     class Meta:
         ordering = ('name',)
@@ -105,8 +68,6 @@ class Asset(CommonFields):
         max_digits=20, decimal_places=2, blank=True, null=True,
         help_text='The amount paid for this asset, inclusive of any upgrades (excluding GST).')
     notes = models.TextField(blank=True)
-    supplier = models.ForeignKey(Suppliers, on_delete=models.PROTECT, blank=True, null=True)
-    rsid = models.IntegerField(default='0')
 
     class Meta:
         abstract = True
@@ -162,31 +123,6 @@ class HardwareModel(models.Model):
         ('Computer - Monitor', 'Computer - Monitor'),
         ('Computer - Tablet PC', 'Computer - Tablet PC'),
         ('Computer - Other', 'Computer - Other'),
-        ### New Categories From FS_COM Asset Databases
-        ('Comms - Airband Handheld','Comms - Airband Handheld' ),
-        ('Comms - SIM - BGAN','Comms - SIM - BGAN'),
-        ('Comms - Radio Over IP','Comms - Radio Over IP'),
-        ('Comms - UHF','Comms - UHF'),
-        ('Comms - VHF','Comms - VHF'),
-        ('Comms - HF','Comms - HF'),
-        ('Comms - Dual Band VH/U','Comms - Dual Band VH/U'),
-        ('Comms - Satellite Phone','Comms - Satellite Phone'),
-        ('Comms - SIM - Satellite Phone','Comms - SIM - Satellite Phone'),
-        ('Comms - BGAN','Comms - BGAN'),
-        ('Comms - rBGAN','Comms - rBGAN'),
-        ('Comms - 2 Way Satellite System','Comms - 2 Way Satellite System'),
-        ('Comms - Satellite System (DEC VSAT)','Comms - Satellite System (DEC VSAT)'),
-        ('Comms - Automatic Weather Station','Comms - Automatic Weather Station'),
-        ('Comms - Satellite Base Telephone','Comms - Satellite Base Telephone'),
-        ('Comms - Telephone Interface','Comms - Telephone Interface'),
-        ('Comms - FMS Cache','Comms - FMS Cache'),
-        ('Comms - Communications Bus','Comms - Communications Bus'),
-        ('Comms - Mobile Communication Vehicle','Comms - Mobile Communication Vehicle'),
-        ('Comms - Tracking Device','Comms - Tracking Device'),
-        ('Comms - Explorer PTT Terminal','Comms - Explorer PTT Terminal'),
-        ('Comms - Codan Portable Repeater','Comms - Codan Portable Repeater'),
-        ('Comms - VHF (Digital)','Comms - VHF (Digital)'),
-        ###########################################
         ('Environmental monitor', 'Environmental monitor'),
         ('Network - Hub', 'Network - Hub'),
         ('Network - Media converter', 'Network - Media converter'),
@@ -229,7 +165,6 @@ class HardwareModel(models.Model):
         ('Tape drive', 'Tape drive'),
         ('UPS', 'UPS'),
         ('Other', 'Other'),
-
     )
 
     model_type = models.CharField(max_length=50, choices=TYPE_CHOICES)
@@ -256,18 +191,7 @@ class HardwareAsset(Asset):
         ('In storage', 'In storage'),
         ('Deployed', 'Deployed'),
         ('Disposed', 'Disposed'),
-		('Available','Available'),
-		('Decommissioned','Decommissioned'),
-		('Hired','Hired'),
-		('In Service','In Service'),
-		('Lost','Lost'),
-		('Return to Manufacturer','Return to Manufacturer'),
-		('Sold','Sold'),
-		('Stolen','Stolen'),
-		('Location unknown','Location unknown'),
-		('Invalid','Invalid')
     )
-
     asset_tag = models.CharField(max_length=10, unique=True)
     finance_asset_tag = models.CharField(
         max_length=10, null=True, blank=True,
@@ -280,62 +204,9 @@ class HardwareAsset(Asset):
     location = models.ForeignKey(Location, on_delete=models.PROTECT)
     assigned_user = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, null=True, blank=True)
-	
+
     class Meta:
         ordering = ('-asset_tag',)
 
     def __str__(self):
         return self.asset_tag
-
-@python_2_unicode_compatible
-class HardwareAssetExtra(models.Model):
-	
-	ha = models.ForeignKey(HardwareAsset, on_delete=models.PROTECT)
-	voice_no = models.CharField(max_length=40, null=True, blank=True, help_text='The Telephone number of the Device')
-	fax_no	= models.CharField(max_length=40, null=True, blank=True, help_text='The Fax number of the Device')
-	icc_id	= models.CharField(max_length=40, null=True, blank=True, help_text='The ICC ID number')
-	msisdn = models.CharField(max_length=24, null=True, blank=True)
-	service_provider = models.CharField(max_length=100, null=True, blank=True, help_text='Name of Provider')
-	service_plan = models.CharField(max_length=100, null=True, blank=True, help_text='Name of Provider Plan')
-	sim_pin = models.CharField(max_length=10, null=True, blank=True)
-	account_number = models.CharField(max_length=100, null=True, blank=True)
-	account_pin = models.CharField(max_length=10, null=True, blank=True)
-	date_modified = models.DateField(default=datetime.now)
-	date_created = models.DateTimeField(default=datetime.now)
-	comms_type = models.CharField(max_length=100)
-	vtd_id = models.IntegerField(null=True, blank=True)
-	vehicle_id = models.IntegerField(null=True, blank=True)
-	
-	def __str__(self):
-		return self.asset_tag
-
-@python_2_unicode_compatible
-class VehicleDetails(models.Model):
-	vehicle_id = models.IntegerField(null=True, blank=True,unique=True)
-	rego = models.CharField(max_length=20, null=True, blank=True, help_text='Vehicle Registration')
-	make = models.CharField(max_length=120, null=True, blank=True, help_text='Vehicle Make')
-	model = models.CharField(max_length=120, null=True, blank=True, help_text='Vehicle Model')
-	kms = models.IntegerField(null=True, blank=True)
-	light_flag = models.NullBooleanField(default=None)
-	category = models.CharField(max_length=170, null=True, blank=True, help_text='Category')
-	rate = models.IntegerField(null=True, blank=True)
-	default_job_id = models.CharField(max_length=40, null=True, blank=True, help_text='JOB ID')
-	month_cost = models.IntegerField(null=True, blank=True)
-	status_flag = models.CharField(max_length=2, null=True, blank=True)
-	cost_centre = models.CharField(max_length=20, null=True, blank=True)
-	manufactured_month_year = models.DateField(null=True, blank=True)
-	engine_no = models.CharField(max_length=40, null=True, blank=True)
-	diesel_engine = models.NullBooleanField(default=None)
-	automatic_engine = models.NullBooleanField(default=None)
-	tare = models.IntegerField(null=True, blank=True)
-	gcm = models.IntegerField(null=True, blank=True)
-	serial_chassis_no = models.CharField(max_length=60, null=True, blank=True)
-	date_deleted = models.DateField(null=True, blank=True)
-	comments = models.CharField(max_length=120, null=True, blank=True)
-	comments2 = models.CharField(max_length=120, null=True, blank=True)
-	comments3 = models.CharField(max_length=120, null=True, blank=True)
-	location = models.CharField(max_length=120, null=True, blank=True)
-
-	def __str__(self):
-		return self.make
-

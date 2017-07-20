@@ -36,6 +36,7 @@ class FsComAgencies(models.Model):
         managed = False
         db_table = 'fs_com_agencies'
 
+
 class FsComAsset2WaySats(models.Model):
     sat_id = models.IntegerField(primary_key=True)
     ast = models.OneToOneField('FsComAssets', models.DO_NOTHING)
@@ -1010,46 +1011,4 @@ class FsSites(models.Model):
         db_table = 'fs_sites'
         unique_together = (('name', 'effective_from'),)
 
-class FsVehicleDetails(models.Model):
-	
-	dept =  models.CharField(max_length=6, blank=True, null=True)
-	vehicle_id = models.IntegerField(primary_key=True)
-	rego = models.CharField(max_length=20, blank=True, null=True)
-	make_id = models.IntegerField(blank=True, null=True)
-	make_desc = models.CharField(max_length=110, blank=True, null=True)
-	model_id = models.IntegerField(blank=True, null=True)
-	model_desc = models.CharField(max_length=110, blank=True, null=True)
-	kms = models.IntegerField(blank=True, null=True)
-	light_flag = models.NullBooleanField(default=None)
-	category_id = models.IntegerField(blank=True, null=True)
-	category_desc = models.CharField(max_length=160, blank=True, null=True)
-	rate = models.IntegerField(blank=True, null=True)
-	default_job_id = models.CharField(max_length=40, blank=True, null=True)
-	month_cost = models.IntegerField(blank=True, null=True)
-	status_flag = models.CharField(max_length=4, blank=True, null=True)
-	cost_centre = models.CharField(max_length=20, blank=True, null=True)
-	total_cost = models.IntegerField(blank=True, null=True)
-	manufactured_mth_yr = models.DateField(blank=True, null=True)
-	code = models.CharField(max_length=20, blank=True, null=True)
-	engine_no = models.CharField(max_length=40, blank=True, null=True)
-	kilowatts = models.CharField(max_length=40, blank=True, null=True)
-	diesel_flag = models.NullBooleanField(default=None)
-	automatic_flag = models.NullBooleanField(default=None)
-	radio_type_flag = models.NullBooleanField(default=None)
-	tare = models.IntegerField(blank=True, null=True)
-	aggregate = models.IntegerField(blank=True, null=True)
-	gcm = models.IntegerField(blank=True, null=True)
-	serial_chassis_no = models.CharField(max_length=60, blank=True, null=True)
-	delete_date = models.DateField(blank=True, null=True)
-	comments = models.CharField(max_length=100, blank=True, null=True)
-	comments2 = models.CharField(max_length=100, blank=True, null=True)
-	comments3 = models.CharField(max_length=100, blank=True, null=True)
-	location = models.CharField(max_length=100, blank=True, null=True)
-	fire_unit_no = models.CharField(max_length=10, blank=True, null=True)
-	file_ref = models.CharField(max_length=34, blank=True, null=True)
-	old_rego = models.CharField(max_length=14, blank=True, null=True)
 
-	class Meta:
-		managed = False
-		db_table = 'FS_VEHICLE_DETAILS_MV'
-#		db_table = 'fs_sites'

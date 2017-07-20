@@ -1,114 +1,45 @@
 {% load core_tags static wagtailcore_tags %}
-
-<div class="top-bar columns" style='z-index: 300' >
-	<div class="top-bar-left show-for-large top-bar-large" style='padding-left: 20px;' >
-		<ul class="dropdown menu" data-dropdown-menu>
-			<li style='display:none'><a style="display:none" href="/">Home</a></li>
-			{% for menuitem in menuitems %}
-			<li onclick="window.location.href='{% pageurl menuitem %}';">
-				<a  style="" href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
-				{% if menuitem.show_dropdown %}
-				{% f6_top_menu_children parent=menuitem vertical=False %}
-				{% endif %}
-			</li>
-			{% endfor %}
-		</ul>
-	</div>
-	<div class="top-bar-right " id='rightslidermenubutton' data-responsive-toggle="drilldown-main-menu" data-hide-for="large" style='width: 45px'>
-		<ul class="menu">
-			<li onclick="topbar.openRightSlideMenu();" id='rightslidermenubutton' class='sliderbutton'  >
-				<a id='rightslidermenubutton' data-toggle><i id='rightslidermenubutton'  class="fi-list"></i> Menu </a>
-			</li>
-		</ul>
-	</div>
-	<div class='show-for-small hide-for-large mobilemenu' id='rightslidemenu' style='display:none' >
-		<div id='mobilemenu' >
-			<div class='mainbox' id='rightslidemenu'>
-				<div class='headerbox' id='rightmenuclosebutton'>
-					<span class='leftside' >MENU</span>
-					<span class='rightside' onclick="topbar.openRightSlideMenu();" id='rightmenuclosebutton'>
-						<div class='closemenu' id='rightmenuclosebutton'>&nbsp;&nbsp;<span id='rightmenuclosebutton' > &#215; </span></div>
-					</span>
-				</div>
-				<ul id='menuslider'>
-					<li class='mobilesearch' id='meunslidersub' >
-						<div id='meunslidersub'>
-							<form method="get" action="{% url 'search' %}" role="search">
-								<input name="q" type="search" placeholder="Search OIM Extranet"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} id='oimsearch' />
-							</form>
-						</div>
-					</li>
-					{% for menuitem in menuitems %}
-					<li id='meunslidersub' >
-						<span class='text'>
-							<a istyle="font-size: 12.5px; height: 45px; padding-top: 17px" href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
-						</span>
-						{% if menuitem.show_dropdown %}
-						<div class='submenu' >
-							{% f6_top_menu_children_mobile parent=menuitem vertical=True %}
-						</div>
-						{% endif %}
-					</li>
-					{% endfor %}
-
-				</ul>
-				<!-- Department of Planning and Wildlife Logo -->
-				<div style='width: 100%; text-align: left;' > 
-					<img src="//static.dpaw.wa.gov.au/images/oimlogo_left.svg" alt="Department of Parks and Wildlife" style='height: 50px; margin-left: 30px;    -webkit-filter: invert(1); filter: brightness(0) invert(1)'> 
-				</div>
-			</div>
-		</div>
-	</div>
-
-
-	<div class='top-bar-right ' style='width:66px;'>
-		<ul class='right menu top-bar-profile'>
-			<li>
-
-				<IMG  id='myprofilebutton' src="/static/images/busmanwomen2.png" onclick='topbar.toggleMyProfile()'>
-				<div class='show-for-large'>
-				<div class='myprofilebox' id='myprofileinfo'>
-					<div class='myprofilebox2'  id='myprofileinfosub'>
-						<div class='myprofilebox-textimg' id='myprofileinfosub'>
-							<div class='myprofilebox-img' >
-								<img src="/static/images/busmanwomen2.png" style="height: 85px; width: 85px; border: 1px solid #f3f0f0; padding: 5px;" id='myprofileimage2'>
-								<div>
-									<a style='font-size: 12px; font-weight: normal; text-align: center; width: 100%; float: left; padding-top: 5px; background: none; color: #004d88' href=''>change</a>
-								</div>
-							</div>
-							<div class='myprofilebox-text' id='myprofileinfosub'>
-								<div  class='myprofilebox-text-area' id='myprofileinfosub' >
-									<div class='myprofilebox-text-name' id='myprofileinfosub'> <span style='text-transform: uppercase;' id='myprofileinfosub' >{{ request.user.last_name }}</span>, <span id='myprofileinfosub' style=' text-transform: capitalize;'>{{ request.user.first_name }}</span></div>
-									<div class='myprofilebox-text-email' id='myprofileinfosub'> {{ request.user.email }}</div>
-								</div>
-							</div>
-						</div>
-						<div class='myprofilebox-item' >
-							<A style='background: none; color: #004d88; font-weight: bold;' HREF=''>About Me</A>
-						</div>
-						<div  class='myprofilebox-item'>
-							<A HREF='/profile/'>My Profile</A>
-						</div>
-						<div class='myprofilebox-item-end' >
-							<A style='background: none; color: #004d88; font-weight: bold;' HREF='{% url 'logout' %}'>Log Out</A>
-						</div>
-					</div>
-				</div>
-				</div>
-
-			</li>
-		</ul>
-	</div>
-
-	<div class="top-bar-right show-for-large hide-for-small">
-		<ul class="menu">
-			<li class="has-form">
-				{% block search %}
-				<form method="get" action="{% url 'search' %}" role="search">
-					<input style='margin-top: 8px;' name="q" type="search" placeholder="Search OIM Extranet"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
-				</form>
-				{% endblock %}
-			</li>
-		</ul>
-	</div>
+<div class="top-bar columns">
+    <div class="top-bar-left show-for-large">
+        <ul class="dropdown menu" data-dropdown-menu>
+            <li><a href="/">Home</a></li>
+            {% for menuitem in menuitems %}
+            <li>
+                <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+                {% if menuitem.show_dropdown %}
+                    {% f6_top_menu_children parent=menuitem vertical=False %}
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="top-bar-left hide-for-large" id="drilldown-main-menu">
+        <ul class="vertical menu" data-drilldown>
+            <li><a href="/">Home</a></li>
+            {% for menuitem in menuitems %}
+            <li>
+                <a href="{% pageurl menuitem %}">{{ menuitem.title }}</a>
+                {% if menuitem.show_dropdown %}
+                    {% f6_top_menu_children parent=menuitem vertical=True %}
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+            <div class="top-bar-left" data-responsive-toggle="drilldown-main-menu" data-hide-for="large">
+                <ul class="menu">
+                    <li><a data-toggle><i class="fi-list"></i> Menu</a></li>
+                </ul>
+            </div>
+    <div class="top-bar-right">
+        <ul class="menu">
+            <li class="has-form">
+        {% block search %}
+            <form method="get" action="{% url 'search' %}" role="search">
+                <input name="q" type="search" placeholder="Search OIM Extranet"{% if request.GET.q %} value="{{ request.GET.q }}"{% endif %} />
+            </form>
+        {% endblock %}
+            </li>
+        </ul>
+    </div>
 </div>
