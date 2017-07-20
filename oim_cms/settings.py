@@ -116,7 +116,7 @@ MIDDLEWARE_CLASSES = (
     'dpaw_utils.middleware.SSOLoginMiddleware',
 )
 ROOT_URLCONF = 'oim_cms.urls'
-APPLICATION_VERSION = '1.4'
+APPLICATION_VERSION = '1.4.1'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
 
 # Database configuration
