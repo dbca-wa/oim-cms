@@ -10,7 +10,6 @@ services:
 branches:
     only:
         - master
-        - prod-oldui
 env:
     global:
         - SECRET_KEY="SecretKeyForTravisCI"
