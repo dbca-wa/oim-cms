@@ -16,7 +16,7 @@ from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp
 
 
 def validate_employee_id(value):
-    """NOT: deprecated, but retain (otherwise migrations are broken).
+    """NOTE: deprecated, but retain (otherwise migrations are broken).
     """
     if value.lower() == 'n/a':
         return

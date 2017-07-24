@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 import json
+import pytz
 from restless.constants import OK
 from restless.dj import DjangoResource
 from restless.exceptions import BadRequest
@@ -82,10 +83,16 @@ class DepartmentUserResource(DjangoResource):
         """Modify the returned object to append the GAL Department value.
         """
         prepped = super(DepartmentUserResource, self).prepare(data)
+        tz = pytz.timezone(settings.TIME_ZONE)
         if 'pk' in data:
             prepped['gal_department'] = DepartmentUser.objects.get(pk=data['pk']).get_gal_department()
-        if 'expiry_date' in data:
-            if data['expiry_date'] and data['expiry_date'] < timezone.now():
+        if 'date_updated' in data and data['date_updated']:
+            prepped['date_updated'] = data['date_updated'].astimezone(tz)
+        if 'date_ad_updated' in data and data['date_ad_updated']:
+            prepped['date_ad_updated'] = data['date_ad_updated'].astimezone(tz)
+        if 'expiry_date' in data and data['expiry_date']:
+            prepped['expiry_date'] = data['expiry_date'].astimezone(tz)
+            if data['expiry_date'] < timezone.now():
                 data['ad_expired'] = True
             else:
                 data['ad_expired'] = False
