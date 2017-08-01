@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
 from organisation.models import DepartmentUser, Location
-from tracking.models import CommonFields
+from tracking.models import CommonFields, Computer
 
 
 @python_2_unicode_compatible
@@ -86,7 +86,7 @@ class SoftwareLicense(CommonFields):
     support_url = models.URLField(max_length=2000, null=True, blank=True)
     oss = models.NullBooleanField(
         default=None, help_text='Open-source/free software license?')
-    primary_user = models.ForeignKey(
+    assigned_user = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, null=True, blank=True)
     vendor = models.ForeignKey(
         Vendor, on_delete=models.PROTECT, null=True, blank=True)
@@ -204,6 +204,7 @@ class HardwareAsset(Asset):
     location = models.ForeignKey(Location, on_delete=models.PROTECT)
     assigned_user = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, null=True, blank=True)
+    tracked_computer = models.OneToOneField(Computer, null=True, blank=True)
 
     class Meta:
         ordering = ('-asset_tag',)

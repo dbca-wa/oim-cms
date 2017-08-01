@@ -13,8 +13,16 @@ from .models import Vendor, Invoice, SoftwareLicense, HardwareModel, HardwareAss
 
 @register(Vendor)
 class VendorAdmin(VersionAdmin):
-    list_display = ('name', 'website')
+    list_display = (
+        'name', 'account_rep', 'contact_email', 'contact_phone', 'website',
+        'software_licences', 'hardware_assets')
     search_fields = ('name', 'details', 'account_rep', 'website')
+
+    def software_licences(self, obj):
+        return obj.softwarelicense_set.count()
+
+    def hardware_assets(self, obj):
+        return obj.hardwareasset_set.count()
 
 
 @register(Invoice)
@@ -31,7 +39,7 @@ class SoftwareLicenseAdmin(VersionAdmin):
     list_display = ('name', 'vendor', 'oss')
     list_filter = ('oss', 'vendor')
     search_fields = ('name', 'url', 'support', 'support_url', 'vendor__name')
-    raw_id_fields = ('org_unit', 'primary_user')
+    raw_id_fields = ('org_unit', 'assigned_user')
 
 
 @register(HardwareModel)
