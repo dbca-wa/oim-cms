@@ -16,6 +16,7 @@ from core.models import Content, UserSession
 from oim_cms.api import WhoAmIResource
 from django.contrib.auth.models import User
 from tracking.models import DepartmentUser
+from django.views.decorators.cache import never_cache
 
 
 def force_email(username):
@@ -55,6 +56,7 @@ def shared_id_authenticate(email, shared_id):
 
 
 @csrf_exempt
+@never_cache
 def auth_get(request):
     # If user is using SSO, do a normal auth check.
     if request.user.is_authenticated():
@@ -75,6 +77,7 @@ def auth_get(request):
 
 
 @csrf_exempt
+@never_cache
 def auth_dual(request):
     # If user has a SSO cookie, do a normal auth check.
     if request.user.is_authenticated():
@@ -86,6 +89,7 @@ def auth_dual(request):
 
 
 @csrf_exempt
+@never_cache
 def auth_ip(request):
     # Get the IP of the current user, try and match it up to a session.
     current_ip = get_ip(request)
@@ -139,6 +143,7 @@ def auth_ip(request):
 
 
 @csrf_exempt
+@never_cache
 def auth(request):
     # grab the basic auth data from the request
     basic_auth = request.META.get("HTTP_AUTHORIZATION")
