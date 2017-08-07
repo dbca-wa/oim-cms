@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 import json
+import pytz
 from restless.constants import OK
 from restless.dj import DjangoResource
 from restless.exceptions import BadRequest
@@ -14,6 +15,7 @@ from restless.resources import skip_prepare
 from restless.utils import MoreTypesJSONEncoder
 from oim_cms.utils import FieldsFormatter, CSVDjangoResource
 import logging
+from django.core.cache import cache
 
 from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
 
@@ -82,10 +84,16 @@ class DepartmentUserResource(DjangoResource):
         """Modify the returned object to append the GAL Department value.
         """
         prepped = super(DepartmentUserResource, self).prepare(data)
+        tz = pytz.timezone(settings.TIME_ZONE)
         if 'pk' in data:
             prepped['gal_department'] = DepartmentUser.objects.get(pk=data['pk']).get_gal_department()
-        if 'expiry_date' in data:
-            if data['expiry_date'] and data['expiry_date'] < timezone.now():
+        if 'date_updated' in data and data['date_updated']:
+            prepped['date_updated'] = data['date_updated'].astimezone(tz)
+        if 'date_ad_updated' in data and data['date_ad_updated']:
+            prepped['date_ad_updated'] = data['date_ad_updated'].astimezone(tz)
+        if 'expiry_date' in data and data['expiry_date']:
+            prepped['expiry_date'] = data['expiry_date'].astimezone(tz)
+            if data['expiry_date'] < timezone.now():
                 data['ad_expired'] = True
             else:
                 data['ad_expired'] = False
@@ -123,6 +131,11 @@ class DepartmentUserResource(DjangoResource):
         Include `populate_groups=true` to output only DepartmentUsers
         with populate_primary_group == True.
         """
+        resp = cache.get(self.request.get_full_path())
+        if resp:
+            LOGGER.info("user api cache hit!")
+            return resp
+        LOGGER.info("user api cache MISS!")
         FILTERS = {}
         sync_o365 = True
         if 'sync_o365' in self.request.GET and self.request.GET['sync_o365'] == 'false':
@@ -178,7 +191,10 @@ class DepartmentUserResource(DjangoResource):
             self.VALUES_ARGS = self.MINIMAL_ARGS
 
         user_values = list(users.values(*self.VALUES_ARGS))
-        return self.formatters.format(self.request, user_values)
+        resp = self.formatters.format(self.request, user_values)
+        # piecemeal caching
+        cache.set(self.request.get_full_path(), resp, timeout=300)
+        return resp
 
     def detail(self, guid):
         """Detail view for a single DepartmentUser object.
