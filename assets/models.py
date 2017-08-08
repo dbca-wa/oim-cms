@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.safestring import mark_safe
+from json2html import json2html
 
 from organisation.models import DepartmentUser, Location
 from tracking.models import CommonFields, Computer
@@ -201,7 +203,7 @@ class HardwareAsset(Asset):
         max_length=50, choices=STATUS_CHOICES, default='In storage')
     serial = models.CharField(
         max_length=50, help_text='The serial number or service tag.')
-    location = models.ForeignKey(Location, on_delete=models.PROTECT)
+    location = models.ForeignKey(Location, on_delete=models.PROTECT, null=True, blank=True)
     assigned_user = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, null=True, blank=True)
     tracked_computer = models.OneToOneField(Computer, null=True, blank=True)
@@ -211,3 +213,8 @@ class HardwareAsset(Asset):
 
     def __str__(self):
         return self.asset_tag
+
+    def get_extra_data_html(self):
+        if not self.extra_data:
+            return mark_safe('')
+        return mark_safe(json2html.convert(json=self.extra_data))

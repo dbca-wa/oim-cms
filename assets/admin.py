@@ -61,6 +61,9 @@ class HardwareAssetAdmin(VersionAdmin):
         ('Location & ownership details', {
             'fields': ('assigned_user', 'location', 'cost_centre')
         }),
+        ('Extra data (history)', {
+            'fields': ('extra_data_ro',)
+        }),
     )
     list_display = (
         'asset_tag', 'vendor', 'hardware_model', 'serial', 'status',
@@ -70,8 +73,13 @@ class HardwareAssetAdmin(VersionAdmin):
     search_fields = (
         'asset_tag', 'vendor__name', 'hardware_model__model_type',
         'hardware_model__model_no')
+    readonly_fields = ['extra_data_ro']
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/assets/hardwareasset/change_list.html'
+
+    def extra_data_ro(self, obj):
+        return obj.get_extra_data_html()
+    extra_data_ro.short_description = 'extra data'
 
     def get_urls(self):
         urls = super(HardwareAssetAdmin, self).get_urls()
