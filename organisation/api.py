@@ -15,6 +15,7 @@ from restless.resources import skip_prepare
 from restless.utils import MoreTypesJSONEncoder
 from oim_cms.utils import FieldsFormatter, CSVDjangoResource
 import logging
+from django.core.cache import cache
 
 from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
 
@@ -130,6 +131,11 @@ class DepartmentUserResource(DjangoResource):
         Include `populate_groups=true` to output only DepartmentUsers
         with populate_primary_group == True.
         """
+        resp = cache.get(self.request.get_full_path())
+        if resp:
+            LOGGER.info("user api cache hit!")
+            return resp
+        LOGGER.info("user api cache MISS!")
         FILTERS = {}
         sync_o365 = True
         if 'sync_o365' in self.request.GET and self.request.GET['sync_o365'] == 'false':
@@ -185,7 +191,10 @@ class DepartmentUserResource(DjangoResource):
             self.VALUES_ARGS = self.MINIMAL_ARGS
 
         user_values = list(users.values(*self.VALUES_ARGS))
-        return self.formatters.format(self.request, user_values)
+        resp = self.formatters.format(self.request, user_values)
+        # piecemeal caching
+        cache.set(self.request.get_full_path(), resp, timeout=300)
+        return resp
 
     def detail(self, guid):
         """Detail view for a single DepartmentUser object.

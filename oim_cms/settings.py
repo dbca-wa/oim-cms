@@ -210,6 +210,7 @@ else:
 
 # Wagtail settings
 WAGTAIL_SITE_NAME = "OIM Content Management System"
+WAGTAILADMIN_NOTIFICATION_FROM_EMAIL ="oim_cms@dbca.wa.gov.au"
 # Use Postgres as the search backend:
 # http://docs.wagtail.io/en/v1.10.1/reference/contrib/postgres_search.html#postgres-search
 WAGTAILSEARCH_BACKENDS = {

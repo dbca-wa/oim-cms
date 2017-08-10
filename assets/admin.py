@@ -13,8 +13,16 @@ from .models import Vendor, Invoice, SoftwareLicense, HardwareModel, HardwareAss
 
 @register(Vendor)
 class VendorAdmin(VersionAdmin):
-    list_display = ('name', 'website')
+    list_display = (
+        'name', 'account_rep', 'contact_email', 'contact_phone', 'website',
+        'software_licences', 'hardware_assets')
     search_fields = ('name', 'details', 'account_rep', 'website')
+
+    def software_licences(self, obj):
+        return obj.softwarelicense_set.count()
+
+    def hardware_assets(self, obj):
+        return obj.hardwareasset_set.count()
 
 
 @register(Invoice)
@@ -31,7 +39,7 @@ class SoftwareLicenseAdmin(VersionAdmin):
     list_display = ('name', 'vendor', 'oss')
     list_filter = ('oss', 'vendor')
     search_fields = ('name', 'url', 'support', 'support_url', 'vendor__name')
-    raw_id_fields = ('org_unit', 'primary_user')
+    raw_id_fields = ('org_unit', 'assigned_user')
 
 
 @register(HardwareModel)
@@ -53,6 +61,9 @@ class HardwareAssetAdmin(VersionAdmin):
         ('Location & ownership details', {
             'fields': ('assigned_user', 'location', 'cost_centre')
         }),
+        ('Extra data (history)', {
+            'fields': ('extra_data_ro',)
+        }),
     )
     list_display = (
         'asset_tag', 'vendor', 'hardware_model', 'serial', 'status',
@@ -62,8 +73,13 @@ class HardwareAssetAdmin(VersionAdmin):
     search_fields = (
         'asset_tag', 'vendor__name', 'hardware_model__model_type',
         'hardware_model__model_no')
+    readonly_fields = ['extra_data_ro']
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/assets/hardwareasset/change_list.html'
+
+    def extra_data_ro(self, obj):
+        return obj.get_extra_data_html()
+    extra_data_ro.short_description = 'extra data'
 
     def get_urls(self):
         urls = super(HardwareAssetAdmin, self).get_urls()
