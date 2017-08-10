@@ -27,7 +27,7 @@ http://localhost:8000/csw/server/?
 
 """
 import math
-import md5
+import hashlib
 import base64
 import os
 import re
@@ -42,6 +42,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.utils import timezone
+from django.core.files.storage import FileSystemStorage
 
 slug_re = re.compile(r'^[a-z0-9_]+$')
 validate_slug = RegexValidator(slug_re, "Slug can only contain lowercase letters, numbers and underscores", "invalid")
@@ -239,6 +240,7 @@ class Record(models.Model):
 
     bbox_re = re.compile('POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)')
     legend = models.FileField(upload_to='catalogue/legends', null=True, blank=True)
+    source_legend = models.FileField(upload_to='catalogue/legends/source', null=True, blank=True,editable=False)
 
     @property 
     def bbox(self):
@@ -358,23 +360,22 @@ class Record(models.Model):
         endpoint_parameters = endpoint_parameters.split("&") if endpoint_parameters else None
         endpoint_parameters = dict([(p.split("=", 1)[0].upper(), p.split("=", 1)) for p in endpoint_parameters] if endpoint_parameters else [])
 
+        #get target_crs
+        target_crs = None
+        if service_type == "WFS":
+            target_crs = [endpoint_parameters.get(k)[1] for k in ["SRSNAME"] if k in endpoint_parameters]
+        elif service_type in ["WMS", "GWC"]:
+            target_crs = [endpoint_parameters.get(k)[1] for k in ["SRS","CRS"] if k in endpoint_parameters]
+
+        if target_crs:
+            target_crs = target_crs[0].upper()
+        else:
+            target_crs = self.crs.upper() if self.crs else None
+
         #transform the bbox between coordinate systems, if required
         bbox = self.bbox or []
         if bbox:
-            if service_type == "WFS":
-                if any([ k in endpoint_parameters for k in ["SRSNAME"]]) :
-                    target_crs = endpoint_parameters.get("SRSNAME")[1]
-                else:
-                    target_crs = None
-            elif service_type in ["WMS", "GWC"]:
-                if any([ k in endpoint_parameters for k in ["SRS", "CRS"]]) :
-                    target_crs = (endpoint_parameters.get("SRS") or endpoint_parameters.get("CRS"))[1].upper()
-                else:
-                    target_crs = None
-            else:
-                target_crs = None
-
-            if target_crs and target_crs != self.crs:
+            if target_crs != self.crs:
                 try:
                     if self.crs.upper() in epsg_extra:
                         p1 = pyproj.Proj(epsg_extra[self.crs.upper()])
@@ -390,8 +391,6 @@ class Record(models.Model):
                     bbox[2], bbox[3] = pyproj.transform(p1, p2, bbox[2], bbox[3])
                 except Exception as e:
                     raise ValidationError("Transform the bbox of layer({0}) from crs({1}) to crs({2}) failed.{3}".format(self.identifier, self.crs, target_crs, str(e)))
-            else:
-                target_crs = self.crs.upper()
 
             if service_type == "WFS":
                 #to limit the returned features, shrink the original bbox to 10 percent
@@ -401,7 +400,6 @@ class Record(models.Model):
                 shrinked_bbox = [shrinked_min(bbox[0], bbox[2]), shrinked_min(bbox[1], bbox[3]), shrinked_max(bbox[0], bbox[2]), shrinked_max(bbox[1], bbox[3])]
         else:
             shrinked_bbox = None
-            target_crs = self.crs.upper() if self.crs else None
 
         bbox2str = lambda bbox, service, version: ', '.join(str(c) for c in bbox) if service != "WFS" or version == "1.0.0" else ", ".join([str(c) for c in [bbox[1], bbox[0], bbox[3], bbox[2]]])
 
@@ -475,13 +473,13 @@ class Record(models.Model):
             if not bbox:
                 #bbox is null, use australian bbox
                 bbox = [108.0000, -45.0000, 155.0000, -10.0000]
-                p1 = pyproj.Proj(init="EPSG:4283")
+                p1 = pyproj.Proj(init="EPSG:4326")
                 p2 = pyproj.Proj(init=target_crs)
                 bbox[0], bbox[1] = pyproj.transform(p1, p2, bbox[0], bbox[1])
                 bbox[2], bbox[3] = pyproj.transform(p1, p2, bbox[2], bbox[3])
 
             if not hasattr(PreviewTile, target_crs.replace(":", "_")):
-                raise Exception("GWC service don't support crs({}) ").format(target_crs)
+                raise Exception("GWC service don't support crs({}) ".format(target_crs))
 
             tile_bbox = getattr(PreviewTile, target_crs.replace(":", "_"))(bbox)
 
@@ -491,7 +489,7 @@ class Record(models.Model):
 
         is_exist = lambda k: any([n.upper() in endpoint_parameters for n in (k if isinstance(k, tuple) or isinstance(k, list) else [k])])
         
-        querystring = "&".join(["{}={}".format(k[0] if isinstance(k, tuple) or isinstance(k, list) else k, v) for k, v in kvp.iteritems() if not is_exist(k)  ])
+        querystring = "&".join(["{}={}".format(k[0] if isinstance(k, tuple) or isinstance(k, list) else k, v) for k, v in kvp.items() if not is_exist(k)  ])
         if querystring:
             if original_endpoint[-1] in ("?", "&"):
                 link = "{}{}".format(original_endpoint, querystring)
@@ -505,7 +503,7 @@ class Record(models.Model):
         #get the endpoint after removing ows related parameters
         if endpoint_parameters:
             is_exist = lambda k: any([ any([k == key.upper() for key in item_key]) if isinstance(item_key, tuple) or isinstance(item_key, list) else k == item_key.upper()  for item_key in kvp ])
-            endpoint_querystring = "&".join(["{}={}".format(*v) for k, v in endpoint_parameters.iteritems() if not is_exist(k)  ])
+            endpoint_querystring = "&".join(["{}={}".format(*v) for k, v in endpoint_parameters.items() if not is_exist(k)  ])
             if endpoint_querystring:
                 endpoint = "{}?{}".format(endpoint, endpoint_querystring)
 
@@ -630,6 +628,17 @@ def update_modify_date(sender, instance, **kwargs):
                     update_fields.append("modified")
     
 
+def styleFilePath(instance,filename):
+    return "catalogue/styles/{}_{}.{}".format(instance.record.identifier.replace(':','_'),instance.name.split('.')[0],instance.format.lower())
+
+class StyleStorage(FileSystemStorage):
+    def get_available_name(self, name, max_length=None):
+        """
+        If the name already exist, remove it 
+        """
+        if self.exists(name):
+            self.delete(name)
+        return name
 
 class Style(models.Model):
     BUILTIN = "builtin"
@@ -642,8 +651,7 @@ class Style(models.Model):
     name = models.CharField(max_length=255)
     format = models.CharField(max_length=3, choices=FORMAT_CHOICES)
     default = models.BooleanField(default=False)
-    content = models.FileField(upload_to='catalogue/styles')
-    checksum = models.CharField(blank=True, max_length=255, editable=False)
+    content = models.FileField(upload_to=styleFilePath,storage=StyleStorage())
 
     @property
     def identifier(self):
@@ -677,49 +685,9 @@ class Style(models.Model):
         else:
             super(Style, self).delete(using)
 
-    def save(self, *args, **kwargs):
-        update_fields=None
-        clean_name = self.name.split('.')
-        self.content.name = 'catalogue/styles/{}_{}.{}'.format(self.record.identifier.replace(':', '_'), clean_name[0], self.format.lower())
-        if self.pk is not None:
-            update_fields=kwargs.get("update_fields", ["default", "content", "checksum"])
-            if "content" in update_fields:
-                if "checksum" not in update_fields: update_fields.append("checksum")
-                orig = Style.objects.get(pk=self.pk)
-                if orig.content:
-                    if orig.checksum != self._calculate_checksum(self.content):
-                        if os.path.isfile(orig.content.path):
-                            os.remove(orig.content.path)
-
-                        if os.path.isfile(self.content.path):
-                            #the style file exists in the file system, remove it
-                            os.remove(self.content.path)
-
-                    else:
-                        #content is not changed, no need to update content and checksum
-                        update_fields = [field for field in update_fields if field not in ["content", "checksum"]]
-                        if not update_fields:
-                            #nothing is needed to update.
-                            return
-                else:
-                    if os.path.isfile(orig.content.path):
-                        os.remove(orig.content.path)
-                    if os.path.isfile(self.content.path):
-                        #the style file exists in the file system, remove it
-                        os.remove(self.content.path)
-
-        if update_fields:
-            kwargs["update_fields"] = update_fields
-        super(Style, self).save(*args, **kwargs)
-        
     def __unicode__(self):
         return self.name
     
-    def _calculate_checksum(self, content):
-        checksum = md5.new()
-        checksum.update(content.read())
-        return base64.b64encode(checksum.digest())
-
 @receiver(pre_save, sender=Style)
 def update_links(sender, instance, **kwargs):
     link = Record.generate_style_link(instance)
@@ -781,13 +749,6 @@ def set_default_style (sender, instance, **kwargs):
                 instance.record.modified = timezone.now()
                 instance.record.save(update_fields=["modified"])
 
-@receiver(pre_save, sender=Style)
-def set_checksum (sender, instance, **kwargs):
-    update_fields=kwargs.get("update_fields", None)
-    if not update_fields or "checksum" in update_fields:
-        checksum = md5.new()
-        checksum.update(instance.content.read())
-        instance.checksum = base64.b64encode(checksum.digest())
 
 @receiver(post_delete, sender=Style)
 def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):

@@ -1,34 +1,20 @@
 from __future__ import unicode_literals, absolute_import
-from django.conf import settings
+from django import forms
 from django.conf.urls import url
 from django.contrib.admin import register, ModelAdmin
 from django.http import HttpResponse
-from django.template.loader import render_to_string
+from django.template.response import TemplateResponse
 from reversion.admin import VersionAdmin
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 import unicodecsv
-
 from .models import (
-    Software, Hardware, UserGroup, DocumentApproval, ITSystemHardware,
-    ITSystem, ITSystemDependency, Backup, BusinessService, BusinessFunction,
-    BusinessProcess, ProcessITSystemRelationship)
-
-
-@register(Software)
-class SoftwareAdmin(VersionAdmin):
-    list_display = ('name', 'url', 'os')
-    list_filter = ('os',)
-    search_fields = ('name', 'url',)
-
-
-@register(Hardware)
-class HardwareAdmin(VersionAdmin):
-    list_display = (
-        'device_type', 'name', 'username', 'email', 'cost_centre', 'ipv4',
-        'ports', 'serials', 'os')
-    list_filter = ('device_type', 'os', 'cost_centre')
-    search_fields = (
-        'name', 'username', 'email', 'ipv4', 'serials', 'ports', 'os__name')
+    UserGroup, ITSystemHardware, Platform, ITSystem, ITSystemDependency,
+    Backup, BusinessService, BusinessFunction, BusinessProcess,
+    ProcessITSystemRelationship, ITSystemEvent)
+from .utils import smart_truncate
 
 
 @register(UserGroup)
@@ -37,21 +23,16 @@ class UserGroupAdmin(VersionAdmin):
     search_fields = ('name',)
 
 
-@register(DocumentApproval)
-class DocumentApprovalAdmin(ModelAdmin):
-    list_diplay = ('department_user', 'approval_role', 'date_created')
-    raw_id_fields = ('department_user',)
-
-
 @register(ITSystemHardware)
 class ITSystemHardwareAdmin(VersionAdmin):
-    list_display = ('hostname', 'role', 'affected_itsystems')
+    list_display = ('computer', 'role', 'affected_itsystems')
     list_filter = ('role',)
-    raw_id_fields = ('host',)
+    raw_id_fields = ('computer',)
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystemhardware/change_list.html'
 
     def affected_itsystems(self, obj):
+        # Exclude decommissioned systems from the count.
         return obj.itsystem_set.all().exclude(status=3).count()
     affected_itsystems.short_description = 'IT Systems'
 
@@ -80,7 +61,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
             # Write a row for each linked ITSystem (non-decommissioned).
             for it in i.itsystem_set.all().exclude(status=3):
                 wr.writerow([
-                    i.hostname, i.host.location, i.get_role_display(),
+                    i.computer.hostname, i.computer.location, i.get_role_display(),
                     it.system_id, it.name, it.get_availability_display(),
                     it.get_criticality_display()])
 
@@ -89,16 +70,42 @@ class ITSystemHardwareAdmin(VersionAdmin):
         return response
 
 
+@register(Platform)
+class PlatformAdmin(VersionAdmin):
+    list_display = ('name', 'category', 'it_systems')
+    list_filter = ('category',)
+    search_fields = ('name',)
+
+    def it_systems(self, obj):
+        # Exclude decommissioned systems from the count.
+        return obj.itsystem_set.all().exclude(status=3).count()
+    it_systems.short_description = 'IT Systems'
+
+
+class ITSystemForm(forms.ModelForm):
+
+    class Meta:
+        model = ITSystem
+        exclude = []
+
+    def clean_biller_code(self):
+        """Validation on the biller_code field: must be unique (ignore null values).
+        """
+        data = self.cleaned_data['biller_code']
+        if data and ITSystem.objects.filter(biller_code=data).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('An IT System with this biller code already exists.')
+        return data
+
+
 @register(ITSystem)
 class ITSystemAdmin(VersionAdmin):
+    filter_horizontal = ('platforms', 'hardwares', 'user_groups')
     list_display = (
         'system_id', 'name', 'acronym', 'status', 'cost_centre', 'owner', 'custodian',
         'preferred_contact', 'access', 'authentication')
     list_filter = (
-        'access',
-        'authentication',
-        'status',
-        'contingency_plan_status')
+        'access', 'authentication', 'status', 'contingency_plan_status',
+        'system_type', 'platforms', 'oim_internal_only')
     search_fields = (
         'system_id', 'owner__username', 'owner__email', 'name', 'acronym', 'description',
         'custodian__username', 'custodian__email', 'link', 'documentation', 'cost_centre__code')
@@ -106,7 +113,6 @@ class ITSystemAdmin(VersionAdmin):
         'owner', 'custodian', 'data_custodian', 'preferred_contact', 'cost_centre',
         'bh_support', 'ah_support')
     readonly_fields = ('extra_data_pretty', 'description_html')
-    filter_horizontal = ('contingency_plan_approvals',)
     fields = [
         ('system_id', 'acronym'),
         ('name', 'status'),
@@ -115,6 +121,7 @@ class ITSystemAdmin(VersionAdmin):
         ('custodian', 'data_custodian'),
         'preferred_contact',
         ('bh_support', 'ah_support'),
+        'platforms',
         'documentation',
         'technical_documentation',
         'status_html',
@@ -123,53 +130,40 @@ class ITSystemAdmin(VersionAdmin):
         'notes',
         ('criticality', 'availability'),
         'schema_url',
-        ('softwares', 'hardwares'),
+        'hardwares',
         'user_groups',
         'system_reqs',
-        'system_type',
+        ('system_type', 'oim_internal_only'),
         'request_access',
         ('vulnerability_docs', 'recovery_docs'),
         'workaround',
         ('mtd', 'rto', 'rpo'),
         ('contingency_plan', 'contingency_plan_status'),
-        'contingency_plan_approvals',
         'contingency_plan_last_tested',
         'system_health',
         'system_creation_date',
         'backup_info',
         'risks',
+        'sla',
         'critical_period',
         'alt_processing',
         'technical_recov',
         'post_recovery',
         'variation_iscp',
         'user_notification',
+        'other_projects',
         'function',
         'use',
         'capability',
         'unique_evidence',
         'point_of_truth',
         'legal_need_to_retain',
+        'biller_code',
         'extra_data',
     ]
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystem/change_list.html'
-
-    def save_model(self, request, obj, form, change):
-        """Override save_model in order to log any changes to the
-        contingency_plan field.
-        """
-        # If contingency_plan changes, delete any associated DocumentApproval
-        # objects.
-        if obj._ITSystem__original_contingency_plan != obj.contingency_plan:
-            # Clear the selected approvals from the modeladmin form.
-            form.cleaned_data['contingency_plan_approvals'] = []
-            approvals = [i for i in obj.contingency_plan_approvals.all()]
-            obj.contingency_plan_approvals.clear()  # Remove M2M relationships
-            obj.save()
-            for i in approvals:
-                i.delete()  # Delete each approval object.
-        super(ITSystemAdmin, self).save_model(request, obj, form, change)
+    form = ITSystemForm  # Use the custom ModelForm.
 
     def get_urls(self):
         urls = super(ITSystemAdmin, self).get_urls()
@@ -211,30 +205,81 @@ class ITSystemDependencyAdmin(VersionAdmin):
     list_display = ('itsystem', 'dependency', 'criticality')
     list_filter = ('criticality',)
     search_fields = ('itsystem__name', 'dependency__name')
+    # Override the default reversion/change_list.html template:
+    change_list_template = 'admin/registers/itsystemdependency/change_list.html'
+
+    def get_urls(self):
+        urls = super(ITSystemDependencyAdmin, self).get_urls()
+        extra_urls = [
+            url(
+                r'^reports/$',
+                self.admin_site.admin_view(self.itsystem_dependency_reports),
+                name='itsystem_dependency_reports'
+            ),
+            url(
+                r'^reports/all/$',
+                self.admin_site.admin_view(self.itsystem_dependency_report_all),
+                name='itsystem_dependency_report_all'
+            ),
+            url(
+                r'^reports/no-deps/$',
+                self.admin_site.admin_view(self.itsystem_dependency_report_nodeps),
+                name='itsystem_dependency_report_nodeps'
+            ),
+        ]
+        return extra_urls + urls
+
+    def itsystem_dependency_reports(self, request):
+        context = {'title': 'IT System dependency reports'}
+        return TemplateResponse(
+            request, 'admin/itsystemdependency_reports.html', context)
+
+    def itsystem_dependency_report_all(self, request):
+        """Returns a CSV containing all recorded dependencies.
+        """
+        fields = [
+            'IT System', 'System status', 'Dependency', 'Dependency status',
+            'Criticality']
+        # Write data for ITSystemHardware objects to the CSV.
+        stream = StringIO()
+        wr = unicodecsv.writer(stream, encoding='utf-8')
+        wr.writerow(fields)  # CSV header row.
+        for i in ITSystemDependency.objects.all():
+            wr.writerow([
+                i.itsystem.name, i.itsystem.get_status_display(),
+                i.dependency.name, i.dependency.get_status_display(),
+                i.get_criticality_display()])
+
+        response = HttpResponse(stream.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=itsystemdependency_all.csv'
+        return response
+
+    def itsystem_dependency_report_nodeps(self, request):
+        """Returns a CSV containing all systems without dependencies recorded.
+        """
+        fields = ['IT System', 'System status']
+        # Write data for ITSystemHardware objects to the CSV.
+        stream = StringIO()
+        wr = unicodecsv.writer(stream, encoding='utf-8')
+        wr.writerow(fields)  # CSV header row.
+        deps = ITSystemDependency.objects.all().values_list('pk')
+        for i in ITSystem.objects.all().exclude(pk__in=deps):
+            wr.writerow([i.name, i.get_status_display()])
+
+        response = HttpResponse(stream.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=itsystem_no_deps.csv'
+        return response
 
 
 @register(Backup)
 class BackupAdmin(VersionAdmin):
-    raw_id_fields = ('system', 'parent_host')
+    raw_id_fields = ('computer',)
     list_display = (
-        'name', 'host', 'operating_system', 'role', 'status', 'last_tested', 'backup_documentation')
+        'computer', 'operating_system', 'role', 'status', 'last_tested')
     list_editable = ('operating_system', 'role', 'status', 'last_tested')
-    search_fields = ('system__name', 'parent_host__name')
+    search_fields = ('computer__hostname',)
     list_filter = ('role', 'status', 'operating_system')
     date_hierarchy = 'last_tested'
-
-    def name(self, obj):
-        return obj.system.name.split('.')[0]
-
-    def host(self, obj):
-        if not obj.parent_host:
-            return None
-        return obj.parent_host.name.split('.')[0]
-
-    def backup_documentation(self, obj):
-        return render_to_string('registers/backup_snippet.html', {
-            'obj': obj, 'settings': settings, 'name': self.name(obj)}
-        )
 
 
 @register(BusinessService)
@@ -266,3 +311,26 @@ class ProcessITSystemRelationshipAdmin(VersionAdmin):
     list_display = ('process', 'itsystem', 'importance')
     list_filter = ('importance', 'process', 'itsystem')
     search_fields = ('process__name', 'itsystem__name')
+
+
+@register(ITSystemEvent)
+class ITSystemEventAdmin(ModelAdmin):
+    filter_horizontal = ('it_systems', 'locations')
+    list_display = (
+        'id', 'event_type', 'description_trunc', 'start', 'duration', 'end',
+        'current', 'it_systems_affected', 'locations_affected')
+    list_filter = ('event_type', 'planned', 'current')
+    search_fields = ('description', 'it_systems__name', 'locations__name')
+    date_hierarchy = 'start'
+
+    def description_trunc(self, obj):
+        return smart_truncate(obj.description)
+    description_trunc.short_description = 'description'
+
+    def it_systems_affected(self, obj):
+        return ', '.join([i.name for i in obj.it_systems.all()])
+    it_systems_affected.short_description = 'IT Systems'
+
+    def locations_affected(self, obj):
+        return ', '.join([i.name for i in obj.locations.all()])
+    locations_affected.short_description = 'locations'

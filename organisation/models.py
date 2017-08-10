@@ -2,14 +2,29 @@ from __future__ import unicode_literals
 from datetime import datetime
 from django.contrib.postgres.fields import JSONField
 from django.contrib.gis.db import models
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from json2html import json2html
 from mptt.models import MPTTModel, TreeForeignKey
 import os
+import re
 
 from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp
+
+
+def validate_employee_id(value):
+    """NOTE: deprecated, but retain (otherwise migrations are broken).
+    """
+    if value.lower() == 'n/a':
+        return
+    if value is None:
+        return
+    if re.match('^[0-9N]{1}[0-9]{5}$', value):
+        return
+    raise ValidationError('Employee ID must be of format 123456, N12345, or n/a')
 
 
 @python_2_unicode_compatible
@@ -20,16 +35,23 @@ class DepartmentUser(MPTTModel):
                      "cost_centre__isnull": False, "contractor": False}
     # The following choices are intended to match options in Alesco.
     ACCOUNT_TYPE_CHOICES = (
-        (3, 'Agency contract'),
-        (0, 'Department fixed-term contract'),
-        (1, 'Other'),
-        (2, 'Permanent'),
-        (4, 'Resigned'),
-        (9, 'Role-based account'),
-        (8, 'Seasonal'),
-        (5, 'Shared account'),
-        (6, 'Vendor'),
-        (7, 'Volunteer'),
+        (2, 'L1 User Account - Permanent'),
+        (3, 'L1 User Account - Agency contract'),
+        (0, 'L1 User Account - Department fixed-term contract'),
+        (8, 'L1 User Account - Seasonal'),
+        (6, 'L1 User Account - Vendor'),
+        (7, 'L1 User Account - Volunteer'),
+        (1, 'L1 User Account - Other/Alumni'),
+        (11, 'L1 User Account - RoomMailbox'),
+        (12, 'L1 User Account - EquipmentMailbox'),
+        (10, 'L2 Service Account - System'),
+        (5, 'L1 Group (shared) Mailbox - Shared account'),
+        (9, 'L1 Role Account - Role-based account'),
+        #(4, 'Resigned'),
+        (4, 'Terminated'),
+        (14, 'Unknown - AD disabled'),
+        (15, 'Cleanup - Permanent'),
+        (16, 'Unknown - AD active'),
     )
     POSITION_TYPE_CHOICES = (
         (0, 'Full time'),
@@ -37,29 +59,42 @@ class DepartmentUser(MPTTModel):
         (2, 'Casual'),
         (3, 'Other'),
     )
-    # These fields are populated from Active Directory.
+
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
     cost_centre = models.ForeignKey(
         "organisation.CostCentre", on_delete=models.PROTECT, null=True)
     cost_centres_secondary = models.ManyToManyField(
-        "organisation.CostCentre", related_name="cost_centres_secondary",
-        blank=True)
+        "organisation.CostCentre", related_name="cost_centres_secondary", editable=False,
+        blank=True, help_text='NOTE: this provides security group access (e.g. T drives).')
     org_unit = models.ForeignKey(
         "organisation.OrgUnit", on_delete=models.PROTECT, null=True, blank=True,
-        verbose_name='organisational unit')
+        verbose_name='organisational unit',
+        help_text="""The organisational unit that represents the user's"""
+        """ primary physical location (also set their distribution group).""")
     org_units_secondary = models.ManyToManyField(
-        "organisation.OrgUnit", related_name="org_units_secondary", blank=True)
+        "organisation.OrgUnit", related_name="org_units_secondary", blank=True, editable=False,
+        help_text='NOTE: this provides email distribution group access.')
     extra_data = JSONField(null=True, blank=True)
-    ad_guid = models.CharField(max_length=48, unique=True, editable=False)
-    ad_dn = models.CharField(max_length=512, unique=True, editable=False)
+    ad_guid = models.CharField(
+        max_length=48, unique=True, null=True, blank=True, verbose_name='AD GUID',
+        help_text='Locally stored AD GUID. This field must match GUID in the AD object for sync to be successful')
+    azure_guid = models.CharField(
+        max_length=48, unique=True, null=True, blank=True, verbose_name='Azure GUID',
+        help_text='Azure AD GUID.')
+    ad_dn = models.CharField(
+        max_length=512, unique=True, null=True, blank=True, verbose_name='AD DN',
+        help_text='AD DistinguishedName value.')
     ad_data = JSONField(null=True, blank=True, editable=False)
     org_data = JSONField(null=True, blank=True, editable=False)
     employee_id = models.CharField(
         max_length=128, null=True, unique=True, blank=True, verbose_name='Employee ID',
-        help_text="HR Employee ID, use 'n/a' if a contractor")
-    username = models.CharField(max_length=128, editable=False, unique=True)
-    name = models.CharField(max_length=128, help_text='Format: Surname, Given name')
+        help_text='HR Employee ID.')
+    email = models.EmailField(unique=True)
+    username = models.CharField(
+        max_length=128, editable=False, unique=True,
+        help_text='Pre-Windows 2000 login username.')
+    name = models.CharField(max_length=128, help_text='Format: [Given name] [Surname]')
     given_name = models.CharField(
         max_length=128, null=True,
         help_text='Legal first name (matches birth certificate/password/etc.)')
@@ -78,21 +113,30 @@ class DepartmentUser(MPTTModel):
     position_type = models.PositiveSmallIntegerField(
         choices=POSITION_TYPE_CHOICES, null=True, blank=True, default=0,
         help_text='Employee position working arrangement (should match Alesco status)')
-    email = models.EmailField(unique=True, editable=False)
     parent = TreeForeignKey(
         'self', on_delete=models.PROTECT, null=True, blank=True,
         related_name='children', editable=True, verbose_name='Reports to',
         help_text='Person that this employee reports to')
-    expiry_date = models.DateTimeField(null=True, editable=False)
+    expiry_date = models.DateTimeField(
+        null=True, blank=True, help_text='Date that the AD account is set to expire.')
     date_ad_updated = models.DateTimeField(
-        null=True, editable=False, verbose_name='Date AD updated')
+        null=True, editable=False, verbose_name='Date AD updated',
+        help_text='The date when the AD account was last updated.')
     telephone = models.CharField(max_length=128, null=True, blank=True)
     mobile_phone = models.CharField(max_length=128, null=True, blank=True)
+    extension = models.CharField(
+        max_length=128, null=True, blank=True, verbose_name='VoIP extension')
     home_phone = models.CharField(max_length=128, null=True, blank=True)
     other_phone = models.CharField(max_length=128, null=True, blank=True)
-    active = models.BooleanField(default=True, editable=False)
-    ad_deleted = models.BooleanField(default=False, editable=False)
-    in_sync = models.BooleanField(default=False, editable=False)
+    active = models.BooleanField(
+        default=True, editable=False,
+        help_text='Account is active within Active Directory.')
+    ad_deleted = models.BooleanField(
+        default=False, editable=False, verbose_name='AD deleted',
+        help_text='Account has been deleted in Active Directory.')
+    in_sync = models.BooleanField(
+        default=False, editable=False,
+        help_text='CMS data has been synchronised from AD data.')
     vip = models.BooleanField(
         default=False,
         help_text="An individual who carries out a critical role for the department")
@@ -107,11 +151,13 @@ class DepartmentUser(MPTTModel):
     sso_roles = models.TextField(
         null=True, editable=False, help_text="Groups/roles separated by semicolon")
     notes = models.TextField(
-        null=True, blank=True, help_text="Officer secondary roles, etc.")
+        null=True, blank=True,
+        help_text='Records relevant to any AD account extension, expiry or deletion (e.g. ticket #).')
     working_hours = models.TextField(
         default="N/A", null=True, blank=True,
         help_text="Description of normal working hours")
-    secondary_locations = models.ManyToManyField("organisation.Location", blank=True)
+    secondary_locations = models.ManyToManyField("organisation.Location", blank=True,
+        help_text="Only to be used for staff working in additional loactions from their cost centre")
     populate_primary_group = models.BooleanField(
         default=True,
         help_text="If unchecked, user will not be added to primary group email")
@@ -124,6 +170,12 @@ class DepartmentUser(MPTTModel):
         default=False, verbose_name='security clearance granted',
         help_text='''Security clearance approved by CC Manager (confidentiality
         agreement, referee check, police clearance, etc.''')
+    o365_licence = models.NullBooleanField(
+        default=None, editable=False,
+        help_text='Account consumes an Office 365 licence.')
+    shared_account = models.BooleanField(
+        default=False, editable=False,
+        help_text='Automatically set from account type.')
 
     class MPTTMeta:
         order_insertion_by = ['name']
@@ -140,22 +192,26 @@ class DepartmentUser(MPTTModel):
         self.__original_cost_centre = self.cost_centre
         self.__original_name = self.name
         self.__original_org_unit = self.org_unit
+        self.__original_expiry_date = self.expiry_date
 
     def __str__(self):
         return self.email
 
     def save(self, *args, **kwargs):
-        if self.employee_id and self.employee_id.lower() == "n/a":
-            self.employee_id = None
+        """Override the save method with additional business logic.
+        """
         if self.employee_id:
-            self.employee_id = "{0:06d}".format(int(self.employee_id))
+            if (self.employee_id.lower() == "n/a") or (self.employee_id.strip() == ''):
+                self.employee_id = None
         self.in_sync = True if self.date_ad_updated else False
+        # If the CC is set but not the OrgUnit, use the CC's OrgUnit.
         if self.cost_centre and not self.org_unit:
             self.org_unit = self.cost_centre.org_position
         if self.cost_centre and self.org_unit:
             self.org_data = self.org_data or {}
             self.org_data["units"] = list(self.org_unit.get_ancestors(include_self=True).values(
-                "id", "name", "acronym", "unit_type", "costcentre__code", "costcentre__name", "location__name"))
+                "id", "name", "acronym", "unit_type", "costcentre__code",
+                "costcentre__name", "location__name"))
             self.org_data["unit"] = self.org_data["units"][-1]
             if self.org_unit.location:
                 self.org_data["location"] = self.org_unit.location.as_dict()
@@ -173,7 +229,23 @@ class DepartmentUser(MPTTModel):
                 "admin": str(self.cost_centre.admin),
                 "tech_contact": str(self.cost_centre.tech_contact),
             }
-        self.update_photo_ad()
+            if self.cost_centres_secondary.exists():
+                self.org_data['cost_centres_secondary'] = [{
+                    'name': i.name,
+                    'code': i.code,
+                } for i in self.cost_centres_secondary.all()]
+            if self.org_units_secondary:
+                self.org_data['org_units_secondary'] = [{
+                    'name': i.name,
+                    'acronym': i.name,
+                    'unit_type': i.get_unit_type_display(),
+                } for i in self.org_units_secondary.all()]
+        try:
+            self.update_photo_ad()
+        except:  # Don't bomb out of saving for update_photo_ad errors.
+            pass
+        if self.account_type in [5, 9]:  # Shared/role-based account types.
+            self.shared_account = True
         super(DepartmentUser, self).save(*args, **kwargs)
 
     def update_photo_ad(self):
@@ -184,7 +256,7 @@ class DepartmentUser(MPTTModel):
             return
 
         from PIL import Image
-        from cStringIO import StringIO
+        from six import BytesIO
         from django.core.files.base import ContentFile
 
         if hasattr(self.photo.file, 'content_type'):
@@ -204,12 +276,12 @@ class DepartmentUser(MPTTModel):
         # remote file size limit
         PHOTO_AD_FILESIZE = 10000
 
-        image = Image.open(StringIO(self.photo.read()))
+        image = Image.open(BytesIO(self.photo.read()))
         image.thumbnail(PHOTO_AD_SIZE, Image.LANCZOS)
 
         # in case we miss 10kb, drop the quality and recompress
         for i in range(12):
-            temp_buffer = StringIO()
+            temp_buffer = BytesIO()
             image.save(temp_buffer, PIL_TYPE,
                        quality=PIL_QUALITY, optimize=True)
             length = temp_buffer.tell()
@@ -272,6 +344,22 @@ class DepartmentUser(MPTTModel):
                 pass
         return None
 
+    @property
+    def ad_expired(self):
+        if self.expiry_date and self.expiry_date < timezone.now():
+            return True
+        return False
+
+    def get_gal_department(self):
+        """Return a string to place into the "Department" field for the Global Address List.
+        """
+        s = ''
+        if self.org_data and 'units' in self.org_data:
+            s = self.org_data['units'][0]['acronym']
+            if len(self.org_data['units']) > 1:
+                s += ' - {}'.format(self.org_data['units'][1]['name'])
+        return s
+
 
 @python_2_unicode_compatible
 class Location(models.Model):
@@ -296,6 +384,7 @@ class Location(models.Model):
         help_text='URL to prtg graph of bw utilisation',
         null=True,
         blank=True)
+    active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ('name',)
@@ -309,11 +398,6 @@ class Location(models.Model):
     def as_dict(self):
         return {k: getattr(self, k) for k in (
             'name', 'address', 'pobox', 'phone', 'fax', 'email') if getattr(self, k)}
-
-    def save(self, *args, **kwargs):
-        for orgunit in self.orgunit_set.all():
-            orgunit.save()
-        super(Location, self).save(*args, **kwargs)
 
 
 @python_2_unicode_compatible
@@ -349,21 +433,20 @@ class OrgUnit(MPTTModel):
     """Represents an element within the Department organisational hierarchy.
     """
     TYPE_CHOICES = (
-        (0, 'Department'),
-        (1, 'Division'),
-        (2, 'Branch'),
-        (3, 'Region'),
-        (4, 'Cost Centre'),
-        (5, 'Office'),
-        (6, 'District'),
-        (7, 'Section'),
-        (8, 'Unit'),
+        (0, 'Department (Tier one)'),
+        (1, 'Division (Tier two)'),
+        (11, 'Division'),
         (9, 'Group'),
+        (2, 'Branch'),
+        (7, 'Section'),
+        (3, 'Region'),
+        (6, 'District'),
+        (8, 'Unit'),
+        (5, 'Office'),
         (10, 'Work centre'),
     )
     TYPE_CHOICES_DICT = dict(TYPE_CHOICES)
-    unit_type = models.PositiveSmallIntegerField(
-        choices=TYPE_CHOICES, default=4)
+    unit_type = models.PositiveSmallIntegerField(choices=TYPE_CHOICES)
     ad_guid = models.CharField(
         max_length=48, unique=True, null=True, editable=False)
     ad_dn = models.CharField(
@@ -382,6 +465,7 @@ class OrgUnit(MPTTModel):
         SecondaryLocation, on_delete=models.PROTECT, null=True, blank=True)
     sync_o365 = models.BooleanField(
         default=True, help_text='Sync this to O365 (creates a security group).')
+    active = models.BooleanField(default=True)
 
     class MPTTMeta:
         order_insertion_by = ['name']
@@ -400,7 +484,7 @@ class OrgUnit(MPTTModel):
         if self.acronym:
             name = '{} - {}'.format(self.acronym, name)
         if self.cc():
-            return '{} - CC{}'.format(name, self.cc())
+            return '{} - CC {}'.format(name, self.cc())
         return name
 
     def members(self):
@@ -412,32 +496,29 @@ class OrgUnit(MPTTModel):
         self.details.update({
             'type': self.get_unit_type_display(),
         })
-        if self.secondary_location:
-            self.location = self.secondary_location.location
-        if not getattr(self, 'cheap_save', False):
-            for user in self.departmentuser_set.all():
-                user.save()
         super(OrgUnit, self).save(*args, **kwargs)
+        if not getattr(self, 'cheap_save', False):
+            for user in self.members():
+                user.save()
 
     def get_descendants_active(self, *args, **kwargs):
-        """Exclude inactive OrgUnit objects from get_descendants() queryset
-        (those with 'inactive' in the name). Also exclude OrgUnit objects
-        with 0 members.
+        """Exclude 'inactive' OrgUnit objects from get_descendants() queryset.
+        Returns a list of OrgUnits.
         """
-        descendants = self.get_descendants(*args, **kwargs).exclude(name__icontains='inactive')
-        descendants = [o for o in descendants if o.members().count() > 0]
+        descendants = self.get_descendants(*args, **kwargs).exclude(active=False)
         return descendants
 
 
 @python_2_unicode_compatible
 class CostCentre(models.Model):
-    """Models the details of a Department cost centre.
+    """Models the details of a Department cost centre / chart of accounts.
     """
-    name = models.CharField(max_length=25, unique=True, editable=False)
-    code = models.CharField(max_length=5, unique=True)
+    name = models.CharField(max_length=128, unique=True, editable=False)
+    code = models.CharField(max_length=16, unique=True)
+    chart_acct_name = models.CharField(
+        max_length=256, blank=True, null=True, verbose_name='chart of accounts name')
     division = models.ForeignKey(
-        OrgUnit, null=True, editable=False,
-        related_name='costcentres_in_division')
+        OrgUnit, null=True, editable=False, related_name='costcentres_in_division')
     org_position = models.OneToOneField(
         OrgUnit, unique=True, blank=True, null=True)
     manager = models.ForeignKey(
@@ -452,28 +533,32 @@ class CostCentre(models.Model):
     tech_contact = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, related_name='tech_ccs',
         help_text='Technical Contact', null=True, blank=True)
+    active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ('code',)
 
     def save(self, *args, **kwargs):
         self.name = str(self)
+        # If the CC is linked to an OrgUnit, link it to that unit's Division.
         if self.org_position:
             division = self.org_position.get_ancestors(
                 include_self=True).filter(unit_type=1)
-        else:
-            division = None
-        if division:
             self.division = division.first()
-        for user in self.departmentuser_set.all():
+        else:
+            self.division = None
+        # Iterate through each DepartmentUser assigned to this CC to cache
+        # any org stucture/CC changes on that object.
+        for user in self.departmentuser_set.filter(active=True):
             user.save()
         super(CostCentre, self).save(*args, **kwargs)
 
     def __str__(self):
-        name = '{}'.format(self.code)
+        output = '{}'.format(self.code)
         if self.org_position:
-            dept = self.org_position.get_ancestors(
-                include_self=True).filter(unit_type=0)
+            # If the CC is linked to an OrgUnit, include that unit's Department
+            # acronym in the output.
+            dept = self.org_position.get_ancestors(include_self=True).filter(unit_type=0)
             if dept:
-                name += ' ({})'.format(dept.first().acronym)
-        return name
+                output += ' ({})'.format(dept.first().acronym)
+        return output

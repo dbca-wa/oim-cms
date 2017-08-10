@@ -1,5 +1,5 @@
 from __future__ import unicode_literals, absolute_import
-from datetime import timedelta, datetime
+from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib.postgres.fields import ArrayField
@@ -9,7 +9,8 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 
 from organisation.models import DepartmentUser, Location
-from tracking.models import CommonFields, Computer, Mobile
+from tracking.models import CommonFields, Computer
+from .utils import smart_truncate
 
 
 CRITICALITY_CHOICES = (
@@ -30,8 +31,7 @@ DOC_STATUS_CHOICES = (
 
 
 class ChoiceArrayField(ArrayField):
-    """
-    A field that allows us to store an array of choices.
+    """A field that allows us to store an array of choices.
     Uses Django's postgres ArrayField and a MultipleChoiceField for its formfield.
     Source:
     https://blogs.gnome.org/danni/2016/03/08/multiple-choice-using-djangos-postgres-arrayfield/
@@ -46,61 +46,6 @@ class ChoiceArrayField(ArrayField):
 
 
 @python_2_unicode_compatible
-class Software(models.Model):
-    """A model to represent a discrete unit of software (OS, runtime, etc.)
-    """
-    name = models.CharField(max_length=2048, unique=True)
-    url = models.CharField(max_length=2000, null=True, blank=True)
-    os = models.BooleanField(
-        default=False,
-        verbose_name='OS',
-        help_text='Software is an operating system?')
-
-    class Meta:
-        verbose_name_plural = 'software'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
-
-
-@python_2_unicode_compatible
-class Hardware(CommonFields):
-    """Represents additional metadata related to a unit of tracked computing
-    hardware.
-    """
-    device_type = models.PositiveSmallIntegerField(choices=(
-        (1, 'Network'), (2, 'Mobile'), (3, 'Domain PC'), (4, 'Hostname')))
-    computer = models.OneToOneField(
-        Computer, null=True, editable=False)
-    mobile = models.OneToOneField(Mobile, null=True, editable=False)
-    username = models.CharField(max_length=128, null=True, editable=False)
-    email = models.CharField(max_length=512, null=True, editable=False)
-    ipv4 = models.TextField(default='', editable=False)
-    ports = models.TextField(default='', editable=False)
-    name = models.CharField(max_length=2048, unique=True, editable=False)
-    serials = models.TextField(null=True, editable=False)
-    local_info = models.TextField(null=True, editable=False)
-    local_current = models.BooleanField(
-        default=True, help_text='Does local state match central state?')
-    os = models.ForeignKey(
-        Software, on_delete=models.PROTECT, null=True, blank=True, limit_choices_to={
-            'os': True},
-        verbose_name='operating system')
-    location = models.ForeignKey(
-        Location, on_delete=models.PROTECT, null=True, blank=True,
-        help_text='Physical location')
-
-    def __str__(self):
-        return '{}:{} ({})'.format(
-            self.get_device_type_display(), self.name, self.cost_centre)
-
-    class Meta:
-        unique_together = ('computer', 'mobile')
-        ordering = ('name', '-device_type')
-        verbose_name_plural = 'hardware'
-
-
 class UserGroup(models.Model):
     """A model to represent an arbitrary group of users for an IT System.
     E.g. 'All department staff', 'External govt agency staff', etc.
@@ -115,34 +60,9 @@ class UserGroup(models.Model):
         return '{} ({})'.format(self.name, self.user_count)
 
 
-class DocumentApproval(models.Model):
-    """A model to represent an approval/endorsement by a DepartmentUser for an
-    uploaded file.
-    """
-    department_user = models.ForeignKey(
-        DepartmentUser,
-        on_delete=models.PROTECT)
-    approval_role = models.CharField(
-        max_length=256, blank=True, null=True,
-        help_text='The role in which the user is approving the document.')
-    evidence = models.FileField(
-        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d',
-        help_text='Optional evidence to support the document approval (email, etc.)')
-    date_created = models.DateTimeField(auto_now_add=True, editable=False)
-
-    def __str__(self):
-        if self.approval_role:
-            return '{}, {} ({})'.format(
-                self.department_user, self.approval_role,
-                datetime.strftime(self.date_created, '%d-%b-%Y'))
-        else:
-            return '{} ({})'.format(
-                self.department_user, datetime.strftime(self.date_created, '%d-%b-%Y'))
-
-
+@python_2_unicode_compatible
 class ITSystemHardware(models.Model):
-    """A model to represent the relationship between an IT System and a
-    Hardware entity.
+    """A model to represent the relationship between an IT System and a Computer.
     """
     ROLE_CHOICES = (
         (1, 'Application server'),
@@ -150,26 +70,53 @@ class ITSystemHardware(models.Model):
         (3, 'Network file storage'),
         (4, 'Reverse proxy'),
     )
-    host = models.ForeignKey(Hardware, on_delete=models.PROTECT)
+    computer = models.ForeignKey(
+        Computer, blank=True, null=True, on_delete=models.PROTECT)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
 
     class Meta:
         verbose_name_plural = 'IT System hardware'
-        unique_together = ('host', 'role')
-        ordering = ('host__name',)
+        unique_together = ('computer', 'role')
+        ordering = ('computer__hostname',)
 
     def __str__(self):
-        return '{} ({})'.format(self.host.name, self.role)
-
-    @property
-    def hostname(self):
-        return self.host.name.lower()
+        return '{} ({})'.format(self.computer.hostname, self.role)
 
 
+@python_2_unicode_compatible
+class Platform(models.Model):
+    """A model to represent an IT System Platform Service, as defined in the
+    Department IT Strategy.
+    """
+    PLATFORM_CATEGORY_CHOICES = (
+        ('db', 'Database'),
+        ('dns', 'DNS'),
+        ('email', 'Email'),
+        ('idam', 'Identity & access management'),
+        ('middle', 'Middleware'),
+        ('phone', 'Phone system'),
+        ('proxy', 'Reverse proxy'),
+        ('storage', 'Storage'),
+        ('vpn', 'VPN'),
+        ('vm', 'Virtualisation'),
+        ('web', 'Web server'),
+    )
+    category = models.CharField(max_length=64, choices=PLATFORM_CATEGORY_CHOICES, db_index=True)
+    name = models.CharField(max_length=512)
+
+    class Meta:
+        ordering = ('category', 'name')
+        unique_together = ('category', 'name')
+
+    def __str__(self):
+        return '{} - {}'.format(self.get_category_display(), self.name)
+
+
+@python_2_unicode_compatible
 class ITSystem(CommonFields):
     """Represents a named system providing a package of functionality to
     Department staff (normally vendor or bespoke software), which is supported
-    by OIM.
+    by OIM and/or an external vendor.
     """
     STATUS_CHOICES = (
         (0, 'Production'),
@@ -195,10 +142,13 @@ class ITSystem(CommonFields):
         (2, 'Department core business hours'),
     )
     SYSTEM_TYPE_CHOICES = (
-        (1, 'Web application'),
-        (2, 'Client application'),
-        (3, 'Mobile application'),
+        (1, 'System - Web application'),
+        (2, 'System - Client application'),
+        (3, 'System - Mobile application'),
+        (5, 'System - Externally hosted application'),
         (4, 'Service'),
+        (6, 'Platform'),
+        (7, 'Infrastructure'),
     )
     HEALTH_CHOICES = (
         (0, 'Healthy'),
@@ -239,7 +189,8 @@ class ITSystem(CommonFields):
     )
 
     name = models.CharField(max_length=128, unique=True)
-    system_id = models.CharField(max_length=16, unique=True)
+    system_id = models.CharField(
+        max_length=16, unique=True, verbose_name='system ID')
     acronym = models.CharField(max_length=16, null=True, blank=True)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=4)
@@ -297,9 +248,6 @@ class ITSystem(CommonFields):
         help_text='URL to schema diagram')
     user_groups = models.ManyToManyField(
         UserGroup, blank=True, help_text='User group(s) that use this IT System')
-    softwares = models.ManyToManyField(
-        Software, blank=True, verbose_name='software',
-        help_text='Software that is used to provide this IT System')
     hardwares = models.ManyToManyField(
         ITSystemHardware, blank=True, verbose_name='hardware',
         help_text='Hardware that is used to provide this IT System')
@@ -334,12 +282,9 @@ class ITSystem(CommonFields):
         help_text='Recovery Point Objective/Data Loss Interval (days hh:mm:ss)',
         default=timedelta(hours=24))
     contingency_plan = models.FileField(
-        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d',
-        help_text='NOTE: changes to this field will delete current contingency plan approvals.')
+        blank=True, null=True, max_length=255, upload_to='uploads/%Y/%m/%d')
     contingency_plan_status = models.PositiveIntegerField(
         choices=DOC_STATUS_CHOICES, null=True, blank=True)
-    contingency_plan_approvals = models.ManyToManyField(
-        DocumentApproval, blank=True)
     contingency_plan_last_tested = models.DateField(
         null=True, blank=True, help_text='Date that the plan was last tested.')
     notes = models.TextField(blank=True, null=True)
@@ -391,6 +336,19 @@ class ITSystem(CommonFields):
     legal_need_to_retain = models.NullBooleanField(
         default=None, help_text='''Is there a legal or compliance need to keep'''
         ''' the digital content in this system?''')
+    other_projects = models.TextField(
+        null=True, blank=True,
+        help_text='Details of related IT Systems and projects.')
+    sla = models.TextField(
+        null=True, blank=True, verbose_name='Service Level Agreement',
+        help_text='''Details of any Service Level Agreement that exists for'''
+        ''' this IT System (typically with an external vendor).''')
+    biller_code = models.CharField(
+        max_length=64, null=True, blank=True,
+        help_text='BPAY biller code for this IT System (must be unique).')
+    oim_internal_only = models.BooleanField(
+        default=False, help_text='For OIM use only')
+    platforms = models.ManyToManyField(Platform, blank=True)
 
     class Meta:
         verbose_name = 'IT System'
@@ -419,6 +377,7 @@ class ITSystem(CommonFields):
         self.criticality_display = self.get_criticality_display()
         self.availability_display = self.get_availability_display()
         self.system_type_display = self.get_system_type_display()
+        # Note that biller_code uniqueness is checked in the admin ModelForm.
         super(ITSystem, self).save(*args, **kwargs)
 
     @property
@@ -429,6 +388,7 @@ class ITSystem(CommonFields):
             return ''
 
 
+@python_2_unicode_compatible
 class ITSystemDependency(models.Model):
     """A model to represent a dependency that an ITSystem has on another, plus
     the criticality of that dependency.
@@ -453,6 +413,7 @@ class ITSystemDependency(models.Model):
             self.itsystem.name, self.dependency.name, self.get_criticality_display())
 
 
+@python_2_unicode_compatible
 class Backup(CommonFields):
     """Represents the details of backup & recovery arrangements for a single
     piece of computing hardware.
@@ -482,11 +443,9 @@ class Backup(CommonFields):
         (3, 'Daily, 30 day retention'),
         (4, 'Weekly, 1 month retention')
     )
-    system = models.OneToOneField(Hardware)
+    computer = models.ForeignKey(
+        Computer, on_delete=models.PROTECT, null=True, blank=True)
     operating_system = models.CharField(max_length=120)
-    parent_host = models.ForeignKey(
-        Hardware, on_delete=models.PROTECT, null=True, blank=True,
-        related_name='host')
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=0)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=0)
@@ -537,13 +496,17 @@ class Backup(CommonFields):
         return self.next_test_date() < timezone.now().date()
 
     def __str__(self):
-        return '{} ({})'.format(self.system.name.split(
-            '.')[0], self.get_status_display())
+        if self.computer:
+            return '{} ({})'.format(self.computer.hostname.split(
+                '.')[0], self.get_status_display())
+        else:
+            return self.get_status_display()
 
     class Meta:
-        ordering = ('system__name',)
+        ordering = ('computer__hostname',)
 
 
+@python_2_unicode_compatible
 class BusinessService(models.Model):
     """Represents the Department's core business services.
     """
@@ -559,6 +522,7 @@ class BusinessService(models.Model):
         return 'Service {}: {}'.format(self.number, self.name)
 
 
+@python_2_unicode_compatible
 class BusinessFunction(models.Model):
     """Represents a function of the Department, undertaken to meet the
     Department's core services. Each function must be linked to 1+
@@ -575,6 +539,7 @@ class BusinessFunction(models.Model):
         return self.name
 
 
+@python_2_unicode_compatible
 class BusinessProcess(models.Model):
     """Represents a business process that the Department undertakes in order
     to fulfil one of the Department's functions.
@@ -594,6 +559,7 @@ class BusinessProcess(models.Model):
         return self.name
 
 
+@python_2_unicode_compatible
 class ProcessITSystemRelationship(models.Model):
     """A model to represent the relationship between a BusinessProcess and an
     ITSystem object.
@@ -611,3 +577,43 @@ class ProcessITSystemRelationship(models.Model):
     def __str__(self):
         return '{} - {} ({})'.format(
             self.itsystem.name, self.process.name, self.get_importance_display())
+
+
+@python_2_unicode_compatible
+class ITSystemEvent(models.Model):
+    """Represents information about an event that affects one or more IT Systems
+    or networked locations.
+    """
+    EVENT_TYPE_CHOICES = (
+        (1, 'Incident'),
+        (2, 'Maintenance'),
+        (3, 'Information'),
+    )
+    event_type = models.PositiveSmallIntegerField(choices=EVENT_TYPE_CHOICES)
+    description = models.TextField()
+    planned = models.BooleanField(default=False, help_text='Was this event planned?')
+    start = models.DateTimeField(help_text='Event start (date & time)')
+    duration = models.DurationField(null=True, blank=True, help_text='Optional: duration of the event (hh:mm:ss).')
+    end = models.DateTimeField(null=True, blank=True, help_text='Optional: event end (date & time)')
+    current = models.BooleanField(default=True, editable=False)
+    it_systems = models.ManyToManyField(ITSystem, blank=True, help_text='IT System(s) affect by this event')
+    locations = models.ManyToManyField(Location, blank=True, help_text='Location(s) affect by this event')
+    # TODO: incident type (optional: P1, P2, P3, P4)
+    # TODO: FD ticket (optional)
+
+    class Meta:
+        verbose_name = 'IT System event'
+
+    def __str__(self):
+        return '{}: {}'.format(self.get_event_type_display(), smart_truncate(self.description))
+
+    def save(self, *args, **kwargs):
+        # On save, set the `current` boolean field value correctly for the this instant.
+        # An event needs either an end datestamp and/or a duration to set `current`.
+        if self.end and self.end < timezone.now():
+            self.current = False
+        elif self.duration and (self.start + self.duration) < timezone.now():
+            self.current = False
+        else:
+            self.current = True
+        super(ITSystemEvent, self).save(*args, **kwargs)

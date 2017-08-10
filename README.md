@@ -1,3 +1,6 @@
+[![Build
+status](https://travis-ci.org/parksandwildlife/oim-cms.svg?branch=master)](https://travis-ci.org/parksandwildlife/oim-cms/builds) [![Coverage Status](https://coveralls.io/repos/github/parksandwildlife/oim-cms/badge.svg?branch=master)](https://coveralls.io/github/parksandwildlife/oim-cms?branch=master)
+
 OIM Extranet
 ============
 
@@ -23,7 +26,6 @@ Development
 This project uses confy to set environment variables (in a `.env` file).
 For local development, minimum required settings are as follows:
 
-    DJANGO_SETTINGS_MODULE="oim_cms.settings"
     DEBUG=True
     DATABASE_URL="postgis://USER:PASSWORD@HOST:PORT/DATABASE_NAME"
     SECRET_KEY="ThisIsASecretKey"
@@ -31,3 +33,5 @@ For local development, minimum required settings are as follows:
     FRESHDESK_ENDPOINT="https://dpaw.freshdesk.com/api/v2"
     FRESHDESK_KEY="SecretAPIKeyValue"
     PDQ_INV_PATH="/path/to/pdq_inventory/mount"
+    AZUREAD_AUTHORITY="https://login.microsoftonline.com/thisisnotarealazureaudauthorityurl"
+    ALLOWED_DOMAINS=".dpaw.wa.gov.au,.dbca.wa.gov.au,.der.wa.gov.au"

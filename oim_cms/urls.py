@@ -9,12 +9,14 @@ from wagtail.wagtailcore import urls as wagtail_urls
 from approvals import urls as approvals_urls
 from catalogue import urls as catalogue_urls
 from core import views
+from knowledge import urls as knowledge_urls
 from oim_cms.api import api_urlpatterns
 
 admin.site.site_header = 'OIM CMS Database Administration'
 
 urlpatterns = [
     url(r'^approvals/', include(approvals_urls)),
+    url(r'^knowledge/', include(knowledge_urls)),
     url(r'^catalogue/', include(catalogue_urls)),
     url(r'^django-admin/', include(admin.site.urls)),
     url(r'^admin/', include(wagtailadmin_urls)),
@@ -25,7 +27,9 @@ urlpatterns = [
     url(r'^logout', views.logout_view, name='logout'),
     url(r'^redirect/', views.redirect, name='redirect'),
     url(r'^auth$', views.auth, name='auth'),
+    url(r'^auth_dual$', views.auth_dual, name='auth_dual'),
     url(r'^auth_ip$', views.auth_ip, name='auth_ip'),
+    url(r'^auth_get$', views.auth_get, name='auth_get'),
     url(r'', include('social.apps.django_app.urls', namespace='social')),
     url(r'', include('django.contrib.auth.urls', namespace='auth')),
     url(r'', include(wagtail_urls)),

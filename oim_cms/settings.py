@@ -1,5 +1,6 @@
 import os
 from confy import env, database, cache
+from dj_database_url import parse
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -7,7 +8,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # Define the following in the environment:
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG', False)
-ALLOWED_HOSTS = [env('ALLOWED_DOMAIN'), ]
+if not DEBUG:
+    ALLOWED_HOSTS = env('ALLOWED_DOMAINS', '').split(',')
+else:
+    ALLOWED_HOSTS = ['*']
 INTERNAL_IPS = ['127.0.0.1', '::1']
 
 # Base URL to use when referring to full URLs within the Wagtail admin backend
@@ -33,6 +37,7 @@ INSTALLED_APPS = (
     'django_extensions',
     'reversion',
     'mptt',
+    'django_mptt_admin',
     'leaflet',
 
     'wagtail.wagtailcore',
@@ -46,6 +51,8 @@ INSTALLED_APPS = (
     'wagtail.wagtailsearch',
     'wagtail.wagtailredirects',
     'wagtail.wagtailforms',
+    'wagtail.contrib.postgres_search',
+    'wagtailtinymce',
     'django_uwsgi',
 
     'social.apps.django_app.default',
@@ -58,50 +65,17 @@ INSTALLED_APPS = (
     'mudmap',
     'catalogue',
     'approvals',
+    'knowledge',
 )
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'social.backends.azuread.AzureADOAuth2',
 )
-# LDAP settings (required to check auth as an alternative to SSO).
-import ldap
-from django_auth_ldap.config import LDAPSearch, LDAPSearchUnion, GroupOfNamesType
-LDAP_SERVER_URI = env('LDAP_SERVER_URI', 'ldap://')
-LDAP_ACCESS_DN = env('LDAP_ACCESS_DN', 'dn')
-LDAP_ACCESS_PASSWORD = env('LDAP_ACCESS_PASSWORD', 'pass')
-LDAP_SEARCH_SCOPE = env('LDAP_SEARCH_SCOPE', 'scope')
-AUTH_LDAP_SERVER_URI = LDAP_SERVER_URI
-AUTH_LDAP_BIND_DN = LDAP_ACCESS_DN
-AUTH_LDAP_BIND_PASSWORD = LDAP_ACCESS_PASSWORD
-AUTH_LDAP_ALWAYS_UPDATE_USER = False
-AUTH_LDAP_AUTHORIZE_ALL_USERS = True
-AUTH_LDAP_FIND_GROUP_PERMS = False
-AUTH_LDAP_MIRROR_GROUPS = False
-AUTH_LDAP_CACHE_GROUPS = False
-AUTH_LDAP_GROUP_CACHE_TIMEOUT = 300
-AUTH_LDAP_USER_SEARCH = LDAPSearchUnion(
-    LDAPSearch('{}'.format(LDAP_SEARCH_SCOPE),
-               ldap.SCOPE_SUBTREE,
-               '(sAMAccountName=%(user)s)'),
-    LDAPSearch('{}'.format(LDAP_SEARCH_SCOPE),
-               ldap.SCOPE_SUBTREE,
-               '(mail=%(user)s)'),
-)
-AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-    '{}'.format(LDAP_SEARCH_SCOPE),
-    ldap.SCOPE_SUBTREE, '(objectClass=group)'
-)
-AUTH_LDAP_GLOBAL_OPTIONS = {
-    ldap.OPT_X_TLS_REQUIRE_CERT: False,
-    ldap.OPT_REFERRALS: False,
-}
-AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr='cn')
-AUTH_LDAP_USER_ATTR_MAP = {
-    'first_name': 'givenName',
-    'last_name': 'sn',
-    'email': 'mail',
-}
+
+# Azure AD settings
+AZUREAD_AUTHORITY = env('AZUREAD_AUTHORITY', 'https://login.microsoftonline.com')
+AZUREAD_RESOURCE = env('AZUREAD_RESOURCE', '00000002-0000-0000-c000-000000000000')
 SOCIAL_AUTH_AZUREAD_OAUTH2_KEY = env('AZUREAD_CLIENTID', 'clientid')
 SOCIAL_AUTH_AZUREAD_OAUTH2_SECRET = env('AZUREAD_SECRETKEY', 'secret')
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
@@ -141,16 +115,27 @@ MIDDLEWARE_CLASSES = (
     'wagtail.wagtailredirects.middleware.RedirectMiddleware',
     'dpaw_utils.middleware.SSOLoginMiddleware',
 )
-
 ROOT_URLCONF = 'oim_cms.urls'
+APPLICATION_VERSION = '1.4.1'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
+
+# Database configuration
 DATABASES = {'default': database.config()}
-APPLICATION_VERSION = '1.1.2'
+# Optional extra database for RCS Assets (read-only):
+if env('DATABASE_URL_RCS', None):
+    INSTALLED_APPS += ('rcs_assets',)
+    DATABASES['rcs_assets'] = parse(env('DATABASE_URL_RCS'))
+    # The Oracle db port needs to be a string :/
+    DATABASES['rcs_assets']['PORT'] = str(DATABASES['rcs_assets']['PORT'])
+    # When running tests, configure the rcs_assets db as a mirror of default.
+    DATABASES['rcs_assets']['TEST'] = {'MIRROR': 'default'}
+    DATABASE_ROUTERS = ['rcs_assets.router.RCSAssetsRouter']
+
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 
 # Internationalization
-LANGUAGE_CODE = 'en-gb'
+LANGUAGE_CODE = 'en-AU'
 TIME_ZONE = 'Australia/Perth'
 USE_I18N = True
 USE_L10N = True
@@ -212,6 +197,7 @@ FRESHDESK_ENDPOINT = env('FRESHDESK_ENDPOINT', None)
 FRESHDESK_AUTH = (env('FRESHDESK_KEY'), 'X')
 POSTGREST_ROLE = env('POSTGREST_ROLE', 'postgrest')
 POSTGREST_BINARY = env('POSTGREST_BINARY', '/usr/local/bin/postgrest')
+API_RESPONSE_CACHE_SECONDS = env('API_RESPONSE_CACHE_SECONDS', None)
 
 # Email settings
 EMAIL_HOST = env('EMAIL_HOST', None)
@@ -223,29 +209,29 @@ else:
     EMAIL_INCREDIBUS_LIST = EMAIL_INCREDIBUS_LIST.split(',')
 
 # Wagtail settings
-
 WAGTAIL_SITE_NAME = "OIM Content Management System"
-
-# Use Elasticsearch as the search backend for extra performance and better search results:
-# http://wagtail.readthedocs.org/en/latest/howto/performance.html#search
-# http://wagtail.readthedocs.org/en/latest/core_components/search/backends.html#elasticsearch-backend
-#
-# WAGTAILSEARCH_BACKENDS = {
-#     'default': {
-#         'BACKEND': 'wagtail.wagtailsearch.backends.elasticsearch.ElasticSearch',
-#         'INDEX': 'oim_cms',
-#     },
-# }
-
-
-# Whether to use face/feature detection to improve image cropping - requires OpenCV
+WAGTAILADMIN_NOTIFICATION_FROM_EMAIL ="oim_cms@dbca.wa.gov.au"
+# Use Postgres as the search backend:
+# http://docs.wagtail.io/en/v1.10.1/reference/contrib/postgres_search.html#postgres-search
+WAGTAILSEARCH_BACKENDS = {
+    'default': {
+        'BACKEND': 'wagtail.contrib.postgres_search.backend',
+        'SEARCH_CONFIG': 'english',
+    },
+}
+# Use face/feature detection to improve image cropping (requires OpenCV)
 WAGTAILIMAGES_FEATURE_DETECTION_ENABLED = False
-
-# enable image usage stats in the admin
+# Enable image usage stats in the admin
 WAGTAIL_USAGE_COUNT_ENABLED = True
-
-# we want a custom search result template
+# We want a custom search result template
 WAGTAILSEARCH_RESULTS_TEMPLATE = 'core/search_results.html'
+WAGTAILADMIN_RICH_TEXT_EDITORS = {
+    'default': {
+        #'WIDGET': 'wagtailtinymce.rich_text.TinyMCERichTextArea'
+        'WIDGET': 'core.rich_text.CustomTinyMCERichTextArea'
+    },
+}
+
 
 # Logging settings
 # Ensure that the logs directory exists:
@@ -272,8 +258,17 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'cms.log'),
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 5
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
         },
+        'ad_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'ad_sync_actions.log'),
+            'formatter': 'verbose',
+            'maxBytes': 1024 * 1024 * 25,
+            'backupCount': 5,
+        }
     },
     'loggers': {
         'django.request': {
@@ -284,6 +279,14 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'INFO'
         },
+        'organisation': {
+            'handlers': ['file'],
+            'level': 'DEBUG'
+        },
+        'ad_sync': {
+            'handlers': ['ad_file'],
+            'level': 'INFO'
+        }
     }
 }
 

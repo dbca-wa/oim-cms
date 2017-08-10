@@ -1,16 +1,19 @@
 from __future__ import unicode_literals, absolute_import
 from babel.dates import format_timedelta
 from django.conf import settings
+from django.conf.urls import url
 import itertools
-import json
 from oim_cms.utils import CSVDjangoResource
+import pytz
 from restless.dj import DjangoResource
+from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
 
-from .models import ITSystem, Hardware, ITSystemDependency
+from .models import ITSystem, ITSystemHardware, ITSystemEvent
 
 
 class ITSystemResource(CSVDjangoResource):
+    VALUES_ARGS = ()
 
     def prepare(self, data):
         """Prepare a custom API response for ITSystemResource objects.
@@ -23,7 +26,16 @@ class ITSystemResource(CSVDjangoResource):
         cost_centre__name = ''
         cost_centre__code = ''
         # Every damn field is nullable!
-        if data.owner:
+        if data.cost_centre:  # Use this field first.
+            cost_centre__name = data.cost_centre.name
+            cost_centre__code = data.cost_centre.code
+            if data.cost_centre.division:
+                cost_centre__division__name = data.cost_centre.division.name
+                if data.cost_centre.division.manager:
+                    cost_centre__division__manager__name = data.cost_centre.division.manager.name
+                    cost_centre__division__manager__email = data.cost_centre.division.manager.email
+                    cost_centre__division__manager__title = data.cost_centre.division.manager.title
+        elif data.owner:  # Use this second.
             if data.owner.cost_centre:
                 cost_centre__name = data.owner.cost_centre.name
                 cost_centre__code = data.owner.cost_centre.code
@@ -71,26 +83,25 @@ class ITSystemResource(CSVDjangoResource):
             'vulnerability_docs': data.vulnerability_docs,
             'workaround': data.workaround,
             'recovery_docs': data.recovery_docs,
-            'bh_support': {'name': data.bh_support.name, 'email': data.bh_support.email, 'telephone': data.bh_support.telephone} if data.bh_support else {},
-            'ah_support': {'name': data.ah_support.name, 'email': data.ah_support.email, 'telephone': data.ah_support.telephone} if data.ah_support else {},
+            'bh_support': {
+                'name': data.bh_support.name,
+                'email': data.bh_support.email,
+                'telephone': data.bh_support.telephone} if data.bh_support else {},
+            'ah_support': {
+                'name': data.ah_support.name,
+                'email': data.ah_support.email,
+                'telephone': data.ah_support.telephone} if data.ah_support else {},
             'availability': data.availability_display or '',
             'status_display': data.status_display or '',
             'criticality': data.criticality_display or '',
             'mtd': format_timedelta(data.mtd),
             'rto': format_timedelta(data.rto),
             'rpo': format_timedelta(data.rpo),
-            'softwares': [{
-                'name': i.name,
-                'url': i.url,
-            } for i in data.softwares.all()],
             'hardwares': [{
-                'host': i.host.name,
+                'computer': i.computer.hostname,
                 'role': i.get_role_display(),
-                'host__location': i.host.location.name if i.host.location else '',
-                'operating_system': i.host.os.name if i.host.os else '',
-                'operating_system__url': i.host.os.url if i.host.os else '',
-                'backup': i.host.backup.get_os_schedule_display() if (hasattr(i, 'host.backup') and i.host.backup) else '',
-                'backup_test_date': i.host.backup.last_tested.isoformat() if (hasattr(i, 'host.backup') and i.host.backup and i.host.backup.last_tested) else '',
+                'computer__location': i.computer.location.name if i.computer.location else '',
+                'operating_system': i.computer.os_name if i.computer.os_name else '',
 
             } for i in data.hardwares.all()],
             'processes': [{
@@ -111,13 +122,17 @@ class ITSystemResource(CSVDjangoResource):
             'dependencies': [{
                 'dependency__system_id': i.dependency.system_id,
                 'dependency__name': i.dependency.name,
-                'criticality': i.get_criticality_display()
+                'criticality': i.get_criticality_display(),
+                'custodian__name': i.dependency.custodian.name if i.dependency.custodian else '',
+                'custodian__email': i.dependency.custodian.email if i.dependency.custodian else '',
             } for i in data.itsystemdependency_set.all()],
             'dependants': [{
                 'dependant__system_id': i.itsystem.system_id,
                 'dependant__name': i.itsystem.name,
-                'criticality': i.get_criticality_display()
-                } for i in ITSystemDependency.objects.filter(dependency=data)],
+                'criticality': i.get_criticality_display(),
+                'custodian__name': i.itsystem.custodian.name if i.itsystem.custodian else '',
+                'custodian__email': i.itsystem.custodian.email if i.itsystem.custodian else '',
+            } for i in data.dependency.all()],
             'usergroups': [{'name': i.name, 'count': i.user_count} for i in data.user_groups.all()],
             'contingency_plan_url': domain + settings.MEDIA_URL + data.contingency_plan.name if data.contingency_plan else '',
             'contingency_plan_status': data.get_contingency_plan_status_display(),
@@ -144,64 +159,114 @@ class ITSystemResource(CSVDjangoResource):
             'unique_evidence': 'Unknown' if data.unique_evidence is None else data.unique_evidence,
             'point_of_truth': 'Unknown' if data.point_of_truth is None else data.point_of_truth,
             'legal_need_to_retain': 'Unknown' if data.legal_need_to_retain is None else data.legal_need_to_retain,
+            'other_projects': data.other_projects,
+            'sla': data.sla,
+            'biller_code': data.biller_code,
+            'platforms': [{'name': i.name, 'category': i.get_category_display()} for i in data.platforms.all()],
+            'oim_internal': data.oim_internal_only,
         }
         return prepped
 
     def list_qs(self):
-        # Only return production apps
-        FILTERS = {"status": 0}
+        # Only return production/production legacy apps by default.
+        FILTERS = {"status__in": [0, 2]}
         if "all" in self.request.GET:
-            del FILTERS["status"]
+            FILTERS.pop("status__in")
         if "system_id" in self.request.GET:
-            del FILTERS["status"]
+            FILTERS.pop("status__in")
             FILTERS["system_id__icontains"] = self.request.GET["system_id"]
         if "name" in self.request.GET:
+            FILTERS.pop("status__in")
             FILTERS["name"] = self.request.GET["name"]
         if "pk" in self.request.GET:
+            FILTERS.pop("status__in")
             FILTERS["pk"] = self.request.GET["pk"]
-        return ITSystem.objects.filter(**FILTERS)
+        return ITSystem.objects.filter(**FILTERS).prefetch_related(
+            'cost_centre', 'cost_centre__division', 'org_unit',
+            'owner', 'owner__cost_centre', 'owner__cost_centre__division',
+            'preferred_contact',
+            'custodian', 'data_custodian', 'bh_support', 'ah_support', 'user_groups',
+            'itsystemdependency_set', 'itsystemdependency_set__dependency',
+            'itsystemdependency_set__dependency__custodian', 'dependency__itsystem',
+            'dependency__itsystem__custodian'
+        )
 
     def list(self):
         return list(self.list_qs())
 
 
-class HardwareResource(DjangoResource):
-    VALUES_ARGS = (
-        "email", "date_updated",
-        "computer__hostname",
-        "local_info",
-        "local_current")
+class ITSystemHardwareResource(CSVDjangoResource):
+    VALUES_ARGS = ()
 
-    def is_authenticated(self):
-        return True
+    def prepare(self, data):
+        # Exclude decommissioned systems from the list of systems returned.
+        it_systems = data.itsystem_set.all().exclude(status=3)
+        return {
+            'hostname': data.computer.hostname,
+            'role': data.get_role_display(),
+            'it_systems': [i.name for i in it_systems],
+        }
 
-    @skip_prepare
     def list(self):
-        FILTERS = {"computer__isnull": False, "local_info__isnull": False}
-        # Only return production apps
-        if "hostname" in self.request.GET:
-            FILTERS["computer__hostname__istartswith"] = self.request.GET[
-                "hostname"]
-        if self.request.GET.get("local_current", "").lower() == "false":
-            FILTERS["local_current"] = False
-        data = list(Hardware.objects.filter(
-            **FILTERS).values(*self.VALUES_ARGS))
-        for row in data:
-            row.update(json.loads(row["local_info"]))
-        return data
+        return ITSystemHardware.objects.all()
+
+
+class ITSystemEventResource(DjangoResource):
+    def __init__(self, *args, **kwargs):
+        super(ITSystemEventResource, self).__init__(*args, **kwargs)
+        self.http_methods.update({
+            'current': {'GET': 'current'}
+        })
+
+    preparer = FieldsPreparer(fields={
+        'id': 'id',
+        'description': 'description',
+        'planned': 'planned',
+        'current': 'current',
+    })
+
+    def prepare(self, data):
+        prepped = super(ITSystemEventResource, self).prepare(data)
+        prepped['event_type'] = data.get_event_type_display()
+        # Output times as the local timezone.
+        tz = pytz.timezone(settings.TIME_ZONE)
+        prepped['start'] = data.start.astimezone(tz)
+        if data.end:
+            prepped['end'] = data.end.astimezone(tz)
+        else:
+            prepped['end'] = None
+        if data.duration:
+            prepped['duration_sec'] = data.duration.seconds
+        else:
+            prepped['duration_sec'] = None
+        if data.it_systems:
+            prepped['it_systems'] = [i.name for i in data.it_systems.all()]
+        else:
+            prepped['it_systems'] = None
+        if data.locations:
+            prepped['locations'] = [i.name for i in data.locations.all()]
+        else:
+            prepped['locations'] = None
+        return prepped
 
     @skip_prepare
-    def create(self):
-        computer = Hardware.objects.get(
-            computer__hostname__istartswith=self.data["hostname"])
-        local_info = json.dumps(self.data)
-        computer.local_info = local_info
-        computer.local_current = self.data.get("local_current", False)
-        computer.save()
-        data = list(
-            Hardware.objects.filter(
-                pk=computer.pk).values(
-                *
-                self.VALUES_ARGS))[0]
-        data.update(json.loads(data["local_info"]))
-        return data
+    def current(self):
+        # Slightly-expensive query: iterate over each 'current' event and call save().
+        # This should automatically expire any events that need to be non-current.
+        for i in ITSystemEvent.objects.filter(current=True):
+            i.save()
+        # Return prepared data.
+        return {'objects': [self.prepare(data) for data in ITSystemEvent.objects.filter(current=True)]}
+
+    def list(self):
+        return ITSystemEvent.objects.all()
+
+    def detail(self, pk):
+        return ITSystemEvent.objects.get(pk=pk)
+
+    @classmethod
+    def urls(self, name_prefix=None):
+        urlpatterns = super(ITSystemEventResource, self).urls(name_prefix=name_prefix)
+        return [
+            url(r'^current/$', self.as_view('current'), name=self.build_url_name('current', name_prefix)),
+        ] + urlpatterns

@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from django.conf.urls import url
 from django.contrib.admin import register, ModelAdmin
 from django.http import HttpResponse
-from StringIO import StringIO
+from six import BytesIO
 import unicodecsv
 
 from .models import Computer, Mobile, EC2Instance, FreshdeskTicket
@@ -10,8 +10,7 @@ from .models import Computer, Mobile, EC2Instance, FreshdeskTicket
 
 @register(Computer)
 class ComputerAdmin(ModelAdmin):
-    list_display = ['sam_account_name',
-                    'hostname', 'managed_by', 'probable_owner']
+    list_display = ['hostname', 'managed_by', 'probable_owner']
     search_fields = ['sam_account_name', 'hostname']
 
 
@@ -88,8 +87,8 @@ class FreshdeskTicketAdmin(ModelAdmin):
         # Define fields to output.
         fields = ['month', 'category', 'subcategory', 'ticket_count']
 
-        # Write data for ITSystemHardware objects to the CSV.
-        stream = StringIO()
+        # Write data for FreshdeskTicket objects to the CSV.
+        stream = BytesIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
 

@@ -13,7 +13,6 @@ from sqlalchemy import inspection,log
 from sqlalchemy import util as sqlalchemy_util
 from sqlalchemy.sql import util as sql_util
 from sqlalchemy.orm.mapper import Mapper as BaseMapper
-from pycsw.server import Csw as PyCsw
 from itertools import chain
 from .models import Application
 
@@ -21,9 +20,11 @@ from .pycswsettings import build_pycsw_settings
 
 import logging
 import traceback
-from pycsw import util
 from lxml import etree
-from pycsw.server import write_boundingbox
+from pycsw.core import util
+from pycsw.ogc.csw.csw3 import write_boundingbox
+from pycsw.server import Csw as PyCsw
+
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +217,7 @@ class CswEndpoint(View):
         """
 
         kvp = dict()
-        for k, v in query_dict.iteritems():
+        for k, v in query_dict.items():
             kvp[k.lower()] = v
         return kvp
 
