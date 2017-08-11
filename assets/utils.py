@@ -192,3 +192,46 @@ def import_csv(fileobj):
         assets_created.append(asset)
 
     return assets_created
+
+
+def humanise_age(d):
+    """Passed in a timedelta objects, this funciton returns a nice age like "25 days" or
+    "3 months", with appropriate resolution.
+    """
+    if d.days >= 730:
+        years = d.days/365
+        months = (d.days - years*365)/30
+        if months > 0:
+            return "%d years, %d months" % (years, months)
+        else:
+            return "%d years" % (years)
+    elif d.days >= 365:
+        months = (d.days - 365)/30
+        if months > 0:
+            return "1 year, %d months" % (months)
+        else:
+            return "1 year"
+    elif d.days >= 60:
+        return "%d months" % (d.days/30)
+    elif d.days >= 30:
+        return "1 month"
+    elif d.days >= 2:
+        return "%d days" % (d.days)
+    elif d.days == 1:
+        return "1 day"
+    elif d.seconds >= 7200:
+        return "%d hours" % (d.seconds/3600)
+    elif d.seconds >= 3600:
+        return "1 hour"
+    elif d.seconds >= 120:
+        return "%d minutes" % (d.seconds/60)
+    elif d.seconds >= 60:
+        return "1 minute"
+    elif d.seconds >= 2:
+        return "%s seconds" % (d.seconds)
+    elif d.seconds == 0:
+        # Things exactly the same are probably date objects, so max. 1-day
+        # resolution
+        return "1 day"
+    else:
+        return "1 second"
