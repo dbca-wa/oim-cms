@@ -1,14 +1,17 @@
 from __future__ import unicode_literals, absolute_import
+from datetime import date, timedelta
 from django.conf.urls import url
 from django.contrib.admin import register
 from django.core.urlresolvers import reverse
 from django.forms import Form, FileField
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
+from django.utils.safestring import mark_safe
 from reversion.admin import VersionAdmin
 from six import StringIO
 
 from .models import Vendor, Invoice, SoftwareLicense, HardwareModel, HardwareAsset
+from .utils import humanise_age
 
 
 @register(Vendor)
@@ -66,16 +69,34 @@ class HardwareAssetAdmin(VersionAdmin):
         }),
     )
     list_display = (
-        'asset_tag', 'vendor', 'hardware_model', 'serial', 'status',
-        'location', 'assigned_user')
+        'asset_tag', 'vendor', 'model_type', 'hardware_model', 'serial', 'status',
+        'age', 'location', 'assigned_user')
     list_filter = ('status', 'vendor')
-    raw_id_fields = ('assigned_user',)
+    raw_id_fields = (
+        'vendor', 'hardware_model', 'invoice', 'assigned_user', 'location', 'cost_centre')
     search_fields = (
         'asset_tag', 'vendor__name', 'hardware_model__model_type',
         'hardware_model__model_no')
     readonly_fields = ['extra_data_ro']
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/assets/hardwareasset/change_list.html'
+
+    def model_type(self, obj):
+        return obj.hardware_model.model_type
+
+    def age(self, obj):
+        d = date.today() - obj.date_purchased
+        max_age = timedelta(days=obj.hardware_model.lifecycle * 365)
+
+        if d > max_age:
+            if obj.hardware_model.lifecycle == 1:
+                y = "year"
+            else:
+                y = "years"
+            return mark_safe('<font color="#FF0000"><b>{}</b></font> (max {} {})'.format(
+                humanise_age(d), obj.hardware_model.lifecycle, y))
+        else:
+            return humanise_age(d)
 
     def extra_data_ro(self, obj):
         return obj.get_extra_data_html()

@@ -2,6 +2,7 @@ from __future__ import unicode_literals, absolute_import, print_function
 
 from datetime import datetime
 import json
+from organisation.models import DepartmentUser, Location
 from .models import Vendor, HardwareModel, Invoice, HardwareAsset
 
 
@@ -96,6 +97,50 @@ def import_assets():
         if str(k) in assets_history:
             hwasset.extra_data['revision_history'] = assets_history[str(k)]
         hwasset.save()
+
+
+def asset_assigned_user():
+    """Run after importing legacy assets - tries to match assigned user to DepartmentUser.
+    """
+    for i in HardwareAsset.objects.all():
+        if i.extra_data and 'assigned_user' in i.extra_data and i.extra_data['assigned_user']:
+            user = i.extra_data['assigned_user']
+            if DepartmentUser.objects.filter(username__iexact=user).exists():
+                i.assigned_user = DepartmentUser.objects.get(username__iexact=user)
+                i.save()
+            elif DepartmentUser.objects.filter(name__iexact=user).exists():
+                i.assigned_user = DepartmentUser.objects.get(name__iexact=user)
+                i.save()
+
+
+def asset_location():
+    """Run after importing legacy assets - tries to match location to Location.
+    """
+    kens = Location.objects.get(name='Kensington (State Headquarters)')
+    burvill = Location.objects.get(name='Kensington (Burvill Court)')
+
+    for i in HardwareAsset.objects.all():
+        if i.extra_data and 'location' in i.extra_data:
+            loc = i.extra_data['location'].split(', ')
+            d = {}
+
+            try:
+                for j in loc:
+                    k, v = j.split(': ')
+                    d[k.lower()] = v
+                locations = Location.objects.filter(name__istartswith=d['site'])
+                if locations.count() > 1:
+                    # Kensington or Burvill Court
+                    if 'Burvill' in d['block'] or d['block'] == 'Radio Communications Section':
+                        i.location = burvill
+                    else:
+                        i.location = kens
+                    i.save()
+                elif locations.count() == 1:
+                    i.location = locations.first()
+                    i.save()
+            except:
+                pass
 
 
 def export_asset_revisions():
