@@ -194,6 +194,7 @@ class DepartmentUserAdmin(VersionAdmin):
 class LocationAdmin(LeafletGeoAdmin):
     list_display = ('name', 'address', 'phone', 'fax', 'email', 'manager')
     list_filter = ('active',)
+    raw_id_fields = ('manager',)
     search_fields = ('name', 'address', 'phone', 'fax', 'email', 'manager__email')
     settings_overrides = {
         'DEFAULT_CENTER': (-31.0, 115.0),

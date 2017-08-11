@@ -72,7 +72,8 @@ class HardwareAssetAdmin(VersionAdmin):
         'asset_tag', 'vendor', 'model_type', 'hardware_model', 'serial', 'status',
         'age', 'location', 'assigned_user')
     list_filter = ('status', 'vendor')
-    raw_id_fields = ('assigned_user',)
+    raw_id_fields = (
+        'vendor', 'hardware_model', 'invoice', 'assigned_user', 'location', 'cost_centre')
     search_fields = (
         'asset_tag', 'vendor__name', 'hardware_model__model_type',
         'hardware_model__model_no')
