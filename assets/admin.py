@@ -10,7 +10,7 @@ from django.utils.safestring import mark_safe
 from reversion.admin import VersionAdmin
 from six import StringIO
 
-from .models import Vendor, Invoice, SoftwareLicense, HardwareModel, HardwareAsset
+from .models import Vendor, Invoice, HardwareModel, HardwareAsset, SoftwareAsset
 from .utils import humanise_age
 
 
@@ -18,11 +18,8 @@ from .utils import humanise_age
 class VendorAdmin(VersionAdmin):
     list_display = (
         'name', 'account_rep', 'contact_email', 'contact_phone', 'website',
-        'software_licences', 'hardware_assets')
+        'hardware_assets')
     search_fields = ('name', 'details', 'account_rep', 'website')
-
-    def software_licences(self, obj):
-        return obj.softwarelicense_set.count()
 
     def hardware_assets(self, obj):
         return obj.hardwareasset_set.count()
@@ -37,14 +34,6 @@ class InvoiceAdmin(VersionAdmin):
         'vendor__name', 'vendor_ref', 'job_number', 'etj_number', 'notes')
 
 
-@register(SoftwareLicense)
-class SoftwareLicenseAdmin(VersionAdmin):
-    list_display = ('name', 'vendor', 'oss')
-    list_filter = ('oss', 'vendor')
-    search_fields = ('name', 'url', 'support', 'support_url', 'vendor__name')
-    raw_id_fields = ('org_unit', 'assigned_user')
-
-
 @register(HardwareModel)
 class HardwareModelAdmin(VersionAdmin):
     list_display = ('vendor', 'model_type', 'model_no')
@@ -55,14 +44,15 @@ class HardwareModelAdmin(VersionAdmin):
 class HardwareAssetAdmin(VersionAdmin):
     date_hierarchy = 'date_purchased'
     fieldsets = (
-        ('Asset details', {
+        ('Hardware asset details', {
             'fields': (
-                'asset_tag', 'finance_asset_tag', 'serial', 'vendor',
-                'hardware_model', 'status', 'date_purchased', 'invoice',
-                'purchased_value', 'notes')
+                'asset_tag', 'finance_asset_tag', 'serial', 'vendor', 'hardware_model',
+                'status', 'notes')
         }),
         ('Location & ownership details', {
-            'fields': ('assigned_user', 'location', 'cost_centre')
+            'fields': (
+                'assigned_user', 'location', 'cost_centre', 'date_purchased', 'invoice',
+                'purchased_value')
         }),
         ('Extra data (history)', {
             'fields': ('extra_data_ro',)
@@ -191,3 +181,25 @@ class HardwareAssetAdmin(VersionAdmin):
         context['record_count'] = len(assets_created)
         return TemplateResponse(
             request, 'admin/hardwareasset_import_complete.html', context)
+
+
+@register(SoftwareAsset)
+class SoftwareAssetAdmin(VersionAdmin):
+    date_hierarchy = 'date_purchased'
+    fieldsets = (
+        ('Software asset details', {
+            'fields': (
+                'name', 'url', 'vendor', 'publisher', 'support', 'support_expiry',
+                'purchased_value', 'notes')
+        }),
+        ('License details', {
+            'fields': ('license', 'license_details', 'license_count')
+        }),
+        ('Asset ownership details', {
+            'fields': ('cost_centre', 'date_purchased', 'invoice')
+        }),
+    )
+    list_display = ('name', 'vendor', 'license')
+    list_filter = ('license',)
+    raw_id_fields = ('invoice', 'org_unit', 'cost_centre')
+    search_fields = ('name', 'vendor__name')
