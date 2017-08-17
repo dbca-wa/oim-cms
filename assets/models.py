@@ -31,13 +31,13 @@ class Vendor(models.Model):
 
 @python_2_unicode_compatible
 class Invoice(CommonFields):
-    vendor = models.ForeignKey(Vendor, on_delete=models.PROTECT)
+    vendor = models.ForeignKey(Vendor, null=True, blank=True, on_delete=models.PROTECT)
     vendor_ref = models.CharField(
         max_length=50, null=True, blank=True,
         help_text="The vendor's reference or invoice number for this order.")
     job_number = models.CharField(
         max_length=50, null=True, blank=True,
-        help_text='The P&W job number relating to this order.')
+        help_text="The department's job number relating to this order.")
     date = models.DateField(
         blank=True, null=True, help_text='The date shown on the invoice.')
     etj_number = models.CharField(
@@ -62,7 +62,8 @@ class Invoice(CommonFields):
 class Asset(CommonFields):
     """Abstract model class to represent fields common to all asset types.
     """
-    vendor = models.ForeignKey(Vendor, on_delete=models.PROTECT)
+    vendor = models.ForeignKey(
+        Vendor, on_delete=models.PROTECT, help_text='Vendor/reseller from whom this asset was purchased.')
     date_purchased = models.DateField(null=True, blank=True)
     invoice = models.ForeignKey(
         Invoice, on_delete=models.PROTECT, blank=True, null=True)
@@ -73,36 +74,6 @@ class Asset(CommonFields):
 
     class Meta:
         abstract = True
-
-
-@python_2_unicode_compatible
-class SoftwareLicense(CommonFields):
-    """Represents a software licensing arrangement. A licence for software may
-    be obtained from a separate vendor than the one that creates the software
-    (e.g. a supplier of COTS software).
-    """
-    name = models.CharField(max_length=256, unique=True)
-    url = models.URLField(max_length=2000, null=True, blank=True)
-    support = models.TextField(
-        blank=True, help_text='Support timeframe or scope')
-    support_url = models.URLField(max_length=2000, null=True, blank=True)
-    oss = models.NullBooleanField(
-        default=None, help_text='Open-source/free software license?')
-    assigned_user = models.ForeignKey(
-        DepartmentUser, on_delete=models.PROTECT, null=True, blank=True)
-    vendor = models.ForeignKey(
-        Vendor, on_delete=models.PROTECT, null=True, blank=True)
-    used_licenses = models.PositiveSmallIntegerField(default=0, editable=False)
-    available_licenses = models.PositiveSmallIntegerField(
-        default=0, null=True, blank=True)
-    license_details = models.TextField(
-        blank=True, help_text='Direct license keys or details')
-
-    class Meta:
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
 
 
 @python_2_unicode_compatible
@@ -194,11 +165,12 @@ class HardwareAsset(Asset):
         ('Deployed', 'Deployed'),
         ('Disposed', 'Disposed'),
     )
-    asset_tag = models.CharField(max_length=10, unique=True)
+    asset_tag = models.CharField(max_length=10, unique=True, help_text='OIM asset tag number.')
     finance_asset_tag = models.CharField(
         max_length=10, null=True, blank=True,
-        help_text='The Finance Services Branch asset number for (leave blank if unsure).')
-    hardware_model = models.ForeignKey(HardwareModel, on_delete=models.PROTECT)
+        help_text='The Finance Services Branch asset number for (leave blank if unknown).')
+    hardware_model = models.ForeignKey(
+        HardwareModel, on_delete=models.PROTECT, help_text="The manufacturer's hardware model.")
     status = models.CharField(
         max_length=50, choices=STATUS_CHOICES, default='In storage')
     serial = models.CharField(
@@ -218,3 +190,34 @@ class HardwareAsset(Asset):
         if not self.extra_data:
             return mark_safe('')
         return mark_safe(json2html.convert(json=self.extra_data))
+
+
+@python_2_unicode_compatible
+class SoftwareAsset(Asset):
+    """Represents a purchased, proprietary software asset (licence or subscription).
+    Does not include FOSS or other free/non-purchased software.
+    """
+    LICENSE_CHOICES = (
+        (0, 'License/perpetual'),
+        (1, 'Subscription/SaaS'),
+    )
+    name = models.CharField(max_length=512, unique=True)
+    publisher = models.ForeignKey(
+        Vendor, null=True, blank=True, on_delete=models.PROTECT, related_name='publisher',
+        help_text='The publisher of this software (may differ from the vendor/reseller).')
+    url = models.URLField(max_length=2000, verbose_name='URL', null=True, blank=True)
+    support = models.TextField(blank=True, help_text='Description of the scope of vendor support.')
+    support_expiry = models.DateField(null=True, blank=True, help_text='Expiry date of vendor support (if applicable).')
+    license = models.PositiveSmallIntegerField(
+        choices=LICENSE_CHOICES, null=True, blank=True,
+        help_text='The license type/arrangement for this software asset')
+    license_details = models.TextField(
+        blank=True, help_text='Description of license arrangement (custodian of license key/s, etc.)')
+    license_count = models.PositiveSmallIntegerField(
+        default=1, null=True, blank=True,
+        help_text='The number of licenses, seats or subscriptions provided with this software asset.')
+    installations = models.ManyToManyField(
+        Computer, blank=True, help_text='Department computers on which this software is physically installed.')
+
+    def __str__(self):
+        return self.name
