@@ -54,7 +54,7 @@ class Invoice(CommonFields):
         if self.vendor_ref and self.total_value:
             return '{} {} - {:.2f}'.format(self.vendor.name, self.vendor_ref, self.total_value)
         elif self.job_number:
-            return '{} - {:.2f}'.format(self.vendor.name, self.job_number)
+            return '{} - {}'.format(self.vendor.name, self.job_number)
         else:
             return self.vendor.name
 
