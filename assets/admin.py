@@ -52,7 +52,7 @@ class HardwareAssetAdmin(VersionAdmin):
         }),
         ('Location & ownership details', {
             'fields': (
-                'assigned_user', 'location', 'cost_centre', 'date_purchased', 'invoice',
+                'cost_centre', 'location', 'assigned_user', 'date_purchased', 'invoice',
                 'purchased_value')
         }),
         ('Extra data (history)', {

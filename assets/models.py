@@ -45,7 +45,7 @@ class Invoice(CommonFields):
     total_value = models.DecimalField(
         max_digits=20, decimal_places=2, blank=True, null=True,
         help_text='The total value of the invoice (excluding GST).')
-    notes = models.TextField(blank=True)
+    notes = models.TextField(null=True, blank=True)
 
     class Meta:
         ordering = ('-job_number',)
@@ -72,7 +72,7 @@ class Asset(CommonFields):
     purchased_value = models.DecimalField(
         max_digits=20, decimal_places=2, blank=True, null=True,
         help_text='The amount paid for this asset, inclusive of any upgrades (excluding GST).')
-    notes = models.TextField(blank=True)
+    notes = models.TextField(null=True, blank=True)
 
     class Meta:
         abstract = True
@@ -142,14 +142,21 @@ class HardwareModel(models.Model):
         ('Other', 'Other'),
     )
 
-    model_type = models.CharField(max_length=50, choices=TYPE_CHOICES)
-    vendor = models.ForeignKey(Vendor, on_delete=models.PROTECT)
+    model_type = models.CharField(
+        max_length=50, choices=TYPE_CHOICES, help_text='The broad category of this hardware model.')
+    vendor = models.ForeignKey(
+        Vendor, on_delete=models.PROTECT, verbose_name='manufacturer',
+        help_text='The manufacturer of this hardware model (e.g. Dell, Cisco, Apple).')
     model_no = models.CharField(
-        max_length=50,
-        help_text="The short model number (eg. '7945G' for a Cisco 7956G phone). Do not enter the class (eg. '7900 series') or the product code (eg. 'WS-7945G=')")
+        max_length=50, verbose_name='model number',
+        help_text='''The short model number (eg. '7945G' for a Cisco 7956G phone).
+            Do not enter the class (eg. '7900 series') or the product code (eg. 'WS-7945G=')''')
     lifecycle = models.IntegerField(
-        help_text="Enter in years how long we should keep items of this model before they get decomissioned. Desktops should generally be three years, servers and networking equipment five years.")
-    notes = models.TextField(blank=True)
+        verbose_name='lifecycle (years)',
+        help_text='''Enter in years how long we should keep items of this model before
+            they get decomissioned. Desktops should generally be three years, servers and
+            networking equipment five years.''')
+    notes = models.TextField(null=True, blank=True)
 
     class Meta:
         ordering = ('vendor', 'model_no')
@@ -208,13 +215,16 @@ class SoftwareAsset(Asset):
         Vendor, null=True, blank=True, on_delete=models.PROTECT, related_name='publisher',
         help_text='The publisher of this software (may differ from the vendor/reseller).')
     url = models.URLField(max_length=2000, verbose_name='URL', null=True, blank=True)
-    support = models.TextField(blank=True, help_text='Description of the scope of vendor support.')
-    support_expiry = models.DateField(null=True, blank=True, help_text='Expiry date of vendor support (if applicable).')
+    support = models.TextField(
+        null=True, blank=True, help_text='Description of the scope of vendor support.')
+    support_expiry = models.DateField(
+        null=True, blank=True, help_text='Expiry date of vendor support (if applicable).')
     license = models.PositiveSmallIntegerField(
         choices=LICENSE_CHOICES, null=True, blank=True,
         help_text='The license type/arrangement for this software asset')
     license_details = models.TextField(
-        blank=True, help_text='Description of license arrangement (custodian of license key/s, etc.)')
+        null=True, blank=True,
+        help_text='Description of license arrangement (custodian of license key/s, etc.)')
     license_count = models.PositiveSmallIntegerField(
         default=1, null=True, blank=True,
         help_text='The number of licenses, seats or subscriptions provided with this software asset.')
