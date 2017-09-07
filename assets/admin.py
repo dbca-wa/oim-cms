@@ -76,6 +76,8 @@ class HardwareAssetAdmin(VersionAdmin):
         return obj.hardware_model.model_type
 
     def age(self, obj):
+        if not obj.date_purchased:
+            return ''
         d = date.today() - obj.date_purchased
         max_age = timedelta(days=obj.hardware_model.lifecycle * 365)
 
