@@ -1,14 +1,15 @@
 from __future__ import unicode_literals, absolute_import
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from django.conf.urls import url
 from django.contrib.admin import register
 from django.core.urlresolvers import reverse
 from django.forms import Form, FileField
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.utils.safestring import mark_safe
 from reversion.admin import VersionAdmin
 from six import StringIO
+import unicodecsv as csv
 
 from .models import Vendor, Invoice, HardwareModel, HardwareAsset, SoftwareAsset
 from .utils import humanise_age
@@ -75,6 +76,8 @@ class HardwareAssetAdmin(VersionAdmin):
         return obj.hardware_model.model_type
 
     def age(self, obj):
+        if not obj.date_purchased:
+            return ''
         d = date.today() - obj.date_purchased
         max_age = timedelta(days=obj.hardware_model.lifecycle * 365)
 
@@ -96,15 +99,33 @@ class HardwareAssetAdmin(VersionAdmin):
         urls = super(HardwareAssetAdmin, self).get_urls()
         extra_urls = [
             url(
-                r'^import/$',
-                self.admin_site.admin_view(self.asset_import),
+                r'^import/$', self.admin_site.admin_view(self.asset_import),
                 name='asset_import'),
             url(
-                r'^import/confirm/$',
-                self.admin_site.admin_view(self.asset_import_confirm),
+                r'^import/confirm/$', self.admin_site.admin_view(self.asset_import_confirm),
                 name='asset_import_confirm'),
+            url(r'^export/$', self.hardwareasset_export, name='hardwareasset_export'),
         ]
         return extra_urls + urls
+
+    def hardwareasset_export(self, request):
+        """Export all HardwareAssets to a CSV.
+        """
+        f = StringIO()
+        writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL, encoding='utf-8')
+        writer.writerow([
+            'ASSET TAG', 'VENDOR', 'MODEL TYPE', 'HARDWARE MODEL', 'SERIAL', 'STATUS',
+            'DATE PURCHASED', 'LOCATION', 'ASSIGNED USER'])
+        for i in HardwareAsset.objects.all():
+            writer.writerow([
+                i.asset_tag, i.vendor, i.hardware_model.get_model_type_display(),
+                i.hardware_model, i.serial, i.get_status_display(),
+                datetime.strftime(i.date_purchased, '%d/%b/%Y') if i.date_purchased else '',
+                i.location if i.location else '', i.assigned_user if i.assigned_user else''])
+
+        response = HttpResponse(f.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=hardwareasset_export.csv'
+        return response
 
     class AssetImportForm(Form):
         assets_csv = FileField()
