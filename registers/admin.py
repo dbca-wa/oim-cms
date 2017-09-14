@@ -204,7 +204,7 @@ class ITSystemAdmin(VersionAdmin):
 class ITSystemDependencyAdmin(VersionAdmin):
     list_display = ('itsystem', 'dependency', 'criticality')
     list_filter = ('criticality',)
-    search_fields = ('itsystem__name', 'dependency__name')
+    search_fields = ('itsystem__name', 'dependency__name', 'description')
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystemdependency/change_list.html'
 
@@ -239,7 +239,7 @@ class ITSystemDependencyAdmin(VersionAdmin):
         """
         fields = [
             'IT System', 'System status', 'Dependency', 'Dependency status',
-            'Criticality']
+            'Criticality', 'Description']
         # Write data for ITSystemHardware objects to the CSV.
         stream = StringIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
@@ -248,7 +248,7 @@ class ITSystemDependencyAdmin(VersionAdmin):
             wr.writerow([
                 i.itsystem.name, i.itsystem.get_status_display(),
                 i.dependency.name, i.dependency.get_status_display(),
-                i.get_criticality_display()])
+                i.get_criticality_display(), i.description])
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=itsystemdependency_all.csv'
