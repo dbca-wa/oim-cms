@@ -42,32 +42,32 @@ class CommonFields(models.Model):
 class Computer(CommonFields):
     """Represents a non-mobile computing device. Maps to an object managed by Active Directory.
     """
-    sam_account_name = models.CharField(max_length=32, unique=True, null=True)
     hostname = models.CharField(max_length=2048)
+    sam_account_name = models.CharField(
+        max_length=32, unique=True, null=True, blank=True, verbose_name='sAMAccountName')
     domain_bound = models.BooleanField(default=False)
-    ad_guid = models.CharField(max_length=48, null=True, unique=True)
-    ad_dn = models.CharField(max_length=512, null=True, unique=True)
+    ad_guid = models.CharField(
+        max_length=48, null=True, blank=True, unique=True, verbose_name='AD GUID')
+    ad_dn = models.CharField(
+        max_length=512, null=True, blank=True, unique=True, verbose_name='AD distinguished name')
     pdq_id = models.IntegerField(null=True, blank=True, unique=True)
-    sophos_id = models.CharField(
-        max_length=64, unique=True, null=True, blank=True)
-    asset_id = models.CharField(
-        max_length=64, null=True, blank=True, help_text='OIM Asset ID')
+    sophos_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    asset_id = models.CharField(max_length=64, null=True, blank=True, help_text='OIM Asset ID')
     finance_asset_id = models.CharField(
         max_length=64, null=True, blank=True, help_text='Finance asset ID')
-    manufacturer = models.CharField(max_length=128)
-    model = models.CharField(max_length=128)
-    chassis = models.CharField(max_length=128)
-    serial_number = models.CharField(max_length=128)
-    os_name = models.CharField(max_length=128, blank=True)
-    os_version = models.CharField(max_length=128)
-    os_service_pack = models.CharField(max_length=128)
-    os_arch = models.CharField(max_length=128)
-    cpu = models.CharField(max_length=128)
-    cpu_count = models.PositiveSmallIntegerField(default=0)
-    cpu_cores = models.PositiveSmallIntegerField(default=0)
-    memory = models.BigIntegerField(default=0)
-    last_ad_login_username = models.CharField(
-        max_length=256, null=True, blank=True)
+    manufacturer = models.CharField(max_length=128, null=True, blank=True)
+    model = models.CharField(max_length=128, null=True, blank=True)
+    chassis = models.CharField(max_length=128, null=True, blank=True)
+    serial_number = models.CharField(max_length=128, null=True, blank=True)
+    os_name = models.CharField(max_length=128, null=True, blank=True)
+    os_version = models.CharField(max_length=128, null=True, blank=True)
+    os_service_pack = models.CharField(max_length=128, null=True, blank=True)
+    os_arch = models.CharField(max_length=128, null=True, blank=True)
+    cpu = models.CharField(max_length=128, null=True, blank=True)
+    cpu_count = models.PositiveSmallIntegerField(default=0, null=True, blank=True)
+    cpu_cores = models.PositiveSmallIntegerField(default=0, null=True, blank=True)
+    memory = models.BigIntegerField(default=0, null=True, blank=True)
+    last_ad_login_username = models.CharField(max_length=256, null=True, blank=True)
     last_ad_login_date = models.DateField(null=True, blank=True)
     probable_owner = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, blank=True, null=True,
@@ -88,6 +88,9 @@ class Computer(CommonFields):
     location = models.ForeignKey(
         Location, on_delete=models.PROTECT, null=True, blank=True,
         help_text='Physical location')
+    hardware_asset = models.ForeignKey(
+        'assets.HardwareAsset', on_delete=models.PROTECT, null=True, blank=True,
+        help_text='OIM hardware asset register.')
 
     def __str__(self):
         return self.hostname

@@ -10,7 +10,28 @@ from .models import Computer, Mobile, EC2Instance, FreshdeskTicket
 
 @register(Computer)
 class ComputerAdmin(ModelAdmin):
+    fieldsets = (
+        ('Details', {
+            'fields': (
+                'hostname', 'sam_account_name', 'domain_bound', 'ad_guid', 'ad_dn')
+        }),
+        ('Ownership & location', {
+            'fields': (
+                'org_unit', 'cost_centre', 'probable_owner', 'managed_by', 'location',
+                'hardware_asset')
+        }),
+        ('Scan data', {
+            'fields': (
+                'date_pdq_updated', 'date_nmap_updated', 'date_sophos_updated', 'date_ad_updated',
+                'date_dhcp_updated')
+        })
+    )
     list_display = ['hostname', 'managed_by', 'probable_owner']
+    raw_id_fields = (
+        'org_unit', 'cost_centre', 'probable_owner', 'managed_by', 'location', 'hardware_asset')
+    readonly_fields = (
+        'date_pdq_updated', 'date_nmap_updated', 'date_sophos_updated', 'date_ad_updated',
+        'date_dhcp_updated')
     search_fields = ['sam_account_name', 'hostname']
 
 
