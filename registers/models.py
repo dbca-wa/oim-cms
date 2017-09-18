@@ -401,6 +401,8 @@ class ITSystemDependency(models.Model):
         help_text='The system which is depended upon by the IT System')
     criticality = models.PositiveIntegerField(
         choices=CRITICALITY_CHOICES, help_text='How critical is the dependency?')
+    description = models.TextField(
+        null=True, blank=True, help_text='Details of the dependency, its criticality, any workarounds, etc.')
 
     class Meta:
         verbose_name = 'IT System dependency'
