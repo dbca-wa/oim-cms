@@ -28,6 +28,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
     list_display = ('computer', 'role', 'affected_itsystems')
     list_filter = ('role',)
     raw_id_fields = ('computer',)
+    search_fields = ('computer__hostname', 'computer__sam_account_name')
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystemhardware/change_list.html'
 
