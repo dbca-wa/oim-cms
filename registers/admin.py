@@ -25,8 +25,8 @@ class UserGroupAdmin(VersionAdmin):
 
 @register(ITSystemHardware)
 class ITSystemHardwareAdmin(VersionAdmin):
-    list_display = ('computer', 'role', 'affected_itsystems')
-    list_filter = ('role',)
+    list_display = ('computer', 'role', 'affected_itsystems', 'production')
+    list_filter = ('role', 'production')
     raw_id_fields = ('computer',)
     search_fields = ('computer__hostname', 'computer__sam_account_name')
     # Override the default reversion/change_list.html template:
@@ -52,7 +52,8 @@ class ITSystemHardwareAdmin(VersionAdmin):
         # Define fields to output.
         fields = [
             'hostname', 'location', 'role', 'it_system_system_id',
-            'it_system_name', 'itsystem_availability', 'itsystem_criticality']
+            'it_system_name', 'itsystem_availability', 'itsystem_criticality',
+            'production']
 
         # Write data for ITSystemHardware objects to the CSV.
         stream = StringIO()
@@ -64,7 +65,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
                 wr.writerow([
                     i.computer.hostname, i.computer.location, i.get_role_display(),
                     it.system_id, it.name, it.get_availability_display(),
-                    it.get_criticality_display()])
+                    it.get_criticality_display(), i.production])
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
