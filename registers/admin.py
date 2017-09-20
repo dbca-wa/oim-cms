@@ -4,6 +4,8 @@ from django.conf.urls import url
 from django.contrib.admin import register, ModelAdmin
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 from reversion.admin import VersionAdmin
 try:
     from StringIO import StringIO
@@ -34,7 +36,9 @@ class ITSystemHardwareAdmin(VersionAdmin):
 
     def affected_itsystems(self, obj):
         # Exclude decommissioned systems from the count.
-        return obj.itsystem_set.all().exclude(status=3).count()
+        count = obj.itsystem_set.all().exclude(status=3).count()
+        url = reverse('admin:registers_itsystem_changelist')
+        return mark_safe('<a href="{}?hardwares__in={}">{}</a>'.format(url, obj.pk, count))
     affected_itsystems.short_description = 'IT Systems'
 
     def get_urls(self):
