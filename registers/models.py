@@ -73,6 +73,8 @@ class ITSystemHardware(models.Model):
     computer = models.ForeignKey(
         Computer, blank=True, null=True, on_delete=models.PROTECT)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
+    production = models.BooleanField(
+        default=False, help_text='Hardware is used by production IT system.')
 
     class Meta:
         verbose_name_plural = 'IT System hardware'
@@ -80,7 +82,10 @@ class ITSystemHardware(models.Model):
         ordering = ('computer__hostname',)
 
     def __str__(self):
-        return '{} ({})'.format(self.computer.hostname, self.role)
+        if self.production:
+            return '{} (prod {})'.format(self.computer.hostname, self.get_role_display().lower())
+        else:
+            return '{} (non-prod {})'.format(self.computer.hostname, self.get_role_display().lower())
 
 
 @python_2_unicode_compatible

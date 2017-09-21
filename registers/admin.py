@@ -4,6 +4,8 @@ from django.conf.urls import url
 from django.contrib.admin import register, ModelAdmin
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 from reversion.admin import VersionAdmin
 try:
     from StringIO import StringIO
@@ -25,8 +27,8 @@ class UserGroupAdmin(VersionAdmin):
 
 @register(ITSystemHardware)
 class ITSystemHardwareAdmin(VersionAdmin):
-    list_display = ('computer', 'role', 'affected_itsystems')
-    list_filter = ('role',)
+    list_display = ('computer', 'role', 'affected_itsystems', 'production')
+    list_filter = ('role', 'production')
     raw_id_fields = ('computer',)
     search_fields = ('computer__hostname', 'computer__sam_account_name')
     # Override the default reversion/change_list.html template:
@@ -34,7 +36,9 @@ class ITSystemHardwareAdmin(VersionAdmin):
 
     def affected_itsystems(self, obj):
         # Exclude decommissioned systems from the count.
-        return obj.itsystem_set.all().exclude(status=3).count()
+        count = obj.itsystem_set.all().exclude(status=3).count()
+        url = reverse('admin:registers_itsystem_changelist')
+        return mark_safe('<a href="{}?hardwares__in={}">{}</a>'.format(url, obj.pk, count))
     affected_itsystems.short_description = 'IT Systems'
 
     def get_urls(self):
@@ -52,7 +56,8 @@ class ITSystemHardwareAdmin(VersionAdmin):
         # Define fields to output.
         fields = [
             'hostname', 'location', 'role', 'it_system_system_id',
-            'it_system_name', 'itsystem_availability', 'itsystem_criticality']
+            'it_system_name', 'itsystem_availability', 'itsystem_criticality',
+            'production']
 
         # Write data for ITSystemHardware objects to the CSV.
         stream = StringIO()
@@ -64,7 +69,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
                 wr.writerow([
                     i.computer.hostname, i.computer.location, i.get_role_display(),
                     it.system_id, it.name, it.get_availability_display(),
-                    it.get_criticality_display()])
+                    it.get_criticality_display(), i.production])
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
