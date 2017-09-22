@@ -41,6 +41,7 @@ class CommonFields(models.Model):
 @python_2_unicode_compatible
 class Computer(CommonFields):
     """Represents a non-mobile computing device. Maps to an object managed by Active Directory.
+    All information should be auto-generated from scans and scripted tasks.
     """
     hostname = models.CharField(max_length=2048)
     sam_account_name = models.CharField(
@@ -51,18 +52,18 @@ class Computer(CommonFields):
     ad_dn = models.CharField(
         max_length=512, null=True, blank=True, unique=True, verbose_name='AD distinguished name')
     pdq_id = models.IntegerField(null=True, blank=True, unique=True)
-    sophos_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
-    asset_id = models.CharField(max_length=64, null=True, blank=True, help_text='OIM Asset ID')
+    sophos_id = models.CharField(max_length=64, unique=True, null=True, blank=True)  # TODO: deprecated
+    asset_id = models.CharField(max_length=64, null=True, blank=True, help_text='OIM Asset ID')  # TODO: deprecated
     finance_asset_id = models.CharField(
-        max_length=64, null=True, blank=True, help_text='Finance asset ID')
+        max_length=64, null=True, blank=True, help_text='Finance asset ID')  # TODO: deprecated
     manufacturer = models.CharField(max_length=128, null=True, blank=True)
     model = models.CharField(max_length=128, null=True, blank=True)
     chassis = models.CharField(max_length=128, null=True, blank=True)
     serial_number = models.CharField(max_length=128, null=True, blank=True)
-    os_name = models.CharField(max_length=128, null=True, blank=True)
-    os_version = models.CharField(max_length=128, null=True, blank=True)
-    os_service_pack = models.CharField(max_length=128, null=True, blank=True)
-    os_arch = models.CharField(max_length=128, null=True, blank=True)
+    os_name = models.CharField(max_length=128, null=True, blank=True, verbose_name='OS name')
+    os_version = models.CharField(max_length=128, null=True, blank=True, verbose_name='OS version')
+    os_service_pack = models.CharField(max_length=128, null=True, blank=True, verbose_name='OS service pack')
+    os_arch = models.CharField(max_length=128, null=True, blank=True, verbose_name='OS architecture')
     cpu = models.CharField(max_length=128, null=True, blank=True)
     cpu_count = models.PositiveSmallIntegerField(default=0, null=True, blank=True)
     cpu_cores = models.PositiveSmallIntegerField(default=0, null=True, blank=True)
@@ -78,13 +79,14 @@ class Computer(CommonFields):
         related_name='computers_managed',
         help_text='"Official" device owner/manager (set in AD).')
     date_pdq_updated = models.DateTimeField(null=True, blank=True)
-    date_nmap_updated = models.DateTimeField(null=True, blank=True)
-    date_sophos_updated = models.DateTimeField(null=True, blank=True)
+    date_nmap_updated = models.DateTimeField(null=True, blank=True)  # TODO: deprecated
+    date_sophos_updated = models.DateTimeField(null=True, blank=True)  # TODO: deprecated
     date_ad_updated = models.DateTimeField(null=True, blank=True)
-    date_dhcp_updated = models.DateTimeField(null=True, blank=True)
+    date_dhcp_updated = models.DateTimeField(null=True, blank=True)  # TODO: deprecated
+    #date_nessus_updated = models.DateTimeField(null=True, blank=True)
     # Notes field to store validation results from synchronising
     # user-uploaded local property register spreadsheets.
-    validation_notes = models.TextField(null=True, blank=True)
+    validation_notes = models.TextField(null=True, blank=True)  # TODO: deprecated
     location = models.ForeignKey(
         Location, on_delete=models.PROTECT, null=True, blank=True,
         help_text='Physical location')

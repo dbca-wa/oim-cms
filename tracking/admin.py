@@ -13,20 +13,18 @@ class ComputerAdmin(ModelAdmin):
     fieldsets = (
         ('Details', {
             'fields': (
-                'hostname', 'sam_account_name', 'domain_bound', 'ad_guid', 'ad_dn')
+                'hostname', 'sam_account_name', 'domain_bound', 'ad_guid', 'ad_dn', 'os_name',
+                'os_version', 'os_service_pack', 'os_arch')
         }),
-        ('Ownership & location', {
+        ('Management', {
             'fields': (
-                'org_unit', 'cost_centre', 'probable_owner', 'managed_by', 'location',
-                'hardware_asset')
+                'probable_owner', 'managed_by', 'location', 'hardware_asset')
         }),
         ('Scan data', {
-            'fields': (
-                'date_pdq_updated', 'date_nmap_updated', 'date_sophos_updated', 'date_ad_updated',
-                'date_dhcp_updated')
+            'fields': ('date_pdq_updated', 'date_ad_updated')
         })
     )
-    list_display = ['hostname', 'managed_by', 'probable_owner']
+    list_display = ['hostname', 'managed_by', 'probable_owner', 'os_name']
     raw_id_fields = (
         'org_unit', 'cost_centre', 'probable_owner', 'managed_by', 'location', 'hardware_asset')
     readonly_fields = (
