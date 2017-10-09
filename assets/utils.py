@@ -125,7 +125,11 @@ def validate_csv(fileobj):
 
         # Check location.
         if 'location' in row and row['location']:
-            if not Location.objects.filter(name__iexact=row['location']):
+            if Location.objects.filter(name__istartswith=row['location']).count() > 1:
+                errors.append(
+                    '''Row {}: {} matches more than one location name. '''
+                    '''Locations must match existing names.'''.format(c.line_num, row['location']))
+            elif Location.objects.filter(name__istartswith=row['location']).count() < 1:
                 errors.append(
                     '''Row {}: There is no location matching name {}. '''
                     '''Locations must match existing names.'''.format(c.line_num, row['location']))
@@ -162,16 +166,24 @@ def import_csv(fileobj):
             else:
                 vendor = Vendor.objects.get(name__iexact=row['vendor'])
                 asset.vendor = vendor
+
         if 'hardware model' in row and row['hardware model']:
-            if not HardwareModel.objects.filter(
-                    model_type__iexact=row['hardware model'], vendor=vendor).exists():
-                asset.hardware_model = unknown_model
+            if not HardwareModel.objects.filter(model_type__iexact=row['hardware model'], vendor=vendor).exists():
+                # Create a new hardware model.
+                asset.hardware_model = HardwareModel.objects.get_or_create(
+                    vendor=asset.vendor, model_no=row['hardware model'], model_type='Other',
+                    lifecycle=3)[0]
             else:
+                # Use the existing hardware model.
                 asset.hardware_model = HardwareModel.objects.get(
-                    model_type__iexact=row['model'], vendor=vendor)
+                    model_type__iexact=row['hardware model'], vendor=vendor)
+        else:
+            # No hardware model specified.
+            asset.hardware_model = unknown_model
+
         if 'location' in row and row['location']:
-            if Location.objects.filter(name__iexact=row['location']).exists():
-                asset.location = Location.objects.get(name__iexact=row['location'])
+            if Location.objects.filter(name__istartswith=row['location']).count() == 1:
+                asset.location = Location.objects.get(name__istartswith=row['location'])
             else:
                 asset.location = unknown_location
         if 'status' in row and row['status']:
