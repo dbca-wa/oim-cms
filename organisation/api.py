@@ -106,7 +106,7 @@ class DepartmentUserResource(DjangoResource):
         """
         return [
             url(r'^$', self.as_list(), name=self.build_url_name('list', name_prefix)),
-            url(r'^(?P<guid>[0-9A-Za-z-@\'&\.]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
+            url(r'^(?P<guid>[0-9A-Za-z-_@\'&\.]+)/$', self.as_detail(), name=self.build_url_name('detail', name_prefix)),
         ]
 
     def build_response(self, data, status=OK):
