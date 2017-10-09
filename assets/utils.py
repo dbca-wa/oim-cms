@@ -1,6 +1,6 @@
 from __future__ import unicode_literals, absolute_import
 from decimal import Decimal
-from datetime import datetime
+from dateutil.parser import parse
 import re
 import unicodecsv
 
@@ -79,7 +79,7 @@ def validate_csv(fileobj):
         # Check date purchased.
         if 'date purchased' in row and row['date purchased']:
             try:
-                datetime.strptime(row['date purchased'], '%d/%m/%Y')
+                parse(row['date purchased'])
             except ValueError:
                 errors.append(
                     '''Row {}: The value '{}' in the 'date purchased' column '''
@@ -110,7 +110,7 @@ def validate_csv(fileobj):
                 vendor = Vendor.objects.get(name__iexact=row['vendor'])
             # Check hardware model (only if vendor is present).
             if vendor and 'hardware model' in row and row['hardware model']:
-                if not HardwareModel.objects.filter(model_type__iexact=row['model'], vendor=vendor).exists():
+                if not HardwareModel.objects.filter(model_type__iexact=row['hardware model'], vendor=vendor).exists():
                     notes.append(
                         '''Row {}: Model '{}' is unknown - a new model will '''
                         '''be created.'''.format(c.line_num, row['hardware model']))
@@ -151,7 +151,7 @@ def import_csv(fileobj):
     for row in c:
         asset = HardwareAsset(
             asset_tag=row['asset tag'].upper(), serial=row['serial'],
-            date_purchased=datetime.strptime(row['date purchased'], '%d/%m/%Y')
+            date_purchased=parse(row['date purchased'])
         )
         if 'finance asset tag' in row and row['finance asset tag']:
             asset.finance_asset_tag = row['finance asset tag']
