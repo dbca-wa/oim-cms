@@ -133,9 +133,9 @@ class DepartmentUserResource(DjangoResource):
         """
         resp = cache.get(self.request.get_full_path())
         if resp:
-            LOGGER.info("user api cache hit!")
+            LOGGER.info('DepartmentUser API cache hit')
             return resp
-        LOGGER.info("user api cache MISS!")
+        LOGGER.info('DepartmentUser API cache miss')
         FILTERS = {}
         sync_o365 = True
         if 'sync_o365' in self.request.GET and self.request.GET['sync_o365'] == 'false':
@@ -218,6 +218,13 @@ class DepartmentUserResource(DjangoResource):
             raise BadRequest('Missing name parameter value')
         if 'SamAccountName' not in self.data and 'username' not in self.data:
             raise BadRequest('Missing account name parameter value')
+
+        # Make an assumption that EmailAddress or email is passed in.
+        if 'EmailAddress' in self.data:
+            LOGGER.info('Creating user {}'.format(self.data['EmailAddress'].lower()))
+        else:
+            LOGGER.info('Creating user {}'.format(self.data['email'].lower()))
+
         # Required: email, name and sAMAccountName.
         if 'EmailAddress' in self.data:
             user.email = self.data['EmailAddress'].lower()
@@ -267,18 +274,16 @@ class DepartmentUserResource(DjangoResource):
         elif 'date_ad_updated' in self.data:
             user.date_ad_updated = self.data['date_ad_updated']
 
+        user.save()
+
         try:
             user.save()
         except Exception as e:
-            data = self.data
-            data['Error'] = repr(e)
-            LOGGER.error(repr(e))
+            LOGGER.exception('Error creating user {}'.format(user.email))
             return self.formatters.format(self.request, {'Error': repr(e)})
 
-        # Serialise the newly-created DepartmentUser.
+        # Serialise and return the newly-created DepartmentUser.
         data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-        LOGGER.info('Created user {}'.format(user.email))
-        LOGGER.info('{} '.format(self.formatters.format(self.request, data)))
         return self.formatters.format(self.request, data)
 
     def update(self, guid):
@@ -294,55 +299,57 @@ class DepartmentUserResource(DjangoResource):
             except DepartmentUser.DoesNotExist:
                 raise BadRequest('Object not found')
 
+        LOGGER.info('Updating user guid/email {}'.format(guid))
+
         try:
             if 'EmailAddress' in self.data and self.data['EmailAddress']:
                 user.email = self.data['EmailAddress'].lower()
-            if 'email' in self.data and self.data['email']:
+            elif 'email' in self.data and self.data['email']:
                 user.email = self.data['email'].lower()
             if 'DisplayName' in self.data and self.data['DisplayName']:
                 user.name = self.data['DisplayName']
-            if 'name' in self.data and self.data['name']:
+            elif 'name' in self.data and self.data['name']:
                 user.name = self.data['name']
             if 'SamAccountName' in self.data and self.data['SamAccountName']:
                 user.username = self.data['SamAccountName']
-            if 'username' in self.data and self.data['username']:
+            elif 'username' in self.data and self.data['username']:
                 user.username = self.data['username']
             if 'ObjectGUID' in self.data and self.data['ObjectGUID']:
                 user.ad_guid = self.data['ObjectGUID']
-            if 'ad_guid' in self.data and self.data['ad_guid']:
+            elif 'ad_guid' in self.data and self.data['ad_guid']:
                 user.ad_guid = self.data['ad_guid']
             if 'DistinguishedName' in self.data and self.data['DistinguishedName']:
                 user.ad_dn = self.data['DistinguishedName']
-            if 'ad_dn' in self.data and self.data['ad_dn']:
+            elif 'ad_dn' in self.data and self.data['ad_dn']:
                 user.ad_dn = self.data['ad_dn']
             if 'AccountExpirationDate' in self.data and self.data['AccountExpirationDate']:
                 user.expiry_date = self.data['AccountExpirationDate']
-            if 'expiry_date' in self.data and self.data['expiry_date']:
+            elif 'expiry_date' in self.data and self.data['expiry_date']:
                 user.expiry_date = self.data['expiry_date']
-            if 'Enabled' in self.data:  # Boolean; don't only work on True!
-                user.active = self.data['Enabled']
-            if 'active' in self.data:  # Boolean; don't only work on True!
-                user.active = self.data['active']
             if 'Title' in self.data and self.data['Title']:
                 user.title = self.data['Title']
-            if 'title' in self.data and self.data['title']:
+            elif 'title' in self.data and self.data['title']:
                 user.title = self.data['title']
             if 'GivenName' in self.data and self.data['GivenName']:
                 user.given_name = self.data['GivenName']
-            if 'given_name' in self.data and self.data['given_name']:
+            elif 'given_name' in self.data and self.data['given_name']:
                 user.given_name = self.data['given_name']
             if 'Surname' in self.data and self.data['Surname']:
                 user.surname = self.data['Surname']
-            if 'surname' in self.data and self.data['surname']:
+            elif 'surname' in self.data and self.data['surname']:
                 user.surname = self.data['surname']
             if 'Modified' in self.data and self.data['Modified']:
                 user.date_ad_updated = self.data['Modified']
-            if 'date_ad_updated' in self.data and self.data['date_ad_updated']:
+            elif 'date_ad_updated' in self.data and self.data['date_ad_updated']:
                 user.date_ad_updated = self.data['date_ad_updated']
             if 'o365_licence' in self.data:  # Boolean; don't only work on True!
                 user.o365_licence = self.data['o365_licence']
             if 'azure_guid' in self.data and self.data['azure_guid']:
                 user.azure_guid = self.data['azure_guid']
+            if 'Enabled' in self.data:  # Boolean; don't only work on True!
+                user.active = self.data['Enabled']
+            if 'active' in self.data:  # Boolean; don't only work on True!
+                user.active = self.data['active']
             if 'Deleted' in self.data and self.data['Deleted']:
                 user.active = False
                 user.ad_deleted = True
@@ -355,15 +362,10 @@ class DepartmentUserResource(DjangoResource):
             user.ad_updated = True
             user.save()
         except Exception as e:
-            data = self.data
-            data['Error'] = repr(e)
-            LOGGER.error(repr(e))
+            LOGGER.exception('Error updating user {}'.format(user.email))
             return self.formatters.format(self.request, {'Error': repr(e)})
 
         data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-        LOGGER.info('Updated user {}'.format(user.email))
-        LOGGER.info('{}'.format(self.formatters.format(self.request, data)))
-
         return self.formatters.format(self.request, data)
 
     def org_structure(self, sync_o365=False, exclude_populate_groups=False):
