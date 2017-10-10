@@ -218,6 +218,9 @@ class DepartmentUserResource(DjangoResource):
             raise BadRequest('Missing name parameter value')
         if 'SamAccountName' not in self.data and 'username' not in self.data:
             raise BadRequest('Missing account name parameter value')
+
+        LOGGER.info('Creating user {}'.format(self.data['EmailAddress'].lower()))
+
         # Required: email, name and sAMAccountName.
         if 'EmailAddress' in self.data:
             user.email = self.data['EmailAddress'].lower()
@@ -270,15 +273,11 @@ class DepartmentUserResource(DjangoResource):
         try:
             user.save()
         except Exception as e:
-            data = self.data
-            data['Error'] = repr(e)
-            LOGGER.error(repr(e))
+            LOGGER.exception('Error creating user {}'.format(user.email))
             return self.formatters.format(self.request, {'Error': repr(e)})
 
         # Serialise the newly-created DepartmentUser.
         data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-        LOGGER.info('Created user {}'.format(user.email))
-        LOGGER.info('{} '.format(self.formatters.format(self.request, data)))
         return self.formatters.format(self.request, data)
 
     def update(self, guid):
@@ -293,6 +292,8 @@ class DepartmentUserResource(DjangoResource):
                 user = DepartmentUser.objects.get(email__iexact=guid.lower())
             except DepartmentUser.DoesNotExist:
                 raise BadRequest('Object not found')
+
+        LOGGER.info('Updating user guid/email {}'.format(guid))
 
         try:
             if 'EmailAddress' in self.data and self.data['EmailAddress']:
@@ -355,15 +356,10 @@ class DepartmentUserResource(DjangoResource):
             user.ad_updated = True
             user.save()
         except Exception as e:
-            data = self.data
-            data['Error'] = repr(e)
-            LOGGER.error(repr(e))
+            LOGGER.exception('Error updating user {}'.format(user.email))
             return self.formatters.format(self.request, {'Error': repr(e)})
 
         data = list(DepartmentUser.objects.filter(pk=user.pk).values(*self.VALUES_ARGS))[0]
-        LOGGER.info('Updated user {}'.format(user.email))
-        LOGGER.info('{}'.format(self.formatters.format(self.request, data)))
-
         return self.formatters.format(self.request, data)
 
     def org_structure(self, sync_o365=False, exclude_populate_groups=False):
