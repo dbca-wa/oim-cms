@@ -48,7 +48,7 @@ class HardwareAssetAdmin(VersionAdmin):
         ('Hardware asset details', {
             'fields': (
                 'asset_tag', 'finance_asset_tag', 'serial', 'vendor', 'hardware_model',
-                'status', 'notes')
+                'status', 'notes', 'service_request_url')
         }),
         ('Location & ownership details', {
             'fields': (
@@ -67,7 +67,7 @@ class HardwareAssetAdmin(VersionAdmin):
         'vendor', 'hardware_model', 'invoice', 'assigned_user', 'location', 'cost_centre')
     search_fields = (
         'asset_tag', 'vendor__name', 'serial', 'hardware_model__model_type',
-        'hardware_model__vendor__name', 'hardware_model__model_no')
+        'hardware_model__vendor__name', 'hardware_model__model_no', 'service_request_url')
     readonly_fields = ['extra_data_ro']
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/assets/hardwareasset/change_list.html'
@@ -211,7 +211,7 @@ class SoftwareAssetAdmin(VersionAdmin):
         ('Software asset details', {
             'fields': (
                 'name', 'url', 'vendor', 'publisher', 'support', 'support_expiry',
-                'purchased_value', 'notes')
+                'purchased_value', 'notes', 'service_request_url')
         }),
         ('License details', {
             'fields': ('license', 'license_details', 'license_count')
@@ -223,4 +223,4 @@ class SoftwareAssetAdmin(VersionAdmin):
     list_display = ('name', 'vendor', 'license')
     list_filter = ('license',)
     raw_id_fields = ('invoice', 'org_unit', 'cost_centre')
-    search_fields = ('name', 'vendor__name')
+    search_fields = ('name', 'vendor__name', 'service_request_url')

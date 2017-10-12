@@ -190,7 +190,7 @@ class ITSystemAdmin(VersionAdmin):
     def export(self, request):
         """Exports ITSystem data to a CSV.
         """
-        # Define fields to output.
+        # Define model fields to output.
         fields = [
             'system_id', 'name', 'acronym', 'status_display', 'description',
             'criticality_display', 'availability_display', 'system_type_display',
@@ -199,7 +199,7 @@ class ITSystemAdmin(VersionAdmin):
             'access_display', 'request_access', 'status_html', 'schema_url',
             'bh_support', 'ah_support', 'system_reqs', 'vulnerability_docs',
             'workaround', 'recovery_docs', 'date_updated']
-        header = copy(fields)
+        header = copy(fields)  # We also output non-field values.
         header.append('associated_hardware')
 
         # Write data for ITSystem objects to the CSV:
