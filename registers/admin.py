@@ -27,10 +27,10 @@ class UserGroupAdmin(VersionAdmin):
 
 @register(ITSystemHardware)
 class ITSystemHardwareAdmin(VersionAdmin):
-    list_display = ('computer', 'role', 'affected_itsystems', 'production')
-    list_filter = ('role', 'production')
+    list_display = ('computer', 'role', 'affected_itsystems', 'production', 'decommissioned')
+    list_filter = ('role', 'production', 'decommissioned')
     raw_id_fields = ('computer',)
-    search_fields = ('computer__hostname', 'computer__sam_account_name')
+    search_fields = ('computer__hostname', 'computer__sam_account_name', 'description')
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystemhardware/change_list.html'
 
@@ -51,25 +51,31 @@ class ITSystemHardwareAdmin(VersionAdmin):
         return urls
 
     def export(self, request):
-        """Exports ITSystemHardware data to a CSV.
+        """Exports ITSystemHardware data to a CSV. NOTE: report output excludes objects
+        that are marked as decommissioned.
         """
         # Define fields to output.
         fields = [
-            'hostname', 'location', 'role', 'it_system_system_id',
-            'it_system_name', 'itsystem_availability', 'itsystem_criticality',
-            'production']
+            'hostname', 'location', 'role', 'production', 'itsystem_system_id',
+            'itsystem_name', 'itsystem_cost_centre', 'itsystem_availability', 'itsystem_custodian',
+            'itsystem_owner', 'it_system_data_custodian']
 
         # Write data for ITSystemHardware objects to the CSV.
         stream = StringIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
-        for i in ITSystemHardware.objects.all():
-            # Write a row for each linked ITSystem (non-decommissioned).
-            for it in i.itsystem_set.all().exclude(status=3):
+        for i in ITSystemHardware.objects.filter(decommissioned=False):
+            if i.itsystem_set.all().exclude(status=3).exists():
+                # Write a row for each linked, non-decommissioned ITSystem.
+                for it in i.itsystem_set.all().exclude(status=3):
+                    wr.writerow([
+                        i.computer.hostname, i.computer.location, i.get_role_display(),
+                        i.production, it.system_id, it.name, it.cost_centre,
+                        it.get_availability_display(), it.custodian, it.owner, it.data_custodian])
+            else:
+                # No IT Systems - just record the hardware details.
                 wr.writerow([
-                    i.computer.hostname, i.computer.location, i.get_role_display(),
-                    it.system_id, it.name, it.get_availability_display(),
-                    it.get_criticality_display(), i.production])
+                    i.computer.hostname, i.computer.location, i.get_role_display(), i.production])
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'

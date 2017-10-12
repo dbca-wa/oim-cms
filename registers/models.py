@@ -75,6 +75,9 @@ class ITSystemHardware(models.Model):
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
     production = models.BooleanField(
         default=False, help_text='Hardware is used by production IT system.')
+    decommissioned = models.BooleanField(
+        default=False, help_text='Hardware has been decommissioned?')
+    description = models.TextField(blank=True)
 
     class Meta:
         verbose_name_plural = 'IT System hardware'
@@ -207,10 +210,10 @@ class ITSystem(CommonFields):
         related_name='systems_owned', help_text='Application owner')
     custodian = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, null=True,
-        related_name='systems_custodianed', help_text='Appication custodian')
+        related_name='systems_custodianed', help_text='Application custodian')
     data_custodian = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, null=True, blank=True,
-        related_name='systems_data_custodianed')
+        related_name='systems_data_custodianed', help_text='Application data custodian')
     preferred_contact = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, null=True, blank=True,
         related_name='systems_preferred_contact')
