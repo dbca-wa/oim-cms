@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, absolute_import
+from copy import copy
 from django import forms
 from django.conf.urls import url
 from django.contrib.admin import register, ModelAdmin
@@ -198,14 +199,18 @@ class ITSystemAdmin(VersionAdmin):
             'access_display', 'request_access', 'status_html', 'schema_url',
             'bh_support', 'ah_support', 'system_reqs', 'vulnerability_docs',
             'workaround', 'recovery_docs', 'date_updated']
+        header = copy(fields)
+        header.append('associated_hardware')
 
         # Write data for ITSystem objects to the CSV:
         stream = StringIO()
         wr = unicodecsv.writer(stream, encoding='utf-8')
-        wr.writerow(fields)
+        wr.writerow(header)  # CSV header.
         for i in ITSystem.objects.all().order_by(
                 'system_id').exclude(status=3):  # Exclude decommissioned
-            wr.writerow([getattr(i, f) for f in fields])
+            row = [getattr(i, f) for f in fields]
+            row.append(', '.join(i.hardwares.filter(decommissioned=False).values_list('computer__hostname', flat=True)))
+            wr.writerow(row)
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=itsystem_export.csv'
