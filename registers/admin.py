@@ -85,14 +85,16 @@ class ITSystemHardwareAdmin(VersionAdmin):
 
 @register(Platform)
 class PlatformAdmin(VersionAdmin):
-    list_display = ('name', 'category', 'it_systems')
+    list_display = ('name', 'category', 'affected_itsystems')
     list_filter = ('category',)
     search_fields = ('name',)
 
-    def it_systems(self, obj):
+    def affected_itsystems(self, obj):
         # Exclude decommissioned systems from the count.
-        return obj.itsystem_set.all().exclude(status=3).count()
-    it_systems.short_description = 'IT Systems'
+        count = obj.itsystem_set.all().exclude(status=3).count()
+        url = reverse('admin:registers_itsystem_changelist')
+        return mark_safe('<a href="{}?platforms__in={}">{}</a>'.format(url, obj.pk, count))
+    affected_itsystems.short_description = 'IT Systems'
 
 
 class ITSystemForm(forms.ModelForm):
