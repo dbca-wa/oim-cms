@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+import json
 from reversion.admin import VersionAdmin
 try:
     from StringIO import StringIO
@@ -28,7 +29,7 @@ class UserGroupAdmin(VersionAdmin):
 
 @register(ITSystemHardware)
 class ITSystemHardwareAdmin(VersionAdmin):
-    list_display = ('computer', 'role', 'affected_itsystems', 'production', 'decommissioned')
+    list_display = ('computer', 'role', 'affected_itsystems', 'production', 'decommissioned', 'aws_tag_values')
     list_filter = ('role', 'production', 'decommissioned')
     raw_id_fields = ('computer',)
     search_fields = ('computer__hostname', 'computer__sam_account_name', 'description')
@@ -41,6 +42,10 @@ class ITSystemHardwareAdmin(VersionAdmin):
         url = reverse('admin:registers_itsystem_changelist')
         return mark_safe('<a href="{}?hardwares__in={}">{}</a>'.format(url, obj.pk, count))
     affected_itsystems.short_description = 'IT Systems'
+
+    def aws_tag_values(self, obj):
+        return obj.aws_tag_values()
+    aws_tag_values.short_description = 'AWS tag values'
 
     def get_urls(self):
         urls = super(ITSystemHardwareAdmin, self).get_urls()
@@ -57,7 +62,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
         """
         # Define fields to output.
         fields = [
-            'hostname', 'location', 'role', 'production', 'itsystem_system_id',
+            'hostname', 'location', 'role', 'production', 'aws_tags', 'itsystem_system_id',
             'itsystem_name', 'itsystem_cost_centre', 'itsystem_availability', 'itsystem_custodian',
             'itsystem_owner', 'it_system_data_custodian']
 
@@ -66,17 +71,21 @@ class ITSystemHardwareAdmin(VersionAdmin):
         wr = unicodecsv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
         for i in ITSystemHardware.objects.filter(decommissioned=False):
+            if i.aws_tags:
+                tags = json.dumps(i.aws_tags)
+            else:
+                tags = ''
             if i.itsystem_set.all().exclude(status=3).exists():
                 # Write a row for each linked, non-decommissioned ITSystem.
                 for it in i.itsystem_set.all().exclude(status=3):
                     wr.writerow([
                         i.computer.hostname, i.computer.location, i.get_role_display(),
-                        i.production, it.system_id, it.name, it.cost_centre,
+                        i.production, tags, it.system_id, it.name, it.cost_centre,
                         it.get_availability_display(), it.custodian, it.owner, it.data_custodian])
             else:
                 # No IT Systems - just record the hardware details.
                 wr.writerow([
-                    i.computer.hostname, i.computer.location, i.get_role_display(), i.production])
+                    i.computer.hostname, i.computer.location, i.get_role_display(), i.production, tags])
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
@@ -85,14 +94,16 @@ class ITSystemHardwareAdmin(VersionAdmin):
 
 @register(Platform)
 class PlatformAdmin(VersionAdmin):
-    list_display = ('name', 'category', 'it_systems')
+    list_display = ('name', 'category', 'affected_itsystems')
     list_filter = ('category',)
     search_fields = ('name',)
 
-    def it_systems(self, obj):
+    def affected_itsystems(self, obj):
         # Exclude decommissioned systems from the count.
-        return obj.itsystem_set.all().exclude(status=3).count()
-    it_systems.short_description = 'IT Systems'
+        count = obj.itsystem_set.all().exclude(status=3).count()
+        url = reverse('admin:registers_itsystem_changelist')
+        return mark_safe('<a href="{}?platforms__in={}">{}</a>'.format(url, obj.pk, count))
+    affected_itsystems.short_description = 'IT Systems'
 
 
 class ITSystemForm(forms.ModelForm):
