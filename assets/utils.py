@@ -105,16 +105,13 @@ def validate_csv(fileobj):
                 notes.append(
                     '''Row {}: Vendor '{}' is unknown - a new vendor '''
                     '''will be created.'''.format(c.line_num, row['vendor']))
-                vendor = None
-            else:
-                vendor = Vendor.objects.get(name__iexact=row['vendor'])
 
-            # Check hardware model (only if vendor is present).
-            if vendor and 'hardware model' in row and row['hardware model']:
-                if not HardwareModel.objects.filter(model_no__iexact=row['hardware model'], vendor=vendor).exists():
-                    notes.append(
-                        '''Row {}: Model '{}' is unknown - a new model will '''
-                        '''be created.'''.format(c.line_num, row['hardware model']))
+        # Check hardware model.
+        if 'hardware model' in row and row['hardware model']:
+            if not HardwareModel.objects.filter(model_no__iexact=row['hardware model']).exists():
+                notes.append(
+                    '''Row {}: Model '{}' is unknown - a new model will '''
+                    '''be created.'''.format(c.line_num, row['hardware model']))
 
         # Check status.
         if 'status' in row and row['status']:
@@ -148,7 +145,7 @@ def import_csv(fileobj):
     unknown_vendor = Vendor.objects.get_or_create(name='Unknown Vendor')[0]
     unknown_model = HardwareModel.objects.get_or_create(
         model_type='Other', vendor=unknown_vendor, model_no='Unknown model',
-        lifecycle=0)[0]
+        lifecycle=3)[0]
     unknown_location = Location.objects.get_or_create(
         name='Unknown', address='Unknown')[0]
     assets_created = []
@@ -162,22 +159,24 @@ def import_csv(fileobj):
             asset.finance_asset_tag = row['finance asset tag']
         if 'vendor' in row and row['vendor']:
             if not Vendor.objects.filter(name__iexact=row['vendor']).exists():
-                vendor = None
-                asset.vendor = unknown_vendor
+                vendor = Vendor.objects.get_or_create(name=row['vendor'])[0]
+                asset.vendor = vendor
             else:
                 vendor = Vendor.objects.get(name__iexact=row['vendor'])
                 asset.vendor = vendor
+        else:
+            # No vendor specified.
+            asset.vendor = unknown_vendor
 
         if 'hardware model' in row and row['hardware model']:
-            if not HardwareModel.objects.filter(model_no__iexact=row['hardware model'], vendor=vendor).exists():
-                # Create a new hardware model.
+            if not HardwareModel.objects.filter(model_no__iexact=row['hardware model']).exists():
+                # Create a new hardware model (use the vendor as manufacturer).
                 asset.hardware_model = HardwareModel.objects.get_or_create(
                     vendor=asset.vendor, model_no=row['hardware model'], model_type='Other',
                     lifecycle=3)[0]
             else:
                 # Use the existing hardware model.
-                asset.hardware_model = HardwareModel.objects.get(
-                    model_no__iexact=row['hardware model'], vendor=vendor)
+                asset.hardware_model = HardwareModel.objects.get(model_no__iexact=row['hardware model'])
         else:
             # No hardware model specified.
             asset.hardware_model = unknown_model

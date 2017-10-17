@@ -37,7 +37,7 @@ class InvoiceAdmin(VersionAdmin):
 
 @register(HardwareModel)
 class HardwareModelAdmin(VersionAdmin):
-    list_display = ('vendor', 'model_type', 'model_no')
+    list_display = ('model_no', 'model_type', 'vendor')
     search_fields = ('vendor__name', 'model_type', 'model_no')
 
 
