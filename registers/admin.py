@@ -62,7 +62,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
         """
         # Define fields to output.
         fields = [
-            'hostname', 'os_name', 'role', 'production', 'aws_tags', 'itsystem_system_id',
+            'hostname', 'os_name', 'role', 'production', 'instance_id', 'aws_tags', 'itsystem_system_id',
             'itsystem_name', 'itsystem_cost_centre', 'itsystem_availability', 'itsystem_custodian',
             'itsystem_owner', 'it_system_data_custodian']
 
@@ -75,17 +75,22 @@ class ITSystemHardwareAdmin(VersionAdmin):
                 tags = json.dumps(i.aws_tags)
             else:
                 tags = ''
+            if i.computer.ec2_instance:
+                ec2 = i.computer.ec2_instance.ec2id
+            else:
+                ec2 = ''
             if i.itsystem_set.all().exclude(status=3).exists():
                 # Write a row for each linked, non-decommissioned ITSystem.
                 for it in i.itsystem_set.all().exclude(status=3):
                     wr.writerow([
                         i.computer.hostname, i.computer.os_name, i.get_role_display(),
-                        i.production, tags, it.system_id, it.name, it.cost_centre,
+                        i.production, ec2, tags, it.system_id, it.name, it.cost_centre,
                         it.get_availability_display(), it.custodian, it.owner, it.data_custodian])
             else:
                 # No IT Systems - just record the hardware details.
                 wr.writerow([
-                    i.computer.hostname, i.computer.os_name, i.get_role_display(), i.production, tags])
+                    i.computer.hostname, i.computer.os_name, i.get_role_display(), i.production,
+                    ec2, tags])
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=itsystemhardware_export.csv'
