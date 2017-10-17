@@ -60,20 +60,7 @@ def csv_sync_prop_register_data(src='it_assets.csv'):
             for c in comps:
                 if i[1]:  # Cost centre no.
                     c.cost_centre_no = int(i[1])
-                if i[3]:  # Finance asset no.
-                    c.finance_asset_id = i[3]
-                if i[4]:  # OIM asset no.
-                    c.asset_id = i[4]
                 c.save()
                 print('Updated {}'.format(c))
-                if c.cost_centre_no:
-                    c.ad_set_cost_centre()
-                    print('Updated {} CC in AD'.format(c))
-                if c.finance_asset_id:
-                    c.ad_set_finance_asset_number()
-                    print('Updated {} Finance asset no in AD'.format(c))
-                if c.asset_id:
-                    c.ad_set_asset_number()
-                    print('Updated {} OIM asset no in AD'.format(c))
 
     print('Done')

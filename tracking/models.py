@@ -52,10 +52,6 @@ class Computer(CommonFields):
     ad_dn = models.CharField(
         max_length=512, null=True, blank=True, unique=True, verbose_name='AD distinguished name')
     pdq_id = models.IntegerField(null=True, blank=True, unique=True)
-    sophos_id = models.CharField(max_length=64, unique=True, null=True, blank=True)  # TODO: deprecated
-    asset_id = models.CharField(max_length=64, null=True, blank=True, help_text='OIM Asset ID')  # TODO: deprecated
-    finance_asset_id = models.CharField(
-        max_length=64, null=True, blank=True, help_text='Finance asset ID')  # TODO: deprecated
     manufacturer = models.CharField(max_length=128, null=True, blank=True)
     model = models.CharField(max_length=128, null=True, blank=True)
     chassis = models.CharField(max_length=128, null=True, blank=True)
@@ -79,20 +75,16 @@ class Computer(CommonFields):
         related_name='computers_managed',
         help_text='"Official" device owner/manager (set in AD).')
     date_pdq_updated = models.DateTimeField(null=True, blank=True)
-    date_nmap_updated = models.DateTimeField(null=True, blank=True)  # TODO: deprecated
-    date_sophos_updated = models.DateTimeField(null=True, blank=True)  # TODO: deprecated
     date_ad_updated = models.DateTimeField(null=True, blank=True)
-    date_dhcp_updated = models.DateTimeField(null=True, blank=True)  # TODO: deprecated
-    #date_nessus_updated = models.DateTimeField(null=True, blank=True)
-    # Notes field to store validation results from synchronising
-    # user-uploaded local property register spreadsheets.
-    validation_notes = models.TextField(null=True, blank=True)  # TODO: deprecated
     location = models.ForeignKey(
         Location, on_delete=models.PROTECT, null=True, blank=True,
         help_text='Physical location')
     hardware_asset = models.ForeignKey(
         'assets.HardwareAsset', on_delete=models.PROTECT, null=True, blank=True,
         help_text='OIM hardware asset register.')
+    ec2_instance = models.ForeignKey(
+        'tracking.EC2Instance', on_delete=models.PROTECT, null=True, blank=True,
+        verbose_name='EC2 instance')
 
     def __str__(self):
         return self.hostname
@@ -106,10 +98,6 @@ class Mobile(CommonFields):
     ad_dn = models.CharField(max_length=512, null=True, unique=True)
     registered_to = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, blank=True, null=True)
-    asset_id = models.CharField(
-        max_length=64, null=True, help_text='OIM Asset ID')
-    finance_asset_id = models.CharField(
-        max_length=64, null=True, help_text='Finance asset ID')
     model = models.CharField(max_length=128, null=True)
     os_name = models.CharField(max_length=128, null=True)
     # Identity is a GUID, from Exchange.
@@ -132,6 +120,8 @@ class EC2Instance(CommonFields):
     next_state = models.BooleanField(
         default=True, help_text="Checked is on, unchecked is off")
     running = models.BooleanField(default=True)
+    agent_version = models.CharField(
+        max_length=128, null=True, blank=True, verbose_name='SSM agent version')
 
     def __str__(self):
         return self.name
