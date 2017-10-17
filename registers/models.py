@@ -62,7 +62,8 @@ class UserGroup(models.Model):
 
 @python_2_unicode_compatible
 class ITSystemHardware(models.Model):
-    """A model to represent the relationship between an IT System and a Computer.
+    """A model to represent the relationship between IT Systems and Computers,
+    i.e. what role each Computer serves and which IT System(s) make use of them.
     """
     ROLE_CHOICES = (
         (1, 'Application server'),
@@ -70,8 +71,7 @@ class ITSystemHardware(models.Model):
         (3, 'Network file storage'),
         (4, 'Reverse proxy'),
     )
-    computer = models.ForeignKey(
-        Computer, blank=True, null=True, on_delete=models.PROTECT)
+    computer = models.ForeignKey(Computer, on_delete=models.PROTECT)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
     production = models.BooleanField(
         default=False, help_text='Hardware is used by production IT system.')

@@ -166,7 +166,7 @@ class HardwareModel(models.Model):
         ordering = ('vendor', 'model_no')
 
     def __str__(self):
-        return '{} {}'.format(self.vendor, self.model_no)
+        return self.model_no
 
 
 @python_2_unicode_compatible

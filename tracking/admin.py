@@ -14,7 +14,7 @@ class ComputerAdmin(ModelAdmin):
         ('Details', {
             'fields': (
                 'hostname', 'sam_account_name', 'domain_bound', 'ad_guid', 'ad_dn', 'os_name',
-                'os_version', 'os_service_pack', 'os_arch')
+                'os_version', 'os_service_pack', 'os_arch', 'ec2_instance')
         }),
         ('Management', {
             'fields': (
@@ -24,28 +24,24 @@ class ComputerAdmin(ModelAdmin):
             'fields': ('date_pdq_updated', 'date_ad_updated')
         })
     )
-    list_display = ['hostname', 'managed_by', 'probable_owner', 'os_name']
+    list_display = ['hostname', 'managed_by', 'probable_owner', 'os_name', 'ec2_instance']
     raw_id_fields = (
         'org_unit', 'cost_centre', 'probable_owner', 'managed_by', 'location', 'hardware_asset')
-    readonly_fields = (
-        'date_pdq_updated', 'date_nmap_updated', 'date_sophos_updated', 'date_ad_updated',
-        'date_dhcp_updated')
+    readonly_fields = ('date_pdq_updated', 'date_ad_updated')
     search_fields = ['sam_account_name', 'hostname']
 
 
 @register(Mobile)
 class MobileAdmin(ModelAdmin):
-    list_display = ('identity', 'model', 'imei', 'serial_number',
-                    'asset_id', 'finance_asset_id', 'registered_to')
-    search_fields = ('identity', 'model', 'imei',
-                     'serial_number', 'asset_id', 'finance_asset_id')
+    list_display = ('identity', 'model', 'imei', 'serial_number', 'registered_to')
+    search_fields = ('identity', 'model', 'imei', 'serial_number')
 
 
 @register(EC2Instance)
 class EC2InstanceAdmin(ModelAdmin):
-    list_display = ('name', 'ec2id', 'launch_time', 'running', 'next_state')
+    list_display = ('name', 'ec2id', 'launch_time', 'running', 'next_state', 'agent_version')
     search_fields = ('name', 'ec2id', 'launch_time')
-    readonly_fields = ["extra_data_pretty", "extra_data"]
+    readonly_fields = ['extra_data_pretty', 'extra_data', 'agent_version']
 
 
 @register(FreshdeskTicket)
