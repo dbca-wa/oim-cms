@@ -1,38 +1,67 @@
-from django.test import TestCase
-from django.contrib.auth.models import User, Group, Permission
-from django.apps import apps
-from django.contrib.contenttypes.models import ContentType
-class PermissionsTestCase(TestCase):
-    group = None
+from __future__ import absolute_import, print_function, unicode_literals
+from django.contrib.auth import get_user_model
+from django.core.urlresolvers import reverse
+from django.test import Client
+from mixer.backend.django import mixer
+from oim_cms.test_api import ApiTestCase
+
+from registers.models import ITSystemHardware
+from tracking.models import Computer
+User = get_user_model()
+
+
+class RegistersAdminTestCase(ApiTestCase):
+    client = Client()
+
     def setUp(self):
-        User.objects.create(username="test-user1", password ="password1",is_superuser=False, is_active =True,is_staff=True)
-        User.objects.create(username="test-user2", password ="password1",is_superuser=False, is_active =True,is_staff=True)
-        User.objects.create(username="test-user3", password ="password1",is_superuser=True, is_active =True,is_staff=True)
-        User.objects.create(username="test-user4", password ="password1",is_superuser=False, is_active =True,is_staff=False)
+        super(RegistersAdminTestCase, self).setUp()
+        # Create an admin user.
+        self.admin_user = mixer.blend(User, username='admin', is_superuser=True, is_staff=True)
+        self.admin_user.set_password('pass')
+        self.admin_user.save()
+        # Create some Computers
+        self.com1 = mixer.blend(Computer)
+        self.com2 = mixer.blend(Computer)
+        # Create some ITSystemHardware objects
+        self.itsys1 = mixer.blend(ITSystemHardware, computer=self.com1, production=True)
+        self.itsys2 = mixer.blend(ITSystemHardware, computer=self.com2)
+        # Attach ITSystemHardware to ITSystem objects.
+        self.it1.hardwares.add(self.itsys1)
+        self.it2.hardwares.add(self.itsys2)
+        # Log in as admin user by default
+        self.client.login(username='admin', password='pass')
 
-        mods = list(apps.get_app_config('organisation').get_models())
-        grp = Group.objects.get_or_create(name='OIM Staff')
-        self.group = grp[0]
+    def test_itsystemhardware_export(self):
+        """Test the ITSystemHardwareAdmin export view
+        """
+        url = reverse('admin:itsystemhardware_export')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
-        for model in mods:
-            ct = ContentType.objects.get_for_model(model)
-            perms = Permission.objects.filter(content_type = ct)
-            self.group.permissions.set(perms)
+    def test_itsystem_export(self):
+        """Test the ITSystemAdmin export view
+        """
+        url = reverse('admin:itsystem_export')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
+    def test_itsystemdependency_reports(self):
+        """Test the ITSystemDependencyAdmin reports view
+        """
+        url = reverse('admin:itsystem_dependency_reports')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
-    def test_in_group(self):
-        ''' test user who is not a super user but is staff and in oim staff group, expected result True '''
-        test_user1 = User.objects.get(username='test-user1');
-        test_user2 = User.objects.get(username='test-user2');
-        test_user3 = User.objects.get(username='test-user3');
-        test_user4 = User.objects.get(username='test-user4');
+    def test_itsystemdependency_report_all(self):
+        """Test the ITSystemDependencyAdmin reports/all view
+        """
+        url = reverse('admin:itsystem_dependency_report_all')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
-        #add test_user1 to group
-        test_user1.groups.add(self.group)
-
-        self.assertEqual(test_user1.has_module_perms('organisation'),True) # in oim group
-        self.assertEqual(test_user2.has_module_perms('organisation'),False) # staff not in group
-        self.assertEqual(test_user3.has_module_perms('organisation'),True) # super user
-        self.assertEqual(test_user4.has_module_perms('organisation'),False) # user who is not staff
-        self.assertEqual(test_user1.has_module_perms('some_app'),False) # test functinality in another group
-        self.assertEqual(test_user3.has_module_perms('some_app'),True) # test supper user functinality in another group
+    def test_itsystemdependency_report_nodeps(self):
+        """Test the ITSystemDependencyAdmin reports/nodeps view
+        """
+        url = reverse('admin:itsystem_dependency_report_nodeps')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
