@@ -12,7 +12,7 @@ from reversion.admin import VersionAdmin
 try:
     from StringIO import StringIO
 except ImportError:
-    from io import StringIO
+    from io import BytesIO as StringIO
 import unicodecsv
 from .models import (
     UserGroup, ITSystemHardware, Platform, ITSystem, ITSystemDependency,
