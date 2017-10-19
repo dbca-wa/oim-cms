@@ -74,8 +74,9 @@ class Asset(CommonFields):
         help_text='The amount paid for this asset, inclusive of any upgrades (excluding GST).')
     notes = models.TextField(null=True, blank=True)
     service_request_url = models.URLField(
-        max_length=2000, verbose_name='Service request URL (e.g. Freshdesk, Jira, etc.)', null=True,
-        blank=True)
+        max_length=2000, verbose_name='Service request URL', null=True, blank=True,
+        help_text='URL (e.g. Freshdesk, Jira, etc.) of the service request for purchase of this asset.')
+
 
     class Meta:
         abstract = True

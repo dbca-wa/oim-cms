@@ -20,7 +20,8 @@ dj-database-url==0.4.1
 # fork of Microsoft Azure AD auth library with password authentication fix
 git+https://github.com/scottp-dpaw/azure-activedirectory-library-for-python.git@passwordauth#egg=adal
 django-ipware==1.1.2
-python-social-auth==0.2.21
+social-auth-app-django==1.2.0
+social-auth-core==1.4.0
 graphviz==0.4.8
 
 # fork of JSON to HTML lib with python 3 fixes

@@ -15,11 +15,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='hardwareasset',
             name='service_request_url',
-            field=models.URLField(blank=True, max_length=2000, null=True, verbose_name='Service request URL (e.g. Freshdesk, Jira, etc.)'),
+            field=models.URLField(blank=True, max_length=2000, null=True, verbose_name='Service request URL', help_text='URL (e.g. Freshdesk, Jira, etc.) of the service request for purchase of this asset.'),
         ),
         migrations.AddField(
             model_name='softwareasset',
             name='service_request_url',
-            field=models.URLField(blank=True, max_length=2000, null=True, verbose_name='Service request URL (e.g. Freshdesk, Jira, etc.)'),
+            field=models.URLField(blank=True, max_length=2000, null=True, verbose_name='Service request URL', help_text='URL (e.g. Freshdesk, Jira, etc.) of the service request for purchase of this asset.'),
         ),
     ]

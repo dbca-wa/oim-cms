@@ -115,13 +115,14 @@ class HardwareAssetAdmin(VersionAdmin):
         writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL, encoding='utf-8')
         writer.writerow([
             'ASSET TAG', 'VENDOR', 'MODEL TYPE', 'HARDWARE MODEL', 'SERIAL', 'STATUS',
-            'DATE PURCHASED', 'LOCATION', 'ASSIGNED USER'])
+            'DATE PURCHASED', 'LOCATION', 'ASSIGNED USER', 'SERVICE REQUEST URL'])
         for i in HardwareAsset.objects.all():
             writer.writerow([
                 i.asset_tag, i.vendor, i.hardware_model.get_model_type_display(),
                 i.hardware_model, i.serial, i.get_status_display(),
                 datetime.strftime(i.date_purchased, '%d/%b/%Y') if i.date_purchased else '',
-                i.location if i.location else '', i.assigned_user if i.assigned_user else''])
+                i.location if i.location else '', i.assigned_user if i.assigned_user else '',
+                i.service_request_url])
 
         response = HttpResponse(f.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=hardwareasset_export.csv'
