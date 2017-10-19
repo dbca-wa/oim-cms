@@ -30,7 +30,7 @@ urlpatterns = [
     url(r'^auth_dual$', views.auth_dual, name='auth_dual'),
     url(r'^auth_ip$', views.auth_ip, name='auth_ip'),
     url(r'^auth_get$', views.auth_get, name='auth_get'),
-    url(r'', include('social.apps.django_app.urls', namespace='social')),
+    url(r'', include('social_django.urls', namespace='social')),
     url(r'', include('django.contrib.auth.urls', namespace='auth')),
     url(r'', include(wagtail_urls)),
 ]
