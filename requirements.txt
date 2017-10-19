@@ -3,7 +3,7 @@ django-extensions==1.8.1
 django-reversion==2.0.10
 django-uwsgi==0.2.1
 git+https://github.com/parksandwildlife/dpaw-utils.git@0.3a16#egg=dpaw-utils
-wagtail==1.12.2
+wagtail==1.13
 wagtailtinymce==4.2.1.5
 django-queryset-csv==1.0.0
 django-mptt==0.8.7
@@ -35,7 +35,7 @@ pyproj==1.9.5.1
 openpyxl==2.3.5
 redis==2.10.5
 unicodecsv==0.14.1
-django-filter==0.13.0
+djangorestframework-filters==0.10.1
 Unidecode==0.04.19
 mixer==5.5.7
 coverage==4.0.3
