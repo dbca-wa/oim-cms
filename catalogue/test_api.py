@@ -27,7 +27,7 @@ class RecordAPITestCase(TestCase):
         url = '/catalogue/api/records/'
         params = {'format': 'json'}
         resp = self.client.get(url, data=params)
-        unfiltered = json.loads(resp.content)
+        unfiltered = json.loads(resp.content.decode('utf-8'))
         records = Record.objects.all()
         rec1, rec2 = records[0], records[1]
         # Generate an Application
@@ -39,5 +39,5 @@ class RecordAPITestCase(TestCase):
         self.assertContains(resp, rec1.title)
         self.assertNotContains(resp, rec2.title)
         # The filtered response will be shorter than the unfiltered one.
-        filtered = json.loads(resp.content)
+        filtered = json.loads(resp.content.decode('utf-8'))
         self.assertTrue(len(unfiltered) > len(filtered))
