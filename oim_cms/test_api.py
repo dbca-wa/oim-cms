@@ -23,7 +23,7 @@ class ApiTestCase(TestCase):
     def setUp(self):
         # Generate some other DepartmentUser objects.
         mixer.cycle(8).blend(
-            DepartmentUser, photo=None, active=True,
+            DepartmentUser, username=mixer.RANDOM, photo=None, active=True,
             email=random_dpaw_email, org_unit=None,
             cost_centre=None, ad_guid=uuid1, o365_licence=False, in_sync=False)
         # Generate some locations.
@@ -95,7 +95,7 @@ class ApiTestCase(TestCase):
             username='testuser', email='user@dpaw.wa.gov.au.com', password='pass')
         # Create a DepartmentUser object for testuser.
         mixer.blend(
-            DepartmentUser, photo=None, active=True, email=self.testuser.email,
+            DepartmentUser, username=mixer.RANDOM, photo=None, active=True, email=self.testuser.email,
             org_unit=None, cost_centre=None, ad_guid=uuid1)
         # Log in testuser by default.
         self.client.login(username='testuser', password='pass')
