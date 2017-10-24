@@ -73,7 +73,6 @@ def pdq_load_computers():
                     pass
 
             computer.domain_bound = True
-            computer.hostname = row[17]
             computer.pdq_id = int(row[0])
             computer.ad_guid = urn
             computer.ad_dn = row[3]
@@ -85,10 +84,8 @@ def pdq_load_computers():
             computer.os_version = row[10]
             computer.os_service_pack = row[11]
             computer.os_arch = row[12]
-            computer.cpu = row[13]
-            computer.cpu_count = row[14]
-            computer.cpu_cores = row[15]
-            computer.memory = row[16]
+            computer.memory = row[13]
+            computer.hostname = row[14]
             computer.date_pdq_updated = update_time
             computer.save()
             logger.info('Computer {} updated from PDQ Inventory scan data'.format(computer))
