@@ -13,14 +13,14 @@ class ApprovalViewsTestCase(TestCase):
 
     def setUp(self):
         # Create User and linked DepartmentUser objects.
-        self.du1 = mixer.blend(DepartmentUser, photo=None)
+        self.du1 = mixer.blend(DepartmentUser, username=mixer.RANDOM, photo=None)
         self.user1 = User.objects.create_user(
             username=self.du1.username, email=self.du1.email)
         self.user1.set_password('pass')
         self.user1.save()
         # Log in user1 by default.
         self.client.login(username=self.user1.username, password='pass')
-        self.du2 = mixer.blend(DepartmentUser, photo=None)
+        self.du2 = mixer.blend(DepartmentUser, username=mixer.RANDOM, photo=None)
         self.user2 = User.objects.create_user(
             username=self.du2.username, email=self.du2.email)
         self.user2.set_password('pass')

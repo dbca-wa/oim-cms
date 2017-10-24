@@ -92,7 +92,7 @@ class DepartmentUser(MPTTModel):
         help_text='HR Employee ID.')
     email = models.EmailField(unique=True)
     username = models.CharField(
-        max_length=128, editable=False, unique=True,
+        max_length=128, editable=False, blank=True, null=True,
         help_text='Pre-Windows 2000 login username.')
     name = models.CharField(max_length=128, help_text='Format: [Given name] [Surname]')
     given_name = models.CharField(
