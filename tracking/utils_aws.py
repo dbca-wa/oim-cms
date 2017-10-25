@@ -2,13 +2,14 @@ from __future__ import absolute_import, unicode_literals
 import json
 import os
 
-from .models import EC2Instance
+from .models import EC2Instance, Computer
 from .utils import logger_setup
 
 
 def aws_load_instances():
     """Update the database with EC2 Instance information.
     """
+    from registers.models import ITSystemHardware  # Prevent circular import.
     logger = logger_setup('aws_load_instances')
     logger_ex = logger_setup('exceptions_aws_load_instances')
     json_path = os.environ.get('AWS_JSON_PATH')
@@ -46,6 +47,13 @@ def aws_load_instances():
             logger_ex.error('Error while loading EC2 instance information')
             logger_ex.exception(e)
 
+        # If the instance name matches one single Computer, create a FK link.
+        comps = Computer.objects.filter(hostname__istartswith=ec2.name)
+        if comps.exists() and comps.count() == 1:
+            c = comps[0]
+            c.ec2_instance = ec2
+            c.save()
+
     for k, v in inst_ssm.iteritems():
         if k.startswith('i'):  # Don't check objects without an EC2 instance ID.
             try:
@@ -60,3 +68,7 @@ def aws_load_instances():
             except Exception as e:
                 logger_ex.error('Error while loading EC2 instance information')
                 logger_ex.exception(e)
+
+    # Update patch_group values on ITSystemHardware objects.
+    for i in ITSystemHardware.objects.all():
+        i.set_patch_group()

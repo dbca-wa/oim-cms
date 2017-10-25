@@ -92,6 +92,18 @@ class ITSystemHardware(models.Model):
         else:
             return '{} (non-prod {})'.format(self.computer.hostname, self.get_role_display().lower())
 
+    def set_patch_group(self):
+        """Follow relationships (self -> computer -> ec2_instance) to see if
+        the patch_group value for this object can be automatically set.
+        """
+        if self.computer and self.computer.ec2_instance:
+            ec2 = self.computer.ec2_instance
+            if 'Patch Group' in ec2.tags:
+                self.patch_group = ec2.tags['Patch Group']
+                self.save()
+
+        return self.patch_group
+
 
 @python_2_unicode_compatible
 class Platform(models.Model):
