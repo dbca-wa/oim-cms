@@ -78,8 +78,8 @@ class ITSystemHardware(models.Model):
     decommissioned = models.BooleanField(
         default=False, help_text='Hardware has been decommissioned?')
     description = models.TextField(blank=True)
-    aws_tags = JSONField(
-        null=True, blank=True, default=dict, help_text='AWS tags (key value pairs).')
+    patch_group = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Patch group that this host has been placed in.')
 
     class Meta:
         verbose_name_plural = 'IT System hardware'
@@ -92,10 +92,17 @@ class ITSystemHardware(models.Model):
         else:
             return '{} (non-prod {})'.format(self.computer.hostname, self.get_role_display().lower())
 
-    def aws_tag_values(self):
-        """Returns a comma-separate list of AWS tag values.
+    def set_patch_group(self):
+        """Follow relationships (self -> computer -> ec2_instance) to see if
+        the patch_group value for this object can be automatically set.
         """
-        return ', '.join(self.aws_tags.itervalues())
+        if self.computer and self.computer.ec2_instance:
+            ec2 = self.computer.ec2_instance
+            if 'Patch Group' in ec2.tags:
+                self.patch_group = ec2.tags['Patch Group']
+                self.save()
+
+        return self.patch_group
 
 
 @python_2_unicode_compatible
