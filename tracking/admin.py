@@ -39,9 +39,13 @@ class MobileAdmin(ModelAdmin):
 
 @register(EC2Instance)
 class EC2InstanceAdmin(ModelAdmin):
-    list_display = ('name', 'ec2id', 'launch_time', 'running', 'next_state', 'agent_version')
+    list_display = ('name', 'ec2id', 'launch_time', 'running', 'next_state', 'agent_version', 'aws_tag_values')
     search_fields = ('name', 'ec2id', 'launch_time')
     readonly_fields = ['extra_data_pretty', 'extra_data', 'agent_version']
+
+    def aws_tag_values(self, obj):
+        return obj.aws_tag_values()
+    aws_tag_values.short_description = 'AWS tag values'
 
 
 @register(FreshdeskTicket)

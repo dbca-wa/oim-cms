@@ -122,12 +122,19 @@ class EC2Instance(CommonFields):
     running = models.BooleanField(default=True)
     agent_version = models.CharField(
         max_length=128, null=True, blank=True, verbose_name='SSM agent version')
+    tags = JSONField(
+        null=True, blank=True, default=dict, help_text='AWS tags (key value pairs).')
 
     def __str__(self):
         return self.name
 
     class Meta:
         verbose_name = 'EC2 instance'
+
+    def aws_tag_values(self):
+        """Returns a comma-separate list of AWS tag values.
+        """
+        return ', '.join(self.tags.itervalues())
 
 
 @python_2_unicode_compatible

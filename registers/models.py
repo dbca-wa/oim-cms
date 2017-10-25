@@ -78,8 +78,8 @@ class ITSystemHardware(models.Model):
     decommissioned = models.BooleanField(
         default=False, help_text='Hardware has been decommissioned?')
     description = models.TextField(blank=True)
-    aws_tags = JSONField(
-        null=True, blank=True, default=dict, help_text='AWS tags (key value pairs).')
+    patch_group = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Patch group that this host has been placed in.')
 
     class Meta:
         verbose_name_plural = 'IT System hardware'
@@ -91,11 +91,6 @@ class ITSystemHardware(models.Model):
             return '{} (prod {})'.format(self.computer.hostname, self.get_role_display().lower())
         else:
             return '{} (non-prod {})'.format(self.computer.hostname, self.get_role_display().lower())
-
-    def aws_tag_values(self):
-        """Returns a comma-separate list of AWS tag values.
-        """
-        return ', '.join(self.aws_tags.itervalues())
 
 
 @python_2_unicode_compatible
