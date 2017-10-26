@@ -51,7 +51,6 @@ class Computer(CommonFields):
         max_length=48, null=True, blank=True, unique=True, verbose_name='AD GUID')
     ad_dn = models.CharField(
         max_length=512, null=True, blank=True, unique=True, verbose_name='AD distinguished name')
-    pdq_id = models.IntegerField(null=True, blank=True, unique=True)
     manufacturer = models.CharField(max_length=128, null=True, blank=True)
     model = models.CharField(max_length=128, null=True, blank=True)
     chassis = models.CharField(max_length=128, null=True, blank=True)
