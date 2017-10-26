@@ -73,7 +73,6 @@ def pdq_load_computers():
                     pass
 
             computer.domain_bound = True
-            computer.pdq_id = int(row[0])
             computer.ad_guid = urn
             computer.ad_dn = row[3]
             computer.manufacturer = row[5]
