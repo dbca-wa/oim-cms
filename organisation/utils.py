@@ -146,7 +146,7 @@ def departmentuser_csv_report():
     stream = BytesIO()
     wr = unicodecsv.writer(stream, encoding='utf-8')
     wr.writerow(header)
-    for u in DepartmentUser.objects.filter(active=True):
+    for u in DepartmentUser.objects.all():
         record = []
         for f in FIELDS:
             record.append(getattr(u, f))
