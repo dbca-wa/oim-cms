@@ -133,9 +133,9 @@ class DepartmentUserResource(DjangoResource):
         """
         resp = cache.get(self.request.get_full_path())
         if resp:
-            LOGGER.info('DepartmentUser API cache hit')
+            #LOGGER.info('DepartmentUser API cache hit')
             return resp
-        LOGGER.info('DepartmentUser API cache miss')
+        #LOGGER.info('DepartmentUser API cache miss')
         FILTERS = {}
         sync_o365 = True
         if 'sync_o365' in self.request.GET and self.request.GET['sync_o365'] == 'false':
