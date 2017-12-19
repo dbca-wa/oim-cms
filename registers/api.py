@@ -102,8 +102,9 @@ class ITSystemResource(CSVDjangoResource):
                 'role': i.get_role_display(),
                 'computer__location': i.computer.location.name if i.computer.location else '',
                 'operating_system': i.computer.os_name if i.computer.os_name else '',
-
-            } for i in data.hardwares.all()],
+                'description': i.description,
+                'patch_group': i.patch_group
+            } for i in data.hardwares.filter(decommissioned=False)],
             'processes': [{
                 'process__name': i.process.name,
                 'process__criticality': i.process.get_criticality_display() if i.process.criticality else '',
