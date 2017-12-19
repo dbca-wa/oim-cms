@@ -18,7 +18,7 @@ Notes
 -----
 
 This project is focused on Parks and Wildlife use cases at this point in time,
-for more information please contact asi@dpaw.wa.gov.au.
+for more information please contact asi@dbca.wa.gov.au.
 
 Development
 -----------
