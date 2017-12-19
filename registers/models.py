@@ -70,6 +70,7 @@ class ITSystemHardware(models.Model):
         (2, 'Database server'),
         (3, 'Network file storage'),
         (4, 'Reverse proxy'),
+        (5, 'Shared workstation'),
     )
     computer = models.ForeignKey(Computer, on_delete=models.PROTECT)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
@@ -80,6 +81,8 @@ class ITSystemHardware(models.Model):
     description = models.TextField(blank=True)
     patch_group = models.CharField(
         max_length=256, null=True, blank=True, help_text='Patch group that this host has been placed in.')
+    host = models.CharField(
+        max_length=256, null=True, blank=True, help_text='Host, or hosting environment.')
 
     class Meta:
         verbose_name_plural = 'IT System hardware'

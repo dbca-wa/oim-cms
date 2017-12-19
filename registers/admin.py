@@ -29,10 +29,10 @@ class UserGroupAdmin(VersionAdmin):
 
 @register(ITSystemHardware)
 class ITSystemHardwareAdmin(VersionAdmin):
-    list_display = ('computer', 'role', 'affected_itsystems', 'production', 'decommissioned', 'patch_group')
-    list_filter = ('role', 'production', 'decommissioned', 'patch_group')
+    list_display = ('computer', 'role', 'affected_itsystems', 'production', 'decommissioned', 'patch_group', 'host')
+    list_filter = ('role', 'production', 'decommissioned', 'patch_group', 'host')
     raw_id_fields = ('computer',)
-    search_fields = ('computer__hostname', 'computer__sam_account_name', 'description')
+    search_fields = ('computer__hostname', 'computer__sam_account_name', 'description', 'host')
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/registers/itsystemhardware/change_list.html'
 
