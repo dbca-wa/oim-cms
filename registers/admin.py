@@ -38,7 +38,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
 
     def affected_itsystems(self, obj):
         # Exclude decommissioned systems from the count.
-        count = obj.itsystem_set.all().exclude(status=3).count()
+        count = obj.itsystem_set.count()
         url = reverse('admin:registers_itsystem_changelist')
         return mark_safe('<a href="{}?hardwares__in={}">{}</a>'.format(url, obj.pk, count))
     affected_itsystems.short_description = 'IT Systems'
@@ -58,7 +58,7 @@ class ITSystemHardwareAdmin(VersionAdmin):
         """
         # Define fields to output.
         fields = [
-            'hostname', 'os_name', 'role', 'production', 'instance_id', 'patch_group', 'itsystem_system_id',
+            'hostname', 'host', 'os_name', 'role', 'production', 'instance_id', 'patch_group', 'itsystem_system_id',
             'itsystem_name', 'itsystem_cost_centre', 'itsystem_availability', 'itsystem_custodian',
             'itsystem_owner', 'it_system_data_custodian']
 
@@ -75,13 +75,13 @@ class ITSystemHardwareAdmin(VersionAdmin):
                 # Write a row for each linked, non-decommissioned ITSystem.
                 for it in i.itsystem_set.all().exclude(status=3):
                     wr.writerow([
-                        i.computer.hostname, i.computer.os_name, i.get_role_display(),
+                        i.computer.hostname, i.host, i.computer.os_name, i.get_role_display(),
                         i.production, ec2, i.patch_group, it.system_id, it.name, it.cost_centre,
                         it.get_availability_display(), it.custodian, it.owner, it.data_custodian])
             else:
                 # No IT Systems - just record the hardware details.
                 wr.writerow([
-                    i.computer.hostname, i.computer.os_name, i.get_role_display(), i.production,
+                    i.computer.hostname, i.host, i.computer.os_name, i.get_role_display(), i.production,
                     ec2, i.patch_group])
 
         response = HttpResponse(stream.getvalue(), content_type='text/csv')
