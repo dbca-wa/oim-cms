@@ -67,7 +67,8 @@ class HardwareAssetAdmin(VersionAdmin):
         'vendor', 'hardware_model', 'invoice', 'assigned_user', 'location', 'cost_centre')
     search_fields = (
         'asset_tag', 'vendor__name', 'serial', 'hardware_model__model_type',
-        'hardware_model__vendor__name', 'hardware_model__model_no', 'service_request_url')
+        'hardware_model__vendor__name', 'hardware_model__model_no', 'service_request_url',
+        'location__name', 'assigned_user__email')
     readonly_fields = ['extra_data_ro']
     # Override the default reversion/change_list.html template:
     change_list_template = 'admin/assets/hardwareasset/change_list.html'
@@ -114,15 +115,17 @@ class HardwareAssetAdmin(VersionAdmin):
         f = StringIO()
         writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL, encoding='utf-8')
         writer.writerow([
-            'ASSET TAG', 'VENDOR', 'MODEL TYPE', 'HARDWARE MODEL', 'SERIAL', 'STATUS',
-            'DATE PURCHASED', 'LOCATION', 'ASSIGNED USER', 'SERVICE REQUEST URL'])
+            'ASSET TAG', 'FINANCE ASSET TAG', 'SERIAL', 'VENDOR', 'MODEL TYPE', 'HARDWARE MODEL',
+            'STATUS', 'COST CENTRE', 'LOCATION', 'ASSIGNED USER', 'DATE PURCHASED',
+            'PURCHASED VALUE', 'SERVICE REQUEST URL'])
         for i in HardwareAsset.objects.all():
             writer.writerow([
-                i.asset_tag, i.vendor, i.hardware_model.get_model_type_display(),
-                i.hardware_model, i.serial, i.get_status_display(),
+                i.asset_tag, i.finance_asset_tag, i.serial, i.vendor, i.hardware_model.get_model_type_display(),
+                i.hardware_model, i.get_status_display(),
+                i.cost_centre if i.cost_centre else '', i.location if i.location else '',
+                i.assigned_user if i.assigned_user else '',
                 datetime.strftime(i.date_purchased, '%d/%b/%Y') if i.date_purchased else '',
-                i.location if i.location else '', i.assigned_user if i.assigned_user else '',
-                i.service_request_url])
+                i.purchased_value, i.service_request_url])
 
         response = HttpResponse(f.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=hardwareasset_export.csv'
