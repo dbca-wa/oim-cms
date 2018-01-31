@@ -38,6 +38,7 @@ class InvoiceAdmin(VersionAdmin):
 @register(HardwareModel)
 class HardwareModelAdmin(VersionAdmin):
     list_display = ('model_no', 'model_type', 'vendor')
+    list_filter = ('model_type',)
     search_fields = ('vendor__name', 'model_type', 'model_no')
 
 
@@ -53,7 +54,7 @@ class HardwareAssetAdmin(VersionAdmin):
         ('Location & ownership details', {
             'fields': (
                 'cost_centre', 'location', 'assigned_user', 'date_purchased', 'invoice',
-                'purchased_value')
+                'purchased_value', 'is_asset', 'local_property')
         }),
         ('Extra data (history)', {
             'fields': ('extra_data_ro',)
@@ -117,7 +118,7 @@ class HardwareAssetAdmin(VersionAdmin):
         writer.writerow([
             'ASSET TAG', 'FINANCE ASSET TAG', 'SERIAL', 'VENDOR', 'MODEL TYPE', 'HARDWARE MODEL',
             'STATUS', 'COST CENTRE', 'LOCATION', 'ASSIGNED USER', 'DATE PURCHASED',
-            'PURCHASED VALUE', 'SERVICE REQUEST URL'])
+            'PURCHASED VALUE', 'SERVICE REQUEST URL', 'LOCAL PROPERTY', 'IS ASSET'])
         for i in HardwareAsset.objects.all():
             writer.writerow([
                 i.asset_tag, i.finance_asset_tag, i.serial, i.vendor, i.hardware_model.get_model_type_display(),
@@ -125,7 +126,7 @@ class HardwareAssetAdmin(VersionAdmin):
                 i.cost_centre if i.cost_centre else '', i.location if i.location else '',
                 i.assigned_user if i.assigned_user else '',
                 datetime.strftime(i.date_purchased, '%d/%b/%Y') if i.date_purchased else '',
-                i.purchased_value, i.service_request_url])
+                i.purchased_value, i.service_request_url, i.local_property, i.is_asset])
 
         response = HttpResponse(f.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=hardwareasset_export.csv'
