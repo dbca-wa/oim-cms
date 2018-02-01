@@ -77,7 +77,6 @@ class Asset(CommonFields):
         max_length=2000, verbose_name='Service request URL', null=True, blank=True,
         help_text='URL (e.g. Freshdesk, Jira, etc.) of the service request for purchase of this asset.')
 
-
     class Meta:
         abstract = True
 
@@ -90,22 +89,15 @@ class HardwareModel(models.Model):
         ('Air conditioner', 'Air conditioner'),
         ('Camera - Compact', 'Camera - Compact'),
         ('Camera - Conference', 'Camera - Conference'),
-        ('Camera - SLR', 'Camera - SLR'),
         ('Camera - Security (IP)', 'Camera - Security (IP)'),
-        ('Camera - Security (non-IP)', 'Camera - Security (non-IP)'),
         ('Camera - Other', 'Camera - Other'),
-        ('Chassis', 'Chassis'),
         ('Computer - Desktop', 'Computer - Desktop'),
-        ('Computer - Docking station', 'Computer - Docking station'),
-        ('Computer - Input device', 'Computer - Input device'),
         ('Computer - Laptop', 'Computer - Laptop'),
-        ('Computer - Misc Accessory', 'Computer - Misc Accessory'),
         ('Computer - Monitor', 'Computer - Monitor'),
         ('Computer - Peripheral', 'Computer - Peripheral'),
         ('Computer - Tablet PC', 'Computer - Tablet PC'),
         ('Computer - Other', 'Computer - Other'),
         ('Environmental monitor', 'Environmental monitor'),
-        ('Network - Hub', 'Network - Hub'),
         ('Network - Media converter', 'Network - Media converter'),
         ('Network - Modem', 'Network - Modem'),
         ('Network - Module or card', 'Network - Module or card'),
@@ -126,14 +118,10 @@ class HardwareModel(models.Model):
         ('Phone - Wireless or portable', 'Phone - Wireless or portable'),
         ('Phone - Other', 'Phone - Other'),
         ('Power Distribution Unit', 'Power Distribution Unit'),
-        ('Printer - Fax machine', 'Printer - Fax machine'),
-        ('Printer - Local', 'Printer - Local'),
-        ('Printer - Local Multifunction', 'Printer - Local Multifunction'),
         ('Printer - Multifunction copier', 'Printer - Multifunction copier'),
         ('Printer - Plotter', 'Printer - Plotter'),
         ('Printer - Server', 'Printer - Server'),
         ('Printer - Workgroup', 'Printer - Workgroup'),
-        ('Printer - Other', 'Printer - Other'),
         ('Projector', 'Projector'),
         ('Rack', 'Rack'),
         ('Server - Blade', 'Server - Blade'),
@@ -145,7 +133,6 @@ class HardwareModel(models.Model):
         ('Storage - SAN', 'Storage - SAN'),
         ('Storage - Other', 'Storage - Other'),
         ('Speaker', 'Speaker'),
-        ('Tablet', 'Tablet'),
         ('Tape autoloader', 'Tape autoloader'),
         ('Tape drive', 'Tape drive'),
         ('Telecom - Testing Device', 'Telecom - Testing Device'),
@@ -199,6 +186,11 @@ class HardwareAsset(Asset):
     assigned_user = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, null=True, blank=True)
     tracked_computer = models.OneToOneField(Computer, null=True, blank=True)
+    local_property = models.BooleanField(
+        default=False, help_text='''Indicates an item that is not registered with Finance (i.e. is
+            valued <$5,000 and is not defined as portable and attractive).''')
+    is_asset = models.BooleanField(
+        default=False, help_text='Indicates an item that is valued >$5,000')
 
     class Meta:
         ordering = ('-asset_tag',)

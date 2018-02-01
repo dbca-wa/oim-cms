@@ -4,7 +4,7 @@ from dateutil.parser import parse
 import re
 import unicodecsv
 
-from organisation.models import DepartmentUser, Location
+from organisation.models import DepartmentUser, Location, CostCentre
 from .models import HardwareAsset, Vendor, HardwareModel
 
 
@@ -23,7 +23,7 @@ def validate_csv(fileobj):
     critical_fields = ('asset tag', 'serial', 'date purchased')
     all_fields = critical_fields + (
         'finance asset tag', 'vendor', 'hardware model', 'location',
-        'status', 'purchased value', 'assigned user', 'notes')
+        'status', 'cost centre', 'purchased value', 'assigned user', 'notes')
     errors = []
     warnings = []
     notes = []
@@ -121,6 +121,12 @@ def validate_csv(fileobj):
                     '''The asset status must be one of 'In storage', '''
                     ''''Deployed' or 'Disposed'.'''.format(c.line_num, row['status']))
 
+        # Check cost centre.
+        if 'cost centre' in row and row['cost centre']:
+            if CostCentre.objects.filter(code=row['cost centre']) < 1:
+                errors.append(
+                    '''Row {}: There is no cost centre code that matches {}. '''
+                    '''Cost centre must exactly match existing codes.'''.format(c.line_num, row['cost centre']))
         # Check location.
         if 'location' in row and row['location']:
             if Location.objects.filter(name__istartswith=row['location']).count() > 1:
@@ -189,6 +195,11 @@ def import_csv(fileobj):
         if 'status' in row and row['status']:
             if row['status'] in ['In storage', 'Deployed', 'Disposed']:
                 asset.status = row['status']
+        if 'cost centre' in row and row['cost centre']:
+            try:
+                asset.cost_centre = CostCentre.objects.get(code=row['cost centre'])
+            except:
+                asset.cost_centre = None
         if 'purchased value' in row and row['purchased value']:
             try:
                 asset.purchased_value = Decimal(row['purchased value'])
