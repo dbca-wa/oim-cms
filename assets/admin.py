@@ -121,9 +121,9 @@ class HardwareAssetAdmin(VersionAdmin):
             'PURCHASED VALUE', 'SERVICE REQUEST URL', 'LOCAL PROPERTY', 'IS ASSET'])
         for i in HardwareAsset.objects.all():
             writer.writerow([
-                i.asset_tag, i.finance_asset_tag, i.serial, i.vendor, i.hardware_model.get_model_type_display(),
-                i.hardware_model, i.get_status_display(),
-                i.cost_centre if i.cost_centre else '', i.location if i.location else '',
+                i.asset_tag, i.finance_asset_tag, i.serial, i.vendor,
+                i.hardware_model.get_model_type_display(), i.hardware_model, i.get_status_display(),
+                i.cost_centre.code if i.cost_centre else '', i.location if i.location else '',
                 i.assigned_user if i.assigned_user else '',
                 datetime.strftime(i.date_purchased, '%d/%b/%Y') if i.date_purchased else '',
                 i.purchased_value, i.service_request_url, i.local_property, i.is_asset])
