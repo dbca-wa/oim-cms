@@ -102,7 +102,9 @@ $(document).ready(function () {
 
     // form upgrades
     window.upgradeForms = function() {
-        $("input[type=date]").fdatepicker({format: "dd/mm/yyyy"}).attr({placeholder: "dd/mm/yyyy"});
+        if (!Modernizr.inputtypes.date) {
+            $("input[type=date]").fdatepicker({format: "dd/mm/yyyy"}).attr({placeholder: "dd/mm/yyyy"});
+        }
         // Find all inputs on the DOM which are bound to a datalist via their list attribute.
         $('input[list]').on("input", function() {
             // use the setCustomValidity function of the Validation API
