@@ -11,7 +11,7 @@ from reversion.admin import VersionAdmin
 from six import StringIO
 import unicodecsv as csv
 
-from .models import Vendor, Invoice, HardwareModel, HardwareAsset, SoftwareAsset
+from .models import Vendor, HardwareModel, HardwareAsset, SoftwareAsset
 from .utils import humanise_age
 
 
@@ -26,15 +26,6 @@ class VendorAdmin(VersionAdmin):
         return obj.hardwareasset_set.count()
 
 
-@register(Invoice)
-class InvoiceAdmin(VersionAdmin):
-    date_hierarchy = 'date'
-    list_display = ('job_number', 'vendor', 'vendor_ref', 'date', 'total_value')
-    list_filter = ('vendor',)
-    search_fields = (
-        'vendor__name', 'vendor_ref', 'job_number', 'etj_number', 'notes')
-
-
 @register(HardwareModel)
 class HardwareModelAdmin(VersionAdmin):
     list_display = ('model_no', 'model_type', 'vendor')
@@ -45,6 +36,7 @@ class HardwareModelAdmin(VersionAdmin):
 @register(HardwareAsset)
 class HardwareAssetAdmin(VersionAdmin):
     date_hierarchy = 'date_purchased'
+    exclude = ('invoice',)
     fieldsets = (
         ('Hardware asset details', {
             'fields': (
@@ -53,8 +45,8 @@ class HardwareAssetAdmin(VersionAdmin):
         }),
         ('Location & ownership details', {
             'fields': (
-                'cost_centre', 'location', 'assigned_user', 'date_purchased', 'invoice',
-                'purchased_value', 'is_asset', 'local_property')
+                'cost_centre', 'location', 'assigned_user', 'date_purchased', 'invoice_copy',
+                'purchased_value', 'is_asset', 'local_property', 'warranty_end')
         }),
         ('Extra data (history)', {
             'fields': ('extra_data_ro',)
@@ -65,7 +57,7 @@ class HardwareAssetAdmin(VersionAdmin):
         'age', 'location', 'assigned_user')
     list_filter = ('status', 'vendor')
     raw_id_fields = (
-        'vendor', 'hardware_model', 'invoice', 'assigned_user', 'location', 'cost_centre')
+        'vendor', 'hardware_model', 'assigned_user', 'location', 'cost_centre')
     search_fields = (
         'asset_tag', 'vendor__name', 'serial', 'hardware_model__model_type',
         'hardware_model__vendor__name', 'hardware_model__model_no', 'service_request_url',
@@ -118,7 +110,8 @@ class HardwareAssetAdmin(VersionAdmin):
         writer.writerow([
             'ASSET TAG', 'FINANCE ASSET TAG', 'SERIAL', 'VENDOR', 'MODEL TYPE', 'HARDWARE MODEL',
             'STATUS', 'COST CENTRE', 'LOCATION', 'ASSIGNED USER', 'DATE PURCHASED',
-            'PURCHASED VALUE', 'SERVICE REQUEST URL', 'LOCAL PROPERTY', 'IS ASSET'])
+            'PURCHASED VALUE', 'SERVICE REQUEST URL', 'LOCAL PROPERTY', 'IS ASSET',
+            'WARRANTY END'])
         for i in HardwareAsset.objects.all():
             writer.writerow([
                 i.asset_tag, i.finance_asset_tag, i.serial, i.vendor,
@@ -126,7 +119,8 @@ class HardwareAssetAdmin(VersionAdmin):
                 i.cost_centre.code if i.cost_centre else '', i.location if i.location else '',
                 i.assigned_user if i.assigned_user else '',
                 datetime.strftime(i.date_purchased, '%d/%b/%Y') if i.date_purchased else '',
-                i.purchased_value, i.service_request_url, i.local_property, i.is_asset])
+                i.purchased_value, i.service_request_url, i.local_property, i.is_asset,
+                datetime.strftime(i.warranty_end, '%d/%b/%Y') if i.warranty_end else ''])
 
         response = HttpResponse(f.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=hardwareasset_export.csv'
@@ -212,6 +206,7 @@ class HardwareAssetAdmin(VersionAdmin):
 @register(SoftwareAsset)
 class SoftwareAssetAdmin(VersionAdmin):
     date_hierarchy = 'date_purchased'
+    exclude = ('invoice',)
     fieldsets = (
         ('Software asset details', {
             'fields': (
@@ -222,10 +217,10 @@ class SoftwareAssetAdmin(VersionAdmin):
             'fields': ('license', 'license_details', 'license_count')
         }),
         ('Asset ownership details', {
-            'fields': ('cost_centre', 'date_purchased', 'invoice')
+            'fields': ('cost_centre', 'date_purchased', 'invoice_copy')
         }),
     )
     list_display = ('name', 'vendor', 'license')
     list_filter = ('license',)
-    raw_id_fields = ('invoice', 'org_unit', 'cost_centre')
+    raw_id_fields = ('org_unit', 'cost_centre')
     search_fields = ('name', 'vendor__name', 'service_request_url')

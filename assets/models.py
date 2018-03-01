@@ -31,6 +31,9 @@ class Vendor(models.Model):
 
 @python_2_unicode_compatible
 class Invoice(CommonFields):
+    """DEPRECATED: this model is no longer in use within the application.
+    Preserving it for a period of time for record-keeping.
+    """
     vendor = models.ForeignKey(Vendor, null=True, blank=True, on_delete=models.PROTECT)
     vendor_ref = models.CharField(
         max_length=50, null=True, blank=True,
@@ -69,6 +72,10 @@ class Asset(CommonFields):
     date_purchased = models.DateField(null=True, blank=True)
     invoice = models.ForeignKey(
         Invoice, on_delete=models.PROTECT, blank=True, null=True)
+    invoice_copy = models.FileField(
+        blank=True, null=True, max_length=512, upload_to='uploads/%Y/%m/%d',
+        help_text='A digital copy of the asset invoice (e.g. PDF, JPG or PNG)'
+    )
     purchased_value = models.DecimalField(
         max_digits=20, decimal_places=2, blank=True, null=True,
         help_text='The amount paid for this asset, inclusive of any upgrades (excluding GST).')
@@ -191,6 +198,8 @@ class HardwareAsset(Asset):
             valued <$5,000 and is not defined as portable and attractive).''')
     is_asset = models.BooleanField(
         default=False, help_text='Indicates an item that is valued >$5,000')
+    warranty_end = models.DateField(
+        null=True, blank=True, help_text='Expiry date of hardware warranty period (if applicable).')
 
     class Meta:
         ordering = ('-asset_tag',)
