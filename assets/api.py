@@ -10,17 +10,21 @@ class HardwareAssetPreparer(Preparer):
     """
     def prepare(self, data):
         result = {
-            'vendor': data.vendor.name,
-            'date_purchased': data.date_purchased,
-            'purchased_value': data.purchased_value,
-            'notes': data.notes,
             'asset_tag': data.asset_tag,
             'finance_asset_tag': data.finance_asset_tag,
+            'serial': data.serial,
+            'vendor': data.vendor.name,
             'hardware_model': data.hardware_model.model_type,
             'status': data.get_status_display(),
-            'serial': data.serial,
-            'location': str(data.location) if data.location else '',
-            'assigned_user': data.assigned_user.email if data.assigned_user else ''
+            'notes': data.notes,
+            'cost_centre': data.cost_centre.name if data.cost_centre else '',
+            'location': data.location.name if data.location else '',
+            'assigned_user': data.assigned_user.email if data.assigned_user else '',
+            'date_purchased': data.date_purchased,
+            'purchased_value': data.purchased_value,
+            'is_asset': data.is_asset,
+            'local_property': data.local_property,
+            'warranty_end': data.warranty_end
         }
         return result
 
@@ -31,3 +35,6 @@ class HardwareAssetResource(CSVDjangoResource):
 
     def list(self):
         return HardwareAsset.objects.all()
+
+    def detail(self, pk):
+        return HardwareAsset.objects.get(pk=pk)
