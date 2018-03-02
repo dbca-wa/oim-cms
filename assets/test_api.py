@@ -22,3 +22,14 @@ class HardwareAssetResourceTestCase(ApiTestCase):
         url = '/api/hardware-assets/{}/'.format(hw.pk)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+    def test_detail_tag(self):
+        hw = HardwareAsset.objects.first()
+        hw.asset_tag = 'IT12345'
+        hw.save()
+        url = '/api/hardware-assets/{}/'.format(hw.asset_tag)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        url = '/api/hardware-assets/{}/'.format(hw.asset_tag.lower())
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
