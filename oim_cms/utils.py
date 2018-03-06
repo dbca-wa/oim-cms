@@ -8,11 +8,11 @@ class CSVDjangoResource(DjangoResource):
     """Extend the restless DjangoResource class to add a CSV export endpoint.
     """
     @classmethod
-    def as_csv(cls, request):
-        resource = cls()
+    def as_csv(self, request):
+        resource = self()
         if not hasattr(resource, "list_qs"):
             return HttpResponse(
-                "list_qs not implemented for {}".format(cls.__name__))
+                "list_qs not implemented for {}".format(self.__name__))
         resource.request = request
         return render_to_csv_response(
             resource.list_qs(), field_order=resource.VALUES_ARGS)

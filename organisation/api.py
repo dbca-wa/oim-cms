@@ -169,12 +169,14 @@ class DepartmentUserResource(DjangoResource):
             users = DepartmentUser.objects.filter(ad_guid=self.request.GET['ad_guid'])
         elif 'cost_centre' in self.request.GET:
             # Always return all objects by cost centre (inc inactive & contractors).
-            users = DepartmentUser.objects.filter(cost_centre__code=self.request.GET['cost_centre'])
+            users = DepartmentUser.objects.filter(cost_centre__code__icontains=self.request.GET['cost_centre'])
         else:
             # No other filtering:
-            # Return 'active' DU objects, excluding predefined account types and contractors.
+            # Return 'active' DU objects, excluding predefined account types and contractors
+            # and expired accounts.
             FILTERS = DepartmentUser.ACTIVE_FILTER.copy()
-            users = DepartmentUser.objects.filter(**FILTERS).exclude(account_type__in=[4, 5, 9, 10, 11, 12, 14, 16])
+            users = DepartmentUser.objects.filter(**FILTERS)
+            users = users.exclude(account_type__in=DepartmentUser.ACCOUNT_TYPE_EXCLUDE)
             users = users.exclude(expiry_date__lte=timezone.now())
         # Non-mutually-exclusive filters:
         if 'o365_licence' in self.request.GET:
@@ -375,7 +377,7 @@ class DepartmentUserResource(DjangoResource):
         """
         qs = DepartmentUser.objects.filter(**DepartmentUser.ACTIVE_FILTER)
         # Exclude predefined account types:
-        qs = qs.exclude(account_type__in=[4, 5, 9, 10, 11, 12, 14, 16])
+        qs = qs.exclude(account_type__in=DepartmentUser.ACCOUNT_TYPE_EXCLUDE)
         if exclude_populate_groups:  # Exclude objects where populate_primary_group == False
             qs = qs.exclude(populate_primary_group=False)
         structure = []

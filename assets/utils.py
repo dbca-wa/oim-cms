@@ -1,8 +1,10 @@
 from __future__ import unicode_literals, absolute_import
 from decimal import Decimal
+from datetime import datetime
 from dateutil.parser import parse
 import re
-import unicodecsv
+from io import BytesIO
+import unicodecsv as csv
 
 from organisation.models import DepartmentUser, Location, CostCentre
 from .models import HardwareAsset, Vendor, HardwareModel
@@ -13,7 +15,7 @@ def validate_csv(fileobj):
     Returns a tuple (number of assets, errors, warnings, notes).
     """
     try:
-        c = unicodecsv.DictReader(fileobj)
+        c = csv.DictReader(fileobj)
         c.fieldnames
     except Exception:
         errors = ["""The file you uploaded could not be interpreted. Check that
@@ -147,7 +149,7 @@ def import_csv(fileobj):
     """Undertakes an import of the passed-in CSV file.
     Returns a list of objects created.
     """
-    c = unicodecsv.DictReader(fileobj)
+    c = csv.DictReader(fileobj)
     unknown_vendor = Vendor.objects.get_or_create(name='Unknown Vendor')[0]
     unknown_model = HardwareModel.objects.get_or_create(
         model_type='Other', vendor=unknown_vendor, model_no='Unknown model',
@@ -222,20 +224,20 @@ def humanise_age(d):
     "3 months", with appropriate resolution.
     """
     if d.days >= 730:
-        years = d.days/365
-        months = (d.days - years*365)/30
+        years = d.days / 365
+        months = (d.days - years * 365) / 30
         if months > 0:
             return "%d years, %d months" % (years, months)
         else:
             return "%d years" % (years)
     elif d.days >= 365:
-        months = (d.days - 365)/30
+        months = (d.days - 365) / 30
         if months > 0:
             return "1 year, %d months" % (months)
         else:
             return "1 year"
     elif d.days >= 60:
-        return "%d months" % (d.days/30)
+        return "%d months" % (d.days / 30)
     elif d.days >= 30:
         return "1 month"
     elif d.days >= 2:
@@ -243,11 +245,11 @@ def humanise_age(d):
     elif d.days == 1:
         return "1 day"
     elif d.seconds >= 7200:
-        return "%d hours" % (d.seconds/3600)
+        return "%d hours" % (d.seconds / 3600)
     elif d.seconds >= 3600:
         return "1 hour"
     elif d.seconds >= 120:
-        return "%d minutes" % (d.seconds/60)
+        return "%d minutes" % (d.seconds / 60)
     elif d.seconds >= 60:
         return "1 minute"
     elif d.seconds >= 2:
@@ -258,3 +260,25 @@ def humanise_age(d):
         return "1 day"
     else:
         return "1 second"
+
+
+def get_csv(qs):
+    """Using a passed-in queryset of HardwareAsset objects, return a CSV.
+    """
+    f = BytesIO()
+    writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL, encoding='utf-8')
+    writer.writerow([
+        'ASSET TAG', 'FINANCE ASSET TAG', 'SERIAL', 'VENDOR', 'MODEL TYPE', 'HARDWARE MODEL',
+        'STATUS', 'COST CENTRE', 'LOCATION', 'ASSIGNED USER', 'DATE PURCHASED',
+        'PURCHASED VALUE', 'SERVICE REQUEST URL', 'LOCAL PROPERTY', 'IS ASSET',
+        'WARRANTY END'])
+    for i in qs:
+        writer.writerow([
+            i.asset_tag, i.finance_asset_tag, i.serial, i.vendor,
+            i.hardware_model.get_model_type_display(), i.hardware_model, i.get_status_display(),
+            i.cost_centre.code if i.cost_centre else '', i.location if i.location else '',
+            i.assigned_user if i.assigned_user else '',
+            datetime.strftime(i.date_purchased, '%d/%b/%Y') if i.date_purchased else '',
+            i.purchased_value, i.service_request_url, i.local_property, i.is_asset,
+            datetime.strftime(i.warranty_end, '%d/%b/%Y') if i.warranty_end else ''])
+    return f

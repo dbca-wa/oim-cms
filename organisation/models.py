@@ -47,12 +47,14 @@ class DepartmentUser(MPTTModel):
         (10, 'L2 Service Account - System'),
         (5, 'L1 Group (shared) Mailbox - Shared account'),
         (9, 'L1 Role Account - Role-based account'),
-        #(4, 'Resigned'),
         (4, 'Terminated'),
         (14, 'Unknown - AD disabled'),
         (15, 'Cleanup - Permanent'),
         (16, 'Unknown - AD active'),
     )
+    # The following is a list of account type of normally exclude from user queries.
+    # E.g. shared accounts, meeting rooms, terminated accounts, etc.
+    ACCOUNT_TYPE_EXCLUDE = [4, 5, 9, 10, 11, 12, 14, 16]
     POSITION_TYPE_CHOICES = (
         (0, 'Full time'),
         (1, 'Part time'),
