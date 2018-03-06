@@ -3,7 +3,7 @@ from decimal import Decimal
 from datetime import datetime
 from dateutil.parser import parse
 import re
-from six import StringIO
+from io import BytesIO
 import unicodecsv as csv
 
 from organisation.models import DepartmentUser, Location, CostCentre
@@ -265,7 +265,7 @@ def humanise_age(d):
 def get_csv(qs):
     """Using a passed-in queryset of HardwareAsset objects, return a CSV.
     """
-    f = StringIO()
+    f = BytesIO()
     writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL, encoding='utf-8')
     writer.writerow([
         'ASSET TAG', 'FINANCE ASSET TAG', 'SERIAL', 'VENDOR', 'MODEL TYPE', 'HARDWARE MODEL',
