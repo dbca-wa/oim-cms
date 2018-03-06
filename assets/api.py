@@ -1,9 +1,12 @@
 from __future__ import unicode_literals, absolute_import
 from django.conf.urls import url
-from oim_cms.utils import CSVDjangoResource
+from django.http import HttpResponse
+from django.views import View
+from restless.dj import DjangoResource
 from restless.preparers import Preparer
 from restless.resources import skip_prepare
 
+from .utils import get_csv
 from .models import HardwareAsset
 
 
@@ -31,17 +34,16 @@ class HardwareAssetPreparer(Preparer):
         return result
 
 
-class HardwareAssetResource(CSVDjangoResource):
+class HardwareAssetResource(DjangoResource):
+    VALUES_ARGS = ('asset_tag', 'status', 'org_unit__name', 'cost_centre__code')
+    preparer = HardwareAssetPreparer()
 
     def __init__(self, *args, **kwargs):
         super(HardwareAssetResource, self).__init__(*args, **kwargs)
         self.http_methods.update({
-            'detail_tag': {
-                'GET': 'detail_tag',
-            }
+            'detail_tag': {'GET': 'detail_tag'},
+            'get_csv': {'GET': 'get_csv'},
         })
-
-    preparer = HardwareAssetPreparer()
 
     @classmethod
     def urls(self, name_prefix=None):
@@ -75,3 +77,26 @@ class HardwareAssetResource(CSVDjangoResource):
         """Custom endpoint to return a single hardware asset, filterd by asset tag no.
         """
         return self.prepare(HardwareAsset.objects.get(asset_tag__istartswith=asset_tag))
+
+
+class HardwareAssetCSV(View):
+    """Custom view to return filtered hardware assets as CSV, because I am too dumb
+    to work out how to accomplish this within restless :|
+    """
+
+    def get(self, request, *args, **kwargs):
+        filters = {'status__in': ['In storage', 'Deployed']}
+        if 'all' in self.request.GET:
+            filters.pop('status__in')
+        if 'asset_tag' in self.request.GET:
+            filters.pop('status__in')  # Also search disposed assets.
+            filters['asset_tag__icontains'] = self.request.GET['asset_tag']
+        if 'cost_centre' in self.request.GET:
+            filters['cost_centre__code__icontains'] = self.request.GET['cost_centre']
+        qs = HardwareAsset.objects.filter(**filters).prefetch_related(
+            'vendor', 'hardware_model', 'cost_centre', 'location', 'assigned_user'
+        )
+        f = get_csv(qs)
+        response = HttpResponse(f.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=hardwareasset_export.csv'
+        return response

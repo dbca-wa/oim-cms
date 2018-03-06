@@ -17,6 +17,11 @@ class HardwareAssetResourceTestCase(ApiTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
+    def test_csv(self):
+        url = '/api/hardware-assets/csv/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
     def test_detail(self):
         hw = HardwareAsset.objects.first()
         url = '/api/hardware-assets/{}/'.format(hw.pk)

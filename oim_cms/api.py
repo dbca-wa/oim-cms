@@ -6,7 +6,7 @@ from restless.preparers import FieldsPreparer
 from restless.resources import skip_prepare
 
 from approvals.api import ApprovalResource
-from assets.api import HardwareAssetResource
+from assets.api import HardwareAssetResource, HardwareAssetCSV
 from core.models import UserSession
 from mudmap.models import MudMap
 from organisation.api import DepartmentUserResource, LocationResource, profile
@@ -164,6 +164,7 @@ class MudMapResource(CSVDjangoResource):
 
 api_urlpatterns = [
     url(r'^approvals/', include(ApprovalResource.urls())),
+    url(r'^hardware-assets/csv/', HardwareAssetCSV.as_view()),
     url(r'^hardware-assets/', include(HardwareAssetResource.urls())),
     url(r'^ec2_instances/', include(EC2InstanceResource.urls())),
     url(r'^freshdesk_tickets/', include(FreshdeskTicketResource.urls())),

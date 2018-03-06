@@ -1,5 +1,5 @@
 from __future__ import unicode_literals, absolute_import
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from django.conf.urls import url
 from django.contrib.admin import register
 from django.core.urlresolvers import reverse
@@ -9,10 +9,9 @@ from django.template.response import TemplateResponse
 from django.utils.safestring import mark_safe
 from reversion.admin import VersionAdmin
 from six import StringIO
-import unicodecsv as csv
 
 from .models import Vendor, HardwareModel, HardwareAsset, SoftwareAsset
-from .utils import humanise_age
+from .utils import humanise_age, get_csv
 
 
 @register(Vendor)
@@ -105,23 +104,7 @@ class HardwareAssetAdmin(VersionAdmin):
     def hardwareasset_export(self, request):
         """Export all HardwareAssets to a CSV.
         """
-        f = StringIO()
-        writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL, encoding='utf-8')
-        writer.writerow([
-            'ASSET TAG', 'FINANCE ASSET TAG', 'SERIAL', 'VENDOR', 'MODEL TYPE', 'HARDWARE MODEL',
-            'STATUS', 'COST CENTRE', 'LOCATION', 'ASSIGNED USER', 'DATE PURCHASED',
-            'PURCHASED VALUE', 'SERVICE REQUEST URL', 'LOCAL PROPERTY', 'IS ASSET',
-            'WARRANTY END'])
-        for i in HardwareAsset.objects.all():
-            writer.writerow([
-                i.asset_tag, i.finance_asset_tag, i.serial, i.vendor,
-                i.hardware_model.get_model_type_display(), i.hardware_model, i.get_status_display(),
-                i.cost_centre.code if i.cost_centre else '', i.location if i.location else '',
-                i.assigned_user if i.assigned_user else '',
-                datetime.strftime(i.date_purchased, '%d/%b/%Y') if i.date_purchased else '',
-                i.purchased_value, i.service_request_url, i.local_property, i.is_asset,
-                datetime.strftime(i.warranty_end, '%d/%b/%Y') if i.warranty_end else ''])
-
+        f = get_csv(HardwareAsset.objects.all())
         response = HttpResponse(f.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=hardwareasset_export.csv'
         return response
