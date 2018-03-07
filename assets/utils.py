@@ -16,16 +16,16 @@ def validate_csv(fileobj):
     """
     try:
         c = csv.DictReader(fileobj)
-        c.fieldnames
     except Exception:
         errors = ["""The file you uploaded could not be interpreted. Check that
             you uploaded the correct file (in a .csv format) and try again."""]
         return (0, errors, [], [])
 
-    critical_fields = ('asset tag', 'serial', 'date purchased')
+    critical_fields = ('ASSET TAG', 'SERIAL', 'DATE PURCHASED')
     all_fields = critical_fields + (
-        'finance asset tag', 'vendor', 'hardware model', 'location',
-        'status', 'cost centre', 'purchased value', 'assigned user', 'notes')
+        'FINANCE ASSET TAG', 'VENDOR', 'MODEL TYPE', 'HARDWARE MODEL', 'LOCATION',
+        'STATUS', 'COST CENTRE', 'PURCHASED VALUE', 'ASSIGNED USER', 'NOTES',
+        'WARRANTY END')
     errors = []
     warnings = []
     notes = []
@@ -37,9 +37,9 @@ def validate_csv(fileobj):
             errors.append(
                 'The mandatory column {} is missing from the spreadsheet.'.format(field))
 
-    if 'status' not in c.fieldnames:
+    if 'STATUS' not in c.fieldnames:
         warnings.append('''Your spreadsheet does not contain a column called
-            'status' - the status field of every new asset will be set to
+            'STATUS' - the status field of every new asset will be set to
             'In storage'.''')
 
     for field in c.fieldnames:
@@ -51,94 +51,114 @@ def validate_csv(fileobj):
     for row in c:
         # Check asset tag.
         asset_tag_re = re.compile("^IT\d{5}$")
-        if 'asset tag' in row and row['asset tag']:
-            if HardwareAsset.objects.filter(asset_tag__iexact=row['asset tag']).exists():
+        if 'ASSET TAG' in row and row['ASSET TAG']:
+            if HardwareAsset.objects.filter(asset_tag__iexact=row['ASSET TAG']).exists():
                 errors.append(
                     '''Row {}: The asset tag '{}' already exists in the database. '''
-                    '''Asset tags must be unique.'''.format(c.line_num, row['asset tag']))
-            if not asset_tag_re.match(row['asset tag'].upper()):
+                    '''Asset tags must be unique.'''.format(c.line_num, row['ASSET TAG']))
+            if not asset_tag_re.match(row['ASSET TAG'].upper()):
                 errors.append(
                     '''Row {}: The value '{}' in the asset tag column is '''
                     '''invalid. Asset tags should be in the format '''
                     '''ITXXXXX.'''.format(c.line_num, row['asset tag']))
-            if row['asset tag'].upper() in asset_tag_list:
+            if row['ASSET TAG'].upper() in asset_tag_list:
                 errors.append(
                     '''Row {}: The asset tag '{}' exists in several rows in '''
                     '''the spreadsheet. Asset tags are unique - remove the '''
-                    '''duplicate values to continue.'''.format(c.line_num, row['asset tag']))
-            asset_tag_list.append(row['asset tag'].upper())
+                    '''duplicate values to continue.'''.format(c.line_num, row['ASSET TAG']))
+            asset_tag_list.append(row['ASSET TAG'].upper())
         else:
             errors.append(
                 '''Row {}: A value for the asset tag column is missing. '''
                 '''Enter a value to continue.'''.format(c.line_num))
 
         # Check serial.
-        if 'serial' in row and not row['serial']:
+        if 'SERIAL' in row and not row['SERIAL']:
             errors.append(
-                '''Row {}: The mandatory field 'serial' is blank. If the '''
+                '''Row {}: The mandatory field 'SERIAL' is blank. If the '''
                 '''hardware does not have a serial, enter 'Unknown'.'''.format(c.line_num))
 
         # Check date purchased.
-        if 'date purchased' in row and row['date purchased']:
+        if 'DATE PURCHASED' in row and row['DATE PURCHASED']:
             try:
-                parse(row['date purchased'])
+                parse(row['DATE PURCHASED'])
             except ValueError:
                 errors.append(
-                    '''Row {}: The value '{}' in the 'date purchased' column '''
+                    '''Row {}: The value '{}' in the 'DATE PURCHASED' column '''
                     '''is invalid. Dates must be in the format '''
-                    '''dd/mm/yyyy.'''.format(c.line_num, row['date purchased']))
+                    '''dd/mm/yyyy.'''.format(c.line_num, row['DATE PURCHASED']))
         else:
             errors.append(
-                '''Row {}: The mandatory field 'date purchased' is blank.'''.format(c.line_num))
+                '''Row {}: The mandatory field 'DATE PURCHASED' is blank.'''.format(c.line_num))
 
         # Check finance asset tag.
-        if 'finance asset tag' in row and row['finance asset tag']:
+        if 'FINANCE ASSET TAG' in row and row['FINANCE ASSET TAG']:
             finance_asset_tag_re = re.compile("^\d+$")
-            if not finance_asset_tag_re.match(row['finance asset tag']):
+            if not finance_asset_tag_re.match(row['FINANCE ASSET TAG']):
                 warnings.append(
                     '''Row {}: The finance asset tag '{}' contains numbers '''
                     '''and other characters - these tags usually only contain '''
                     '''numbers. Check the tag is correct before '''
-                    '''proceeding.'''.format(c.line_num, row['finance asset tag']))
+                    '''proceeding.'''.format(c.line_num, row['FINANCE ASSET TAG']))
 
         # Check vendor.
-        if 'vendor' in row and row['vendor']:
-            if not Vendor.objects.filter(name__iexact=row['vendor']).exists():
+        if 'VENDOR' in row and row['VENDOR']:
+            if not Vendor.objects.filter(name__iexact=row['VENDOR']).exists():
                 notes.append(
                     '''Row {}: Vendor '{}' is unknown - a new vendor '''
-                    '''will be created.'''.format(c.line_num, row['vendor']))
+                    '''will be created.'''.format(c.line_num, row['VENDOR']))
+
+        # Check model type.
+        if 'MODEL TYPE' in row and row['MODEL TYPE']:
+            if row['MODEL TYPE'] not in [i[0] for i in HardwareModel.TYPE_CHOICES]:
+                errors.append(
+                    '''Row {}: The value '{}' in the MODEL TYPE column is not recognised. '''
+                    '''The value will be ignored.'''.format(c.line_num, row['MODEL TYPE']))
 
         # Check hardware model.
-        if 'hardware model' in row and row['hardware model']:
-            if not HardwareModel.objects.filter(model_no__iexact=row['hardware model']).exists():
+        if 'HARDWARE MODEL' in row and row['HARDWARE MODEL']:
+            if not HardwareModel.objects.filter(model_no__iexact=row['HARDWARE MODEL']).exists():
                 notes.append(
                     '''Row {}: Model '{}' is unknown - a new model will '''
-                    '''be created.'''.format(c.line_num, row['hardware model']))
+                    '''be created.'''.format(c.line_num, row['HARDWARE MODEL']))
 
         # Check status.
-        if 'status' in row and row['status']:
-            if row['status'] not in ['In storage', 'Deployed', 'Disposed']:
+        if 'STATUS' in row and row['STATUS']:
+            if row['STATUS'] not in ['In storage', 'Deployed', 'Disposed']:
                 errors.append(
-                    '''Row {}: The value '{}' in the status column is invalid. '''
+                    '''Row {}: The value '{}' in the STATUS column is invalid. '''
                     '''The asset status must be one of 'In storage', '''
-                    ''''Deployed' or 'Disposed'.'''.format(c.line_num, row['status']))
+                    ''''Deployed' or 'Disposed'.'''.format(c.line_num, row['STATUS']))
 
         # Check cost centre.
-        if 'cost centre' in row and row['cost centre']:
-            if CostCentre.objects.filter(code=row['cost centre']) < 1:
+        if 'COST CENTRE' in row and row['COST CENTRE']:
+            if CostCentre.objects.filter(code=row['COST CENTRE']) < 1:
                 errors.append(
                     '''Row {}: There is no cost centre code that matches {}. '''
-                    '''Cost centre must exactly match existing codes.'''.format(c.line_num, row['cost centre']))
+                    '''Cost centre must exactly match existing codes.'''.format(c.line_num, row['COST CENTRE']))
         # Check location.
-        if 'location' in row and row['location']:
-            if Location.objects.filter(name__istartswith=row['location']).count() > 1:
+        if 'LOCATION' in row and row['LOCATION']:
+            if Location.objects.filter(name__istartswith=row['LOCATION']).count() > 1:
                 errors.append(
                     '''Row {}: {} matches more than one location name. '''
-                    '''Locations must match existing names.'''.format(c.line_num, row['location']))
-            elif Location.objects.filter(name__istartswith=row['location']).count() < 1:
+                    '''Locations must match existing names.'''.format(c.line_num, row['LOCATION']))
+            elif Location.objects.filter(name__istartswith=row['LOCATION']).count() < 1:
                 errors.append(
                     '''Row {}: There is no location matching name {}. '''
-                    '''Locations must match existing names.'''.format(c.line_num, row['location']))
+                    '''Locations must match existing names.'''.format(c.line_num, row['LOCATION']))
+
+        # Check warranty end.
+        if 'WARRANTY END' in row and row['WARRANTY END']:
+            try:
+                parse(row['WARRANTY END'])
+            except ValueError:
+                errors.append(
+                    '''Row {}: The value '{}' in the 'WARRANTY END' column '''
+                    '''is invalid. Dates must be in the format '''
+                    '''dd/mm/yyyy.'''.format(c.line_num, row['WARRANY END']))
+        else:
+            errors.append(
+                '''Row {}: The mandatory field 'DATE PURCHASED' is blank.'''.format(c.line_num))
 
     # Reset fileobj now that we're finished with it.
     fileobj.seek(0)
@@ -160,59 +180,65 @@ def import_csv(fileobj):
 
     for row in c:
         asset = HardwareAsset(
-            asset_tag=row['asset tag'].upper(), serial=row['serial'],
-            date_purchased=parse(row['date purchased'])
+            asset_tag=row['ASSET TAG'].upper(), serial=row['SERIAL'],
+            date_purchased=parse(row['DATE PURCHASED'])
         )
-        if 'finance asset tag' in row and row['finance asset tag']:
-            asset.finance_asset_tag = row['finance asset tag']
-        if 'vendor' in row and row['vendor']:
-            if not Vendor.objects.filter(name__iexact=row['vendor']).exists():
-                vendor = Vendor.objects.get_or_create(name=row['vendor'])[0]
+        if 'FINANCE ASSET TAG' in row and row['FINANCE ASSET TAG']:
+            asset.finance_asset_tag = row['FINANCE ASSET TAG']
+        if 'VENDOR' in row and row['VENDOR']:
+            if not Vendor.objects.filter(name__iexact=row['VENDOR']).exists():
+                vendor = Vendor.objects.get_or_create(name=row['VENDOR'])[0]
                 asset.vendor = vendor
             else:
-                vendor = Vendor.objects.get(name__iexact=row['vendor'])
+                vendor = Vendor.objects.get(name__iexact=row['VENDOR'])
                 asset.vendor = vendor
         else:
             # No vendor specified.
             asset.vendor = unknown_vendor
 
-        if 'hardware model' in row and row['hardware model']:
-            if not HardwareModel.objects.filter(model_no__iexact=row['hardware model']).exists():
+        if 'MODEL TYPE' in row and row['MODEL TYPE']:
+            if row['MODEL TYPE'] in [i[0] for i in HardwareModel.TYPE_CHOICES]:
+                asset.model_type = row['MODEL TYPE']
+
+        if 'HARDWARE MODEL' in row and row['HARDWARE MODEL']:
+            if not HardwareModel.objects.filter(model_no__iexact=row['HARDWARE MODEL']).exists():
                 # Create a new hardware model (use the vendor as manufacturer).
                 asset.hardware_model = HardwareModel.objects.get_or_create(
-                    vendor=asset.vendor, model_no=row['hardware model'], model_type='Other',
+                    vendor=asset.vendor, model_no=row['HARDWARE MODEL'], model_type='Other',
                     lifecycle=3)[0]
             else:
                 # Use the existing hardware model.
-                asset.hardware_model = HardwareModel.objects.get(model_no__iexact=row['hardware model'])
+                asset.hardware_model = HardwareModel.objects.get(model_no__iexact=row['HARDWARE MODEL'])
         else:
             # No hardware model specified.
             asset.hardware_model = unknown_model
 
-        if 'location' in row and row['location']:
-            if Location.objects.filter(name__istartswith=row['location']).count() == 1:
-                asset.location = Location.objects.get(name__istartswith=row['location'])
+        if 'LOCATION' in row and row['LOCATION']:
+            if Location.objects.filter(name__istartswith=row['LOCATION']).count() == 1:
+                asset.location = Location.objects.get(name__istartswith=row['LOCATION'])
             else:
                 asset.location = unknown_location
-        if 'status' in row and row['status']:
-            if row['status'] in ['In storage', 'Deployed', 'Disposed']:
-                asset.status = row['status']
-        if 'cost centre' in row and row['cost centre']:
+        if 'STATUS' in row and row['STATUS']:
+            if row['STATUS'] in ['In storage', 'Deployed', 'Disposed']:
+                asset.status = row['STATUS']
+        if 'COST CENTRE' in row and row['COST CENTRE']:
             try:
-                asset.cost_centre = CostCentre.objects.get(code=row['cost centre'])
+                asset.cost_centre = CostCentre.objects.get(code=row['COST CENTRE'])
             except:
                 asset.cost_centre = None
-        if 'purchased value' in row and row['purchased value']:
+        if 'PURCHASED VALUE' in row and row['PURCHASED VALUE']:
             try:
-                asset.purchased_value = Decimal(row['purchased value'])
+                asset.purchased_value = Decimal(row['PURCHASED VALUE'])
             except:
                 asset.purchased_value = None
-        if 'assigned user' in row and row['assigned user']:
-            if DepartmentUser.objects.filter(username__iexact=row['assigned user']).exists():
+        if 'ASSIGNED USER' in row and row['ASSIGNED USER']:
+            if DepartmentUser.objects.filter(username__iexact=row['ASSIGNED USER']).exists():
                 asset.assigned_user = DepartmentUser.objects.get(
-                    username__iexact=row['assigned user'])
-        if 'notes' in row and row['notes']:
-            asset.notes = row['notes']
+                    username__iexact=row['ASSIGNED USER'])
+        if 'NOTES' in row and row['NOTES']:
+            asset.notes = row['NOTES']
+        if 'WARRANTY END' in row and row['WARRANTY END']:
+            asset.warranty_end = parse(row['WARRANTY END'])
         asset.save()
         assets_created.append(asset)
 
