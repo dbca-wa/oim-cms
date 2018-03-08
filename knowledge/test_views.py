@@ -43,17 +43,3 @@ class KnowledgeViewsTestCase(TestCase):
         url = reverse('km_user_accounts')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-
-    def test_km_itsystemreq(self):
-        """Test the km_itsystem GET response
-        """
-        url = reverse('km_itsystem')
-        response = self.client.get(url, data={'reqid': self.itsystem.pk})
-        self.assertEqual(response.status_code, 200)
-
-    def test_km_peoplelist(self):
-        """Test the km_peoplelist GET response
-        """
-        url = reverse('km_peoplelist')
-        response = self.client.get(url, data={'keyword': '%'})
-        self.assertEqual(response.status_code, 200)
