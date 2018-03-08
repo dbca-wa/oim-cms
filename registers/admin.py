@@ -9,11 +9,8 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 import json
 from reversion.admin import VersionAdmin
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import BytesIO as StringIO
-import unicodecsv
+from io import BytesIO
+import unicodecsv as csv
 from .models import (
     UserGroup, ITSystemHardware, Platform, ITSystem, ITSystemDependency,
     Backup, BusinessService, BusinessFunction, BusinessProcess,
@@ -63,8 +60,8 @@ class ITSystemHardwareAdmin(VersionAdmin):
             'itsystem_owner', 'it_system_data_custodian']
 
         # Write data for ITSystemHardware objects to the CSV.
-        stream = StringIO()
-        wr = unicodecsv.writer(stream, encoding='utf-8')
+        stream = BytesIO()
+        wr = csv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
         for i in ITSystemHardware.objects.filter(decommissioned=False):
             if i.computer.ec2_instance:
@@ -211,8 +208,8 @@ class ITSystemAdmin(VersionAdmin):
         header.append('associated_hardware')
 
         # Write data for ITSystem objects to the CSV:
-        stream = StringIO()
-        wr = unicodecsv.writer(stream, encoding='utf-8')
+        stream = BytesIO()
+        wr = csv.writer(stream, encoding='utf-8')
         wr.writerow(header)  # CSV header.
         for i in ITSystem.objects.all().order_by(
                 'system_id').exclude(status=3):  # Exclude decommissioned
@@ -266,8 +263,8 @@ class ITSystemDependencyAdmin(VersionAdmin):
             'IT System', 'System status', 'Dependency', 'Dependency status',
             'Criticality', 'Description']
         # Write data for ITSystemHardware objects to the CSV.
-        stream = StringIO()
-        wr = unicodecsv.writer(stream, encoding='utf-8')
+        stream = BytesIO()
+        wr = csv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
         for i in ITSystemDependency.objects.all():
             wr.writerow([
@@ -284,8 +281,8 @@ class ITSystemDependencyAdmin(VersionAdmin):
         """
         fields = ['IT System', 'System status']
         # Write data for ITSystemHardware objects to the CSV.
-        stream = StringIO()
-        wr = unicodecsv.writer(stream, encoding='utf-8')
+        stream = BytesIO()
+        wr = csv.writer(stream, encoding='utf-8')
         wr.writerow(fields)  # CSV header row.
         deps = ITSystemDependency.objects.all().values_list('pk')
         for i in ITSystem.objects.all().exclude(pk__in=deps):
