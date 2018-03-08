@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, absolute_import
 from datetime import date, timedelta
 from django.conf.urls import url
-from django.contrib.admin import register
+from django.contrib.admin import register, TabularInline
 from django.core.urlresolvers import reverse
 from django.forms import Form, FileField
 from django.http import HttpResponse, HttpResponseRedirect
@@ -10,7 +10,7 @@ from django.utils.safestring import mark_safe
 from reversion.admin import VersionAdmin
 from six import StringIO
 
-from .models import Vendor, HardwareModel, HardwareAsset, SoftwareAsset
+from .models import Vendor, HardwareModel, HardwareAsset, SoftwareAsset, HardwareInvoice
 from .utils import humanise_age, get_csv
 
 
@@ -32,10 +32,15 @@ class HardwareModelAdmin(VersionAdmin):
     search_fields = ('vendor__name', 'model_type', 'model_no')
 
 
+class HardwareInvoiceInline(TabularInline):
+    model = HardwareInvoice
+    extra = 1
+
+
 @register(HardwareAsset)
 class HardwareAssetAdmin(VersionAdmin):
     date_hierarchy = 'date_purchased'
-    exclude = ('invoice',)
+    inlines = [HardwareInvoiceInline]
     fieldsets = (
         ('Hardware asset details', {
             'fields': (
@@ -44,7 +49,7 @@ class HardwareAssetAdmin(VersionAdmin):
         }),
         ('Location & ownership details', {
             'fields': (
-                'cost_centre', 'location', 'assigned_user', 'date_purchased', 'invoice_copy',
+                'cost_centre', 'location', 'assigned_user', 'date_purchased',
                 'purchased_value', 'is_asset', 'local_property', 'warranty_end')
         }),
         ('Extra data (history)', {
@@ -189,7 +194,6 @@ class HardwareAssetAdmin(VersionAdmin):
 @register(SoftwareAsset)
 class SoftwareAssetAdmin(VersionAdmin):
     date_hierarchy = 'date_purchased'
-    exclude = ('invoice',)
     fieldsets = (
         ('Software asset details', {
             'fields': (
@@ -200,7 +204,7 @@ class SoftwareAssetAdmin(VersionAdmin):
             'fields': ('license', 'license_details', 'license_count')
         }),
         ('Asset ownership details', {
-            'fields': ('cost_centre', 'date_purchased', 'invoice_copy')
+            'fields': ('cost_centre', 'date_purchased', 'invoices')
         }),
     )
     list_display = ('name', 'vendor', 'license')

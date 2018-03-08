@@ -4,6 +4,7 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 from json2html import json2html
+import os
 
 from organisation.models import DepartmentUser, Location
 from tracking.models import CommonFields, Computer
@@ -29,53 +30,12 @@ class Vendor(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
-class Invoice(CommonFields):
-    """DEPRECATED: this model is no longer in use within the application.
-    Preserving it for a period of time for record-keeping.
-    """
-    vendor = models.ForeignKey(Vendor, null=True, blank=True, on_delete=models.PROTECT)
-    vendor_ref = models.CharField(
-        max_length=50, null=True, blank=True,
-        help_text="The vendor's reference or invoice number for this order.")
-    job_number = models.CharField(
-        max_length=50, null=True, blank=True,
-        help_text="The department's job number relating to this order.")
-    date = models.DateField(
-        blank=True, null=True, help_text='The date shown on the invoice.')
-    etj_number = models.CharField(
-        max_length=20, null=True, blank=True, verbose_name='ETJ number.')
-    total_value = models.DecimalField(
-        max_digits=20, decimal_places=2, blank=True, null=True,
-        help_text='The total value of the invoice (excluding GST).')
-    notes = models.TextField(null=True, blank=True)
-
-    class Meta:
-        ordering = ('-job_number',)
-
-    def __str__(self):
-        if self.vendor and self.vendor_ref and self.total_value:
-            return '{} {} - {:.2f}'.format(self.vendor.name, self.vendor_ref, self.total_value)
-        elif self.vendor and self.job_number:
-            return '{} - {}'.format(self.vendor.name, self.job_number)
-        elif self.vendor:
-            return self.vendor.name
-        else:
-            return self.pk
-
-
 class Asset(CommonFields):
     """Abstract model class to represent fields common to all asset types.
     """
     vendor = models.ForeignKey(
         Vendor, on_delete=models.PROTECT, help_text='Vendor/reseller from whom this asset was purchased.')
     date_purchased = models.DateField(null=True, blank=True)
-    invoice = models.ForeignKey(
-        Invoice, on_delete=models.PROTECT, blank=True, null=True)
-    invoice_copy = models.FileField(
-        blank=True, null=True, max_length=512, upload_to='uploads/%Y/%m/%d',
-        help_text='A digital copy of the asset invoice (e.g. PDF, JPG or PNG)'
-    )
     purchased_value = models.DecimalField(
         max_digits=20, decimal_places=2, blank=True, null=True,
         help_text='The amount paid for this asset, inclusive of any upgrades (excluding GST).')
@@ -211,6 +171,20 @@ class HardwareAsset(Asset):
         if not self.extra_data:
             return mark_safe('')
         return mark_safe(json2html.convert(json=self.extra_data))
+
+
+@python_2_unicode_compatible
+class HardwareInvoice(models.Model):
+    """A limited model to store uploaded hardware asset invoice copies.
+    """
+    asset = models.ForeignKey(HardwareAsset, on_delete=models.CASCADE)
+    upload = models.FileField(
+        max_length=512, upload_to='uploads/%Y/%m/%d',
+        help_text='A digital copy of the asset invoice (e.g. PDF, JPG or PNG)'
+    )
+
+    def __str__(self):
+        return os.path.basename(self.upload.name)
 
 
 @python_2_unicode_compatible
