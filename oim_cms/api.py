@@ -48,7 +48,7 @@ class OptionResource(DjangoResource):
         return ['CC{} / {}'.format(*c) for c in CostCentre.objects.all().exclude(org_position__name__icontains='inactive').values_list('code', 'org_position__name')]
 
     def data_org_unit(self):
-        return [{'name': i.name, 'id': i.pk, 'active': i.active} for i in OrgUnit.objects.all()]
+        return [{'name': i.name, 'id': i.pk, 'active': i.active} for i in OrgUnit.objects.all().order_by('name')]
 
     def data_dept_user(self):
         return [u[0] for u in DepartmentUser.objects.filter(

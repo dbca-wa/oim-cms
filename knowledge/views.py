@@ -8,3 +8,7 @@ class AddressBook(TemplateView):
 
 class UserAccounts(TemplateView):
     template_name = 'knowledge/user_accounts.html'
+
+
+class NewUserForm(TemplateView):
+    template_name = 'knowledge/new_user.html'
