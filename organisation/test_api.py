@@ -245,7 +245,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         # Response should be status 400 where essential parameters are missing.
         response = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(response.status_code, 400)
-        data['EmailAddress'] = '{}@dpaw.wa.gov.au'.format(username)
+        data['EmailAddress'] = '{}@dbca.wa.gov.au'.format(username)
         response = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(response.status_code, 400)
         data['DisplayName'] = 'Doe, John'
@@ -261,7 +261,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         url = '/api/users/'
         username = str(uuid1())[:8]
         data = {
-            'EmailAddress': '{}@dpaw.wa.gov.au'.format(username),
+            'EmailAddress': '{}@dbca.wa.gov.au'.format(username),
             'DisplayName': 'Doe, John',
             'SamAccountName': username,
             'DistinguishedName': 'CN={},OU=Users,DC=domain'.format(username),
@@ -284,7 +284,7 @@ class DepartmentUserResourceTestCase(ApiTestCase):
         url = '/api/users/'
         username = str(uuid1())[:8]
         data = {
-            'email': '{}@dpaw.wa.gov.au'.format(username),
+            'email': '{}@dbca.wa.gov.au'.format(username),
             'name': 'Doe, John',
             'username': username,
             'ad_dn': 'CN={},OU=Users,DC=domain'.format(username),
