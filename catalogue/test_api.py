@@ -11,7 +11,7 @@ class RecordAPITestCase(TestCase):
     def setUp(self):
         # Generate a test user for endpoint responses.
         self.testuser = User.objects.create_user(
-            username='testuser', email='user@dpaw.wa.gov.au.com', password='pass')
+            username='testuser', email='user@dbca.wa.gov.au.com', password='pass')
         # Log in testuser by default.
         self.client.login(username='testuser', password='pass')
         # Generate some Record objects.

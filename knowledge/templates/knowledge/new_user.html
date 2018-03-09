@@ -3,24 +3,23 @@
     <head>
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title>New User Account - Office for Information Management - Department of Parks and Wildlife</title>
+        <title>New User Account - Office for Information Management - Department of Biodiversity, Conservation and Attractions</title>
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <script type="text/javascript" src="https://static.dpaw.wa.gov.au/static/libs/modernizr/2.8.3/modernizr.min.js"></script>
-        <script type="text/javascript" src="https://static.dpaw.wa.gov.au/static/libs/jquery/2.2.0/jquery.min.js"></script>
-        <script type="text/javascript" src="https://static.dpaw.wa.gov.au/static/libs/localforage/1.3.1/localforage.min.js"></script>
-        <script type="text/javascript" src="https://static.dpaw.wa.gov.au/static/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
-        <script type="text/javascript" src="https://static.dpaw.wa.gov.au/static/libs/foundation/6.1.2/foundation.min.js"></script>
-        <script type="text/javascript" src="https://static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js"></script>
-        <script type="text/javascript" src="https://static.dpaw.wa.gov.au/static/js/egg.js"></script>
-        <link rel="stylesheet" type="text/css" media="all" href="https://static.dpaw.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
-        <link rel="stylesheet" type="text/css" media="all" href="https://static.dpaw.wa.gov.au/static/libs/foundation/6.1.2/foundation-flex.css">
-        <link rel="stylesheet" type="text/css" media="all" href="https://static.dpaw.wa.gov.au/static/cdnjs/ajax/libs/foundicons/3.0.0/foundation-icons.css" />
-        <link rel="stylesheet" type="text/css" media="all" href="https://static.dpaw.wa.gov.au/static/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css" />
+        <script type="text/javascript" src="//static.dbca.wa.gov.au/static/libs/modernizr/2.8.3/modernizr.min.js"></script>
+        <script type="text/javascript" src="//static.dbca.wa.gov.au/static/libs/jquery/2.2.0/jquery.min.js"></script>
+        <script type="text/javascript" src="//static.dbca.wa.gov.au/static/libs/localforage/1.3.1/localforage.min.js"></script>
+        <script type="text/javascript" src="//static.dbca.wa.gov.au/static/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
+        <script type="text/javascript" src="//static.dbca.wa.gov.au/static/libs/foundation/6.1.2/foundation.min.js"></script>
+        <script type="text/javascript" src="//static.dbca.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js"></script>
+        <script type="text/javascript" src="//static.dbca.wa.gov.au/static/js/egg.js"></script>
+        <link rel="stylesheet" type="text/css" media="all" href="//static.dbca.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
+        <link rel="stylesheet" type="text/css" media="all" href="//static.dbca.wa.gov.au/static/libs/foundation/6.1.2/foundation-flex.css">
+        <link rel="stylesheet" type="text/css" media="all" href="//static.dbca.wa.gov.au/static/cdnjs/ajax/libs/foundicons/3.0.0/foundation-icons.css" />
+        <link rel="stylesheet" type="text/css" media="all" href="//static.dbca.wa.gov.au/static/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css" />
     </head>
 	<div id='notification-topbar'></div>
 <body class="">
-
 
 <style type="text/css">textarea { height: 4em; }</style>
 <form method="POST" target="_blank" id="new-user-form">
@@ -35,31 +34,21 @@
             <label><b>* Position Title</b> <input name="1.04 Position Title" type="text" required="true" placeholder="Park Ranger"></label>
             <label><b>* Position Number</b> <input name="1.05 Position Number" type="text" required="true" placeholder="124567"></label>
             <label><b>* Manager Email</b> <input name="1.06 Manager Email" type="email" required="true" placeholder="managers.name@dbca.wa.gov.au"></label>
-            <label><b>* Department</b>
-                <select name="1.07 Department">
-                    <option value="" disabled selected>Select your department</option>
-                    <option>Department of Biodiversity, Conservation and Attractions</option>
-					<option>Department of Biodiversity, Conservation and Attractions (PWS)</option>
-					<option>Department of Biodiversity, Conservation and Attractions (Kings Park)</option>
-					<option>Department of Biodiversity, Conservation and Attractions (Perth Zoo)</option>
-                    <option>Department of Biodiversity, Conservation and Attractions (Rottnest)</option>
-                    <option>Department of Water and Environment Regulation (DWER)</option>
-                </select>
+            <label><b>* Division</b>
+                <select name="1.07 Division" id="id-select-division"></select>
             </label>
 			<label><b>* Cost Centre Number</b> <input name="1.08 Cost Centre Number" type="text" required="true" placeholder="221"></label>
             <p class="help-text">Refer to chart of accounts</p>
             <label>
                 <b>* Location / Site</b>
-                <select name="1.09 Location / Site" id="id-select-location">
-                </select>
+                <select name="1.09 Location / Site" id="id-select-location"></select>
             </label>
             <label>
-                <b>* Organisation Unit / Site</b>
-                <select name="1.10 Location / Site" id="id-select-orgunit">
-                </select>
+                <b>* Organisation Unit</b>
+                <select name="1.10 Organisation Unit" id="id-select-orgunit"></select>
             </label>
             <label>Allocated devices <textarea name="1.11 Allocated devices" placeholder="PC: DBCA-1AB2C, Tel: (08) 9219 0000, Mobile: 0400 000 000" aria-describedby="allocated-device-help"></textarea></label>
-            <p class="help-text" id="allocated-device-help">Please provide the host name(s) of the department computers where available from asset register (see <a href="https://intranet.dpaw.wa.gov.au/csd/fs/Pages/Assets-Management.aspx">Assets Management</a>) as well as desk/mobile phone numbers.</p>
+            <p class="help-text" id="allocated-device-help">Please provide the host name(s) of the department computers where available from asset register (see <a href="//intranet.dbca.wa.gov.au/csd/fs/Pages/Assets-Management.aspx">Assets Management</a>) as well as desk/mobile phone numbers.</p>
             <input name="1.12 User profile photo" value="Please attach a square JPG ( no larger than 1MB ) to this email of a passport style headshot." id="profilephoto" type="checkbox"><label for="profilephoto">User profile photo</label>
             <p class="help-text">User profile photos can optionally be attached, ensuring the photo is a square JPG no larger than 1MB of a passport style headshot.</p>
             <label>Cost Centre resource access <textarea name="1.13 Cost Centre Resources" placeholder="folder: \\corporateict\dfs\..., mailbox (full access): cases@baker.st, ..."></textarea></label>
@@ -93,11 +82,11 @@
                 <input name="2.04 Access Conditions Met" value="Code of Conduct, Corporate Policy 70, Operational Procedure - Acceptable use of IT, Information Security Awareness" required="true" id="codeofconduct" type="checkbox"><label
                     for="codeofconduct">DBCA Charter of Values and entity Code of Conduct</label>
                 <br><input required="true" id="policy70" type="checkbox"><label
-                    for="policy70"><a href="https://oim.dpaw.wa.gov.au/documents/387/Corporate_Policy_Statement_70_-_Information_Security_Management.pdf">Corporate policy statement no. 70 – Information security management</a></label>
+                    for="policy70"><a href="//oim.dbca.wa.gov.au/documents/387/Corporate_Policy_Statement_70_-_Information_Security_Management.pdf">Corporate policy statement no. 70 – Information security management</a></label>
                 <br><input required="true" id="acceptableuse" type="checkbox"><label
-                    for="acceptableuse"><a href="https://oim.dpaw.wa.gov.au/documents/377/Operational_Procedure_-_Acceptable_use_of_IT.pdf">Operational procedure - Acceptable use of IT</a></label>
+                    for="acceptableuse"><a href="//oim.dbca.wa.gov.au/documents/377/Operational_Procedure_-_Acceptable_use_of_IT.pdf">Operational procedure - Acceptable use of IT</a></label>
                 <br><input required="true" id="isap" type="checkbox"><label
-                    for="isap"><a href="https://oim.dpaw.wa.gov.au/documents/364/Information_Security_Awareness_Program.pdf">Information Security Awareness </a></label>
+                    for="isap"><a href="//oim.dbca.wa.gov.au/documents/364/Information_Security_Awareness_Program.pdf">Information Security Awareness </a></label>
                 <p class="help-text">NOTE: user will be required to undertake an online information security awareness induction.
             </fieldset>
             <h4>Approval</h4>
@@ -120,9 +109,28 @@
 
 <script>
     $(function () {
-        // Initialise the location select list
         var url = "/api/options/";
-        var filters = {"list": "location"};
+        var filters = {"list": "division"};
+
+        // Initialise the division select list
+        $.ajax({
+            type: "GET",
+            url: url,
+            data: filters,
+            success: function (data) {
+                var el = $("select#id-select-division").get(0);
+                el.disabled = true;
+                el.options.length = 0;
+                el.options.add(new Option('', ''));
+                for (var i in data.objects) {
+                    el.options.add(new Option(data.objects[i].name, data.objects[i].id));
+                }
+                el.disabled = false;
+            }
+        });
+
+        // Initialise the location select list
+        filters = {"list": "location"};
         $.ajax({
             type: "GET",
             url: url,
@@ -151,9 +159,7 @@
                 el.options.length = 0;
                 el.options.add(new Option('', ''));
                 for (var i in data.objects) {
-                    if (data.objects[i].active) {
-                        el.options.add(new Option(data.objects[i].name, data.objects[i].name));
-                    }
+                    el.options.add(new Option(data.objects[i].name, data.objects[i].id));
                 }
                 el.disabled = false;
             }
@@ -170,8 +176,28 @@
                 el.required = false;
             }
         });
+
+        // Change event for the division select list.
+        $("select#id-select-division").on("change", function() {
+            // DRY violation? Who cares!
+            filters = {"list": "org_unit", "parent_id": this.value};
+            $.ajax({
+                type: "GET",
+                url: url,
+                data: filters,
+                success: function (data) {
+                    var el = $("select#id-select-orgunit").get(0);
+                    el.disabled = true;
+                    el.options.length = 0;
+                    el.options.add(new Option('', ''));
+                    for (var i in data.objects) {
+                        el.options.add(new Option(data.objects[i].name, data.objects[i].id));
+                    }
+                    el.disabled = false;
+                }
+            });
+        });
     });
 </script>
-
 
 </body>
