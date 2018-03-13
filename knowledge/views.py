@@ -12,3 +12,15 @@ class UserAccounts(TemplateView):
 
 class NewUserForm(TemplateView):
     template_name = 'knowledge/new_user.html'
+
+
+class UpdateUserForm(TemplateView):
+    template_name = 'knowledge/update_user.html'
+
+
+class TransferUserForm(TemplateView):
+    template_name = 'knowledge/transfer_user.html'
+
+
+class DeleteUserForm(TemplateView):
+    template_name = 'knowledge/delete_user.html'

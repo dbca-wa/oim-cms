@@ -27,26 +27,18 @@
     <input name="helptext" hidden="true" value="Please forward this email to your cost centre manager for approval and submission to OIM Support ( oimsupport@dbca.wa.gov.au )">
     <div class="row">
         <div class="columns">
-            <label><b>* Account Holder</b> <input name="1.01 Account Holder" type="text" placeholder="James Smith" required="true" aria-describedby="account-holder-help"></label>
+            <label><b>* Account holder email</b> <input name="1.01 Account Holder" type="text" placeholder="James Smith" required="true" aria-describedby="account-holder-help"></label>
             <p class="help-text" id="account-holder-help">Name of the account holder should be legal first name and last name.</p>
-             <label>Preferred Name <input name="1.02 Preferred Name" type="text" placeholder="Jim"></label>
-            <label><b>* Start Date</b> <input name="1.03 Start Date" type="date" required="true" placeholder="31/01/2017"></label>
-            <label><b>* Position Title</b> <input name="1.04 Position Title" type="text" required="true" placeholder="Park Ranger"></label>
-            <label><b>* Position Number</b> <input name="1.05 Position Number" type="text" required="true" placeholder="124567"></label>
-            <label><b>* Manager Email</b> <input name="1.06 Manager Email" type="email" required="true" placeholder="managers.name@dbca.wa.gov.au"></label>
-            <label><b>* Division</b>
-                <select name="1.07 Division" id="id-select-division"></select>
-            </label>
-			<label><b>* Cost Centre Number</b> <input name="1.08 Cost Centre Number" type="text" required="true" placeholder="221"></label>
+             <label>Preferred name <input name="1.02 Preferred Name" type="text" placeholder="Jim"></label>
+            <label><b>* Start date</b> <input name="1.03 Start Date" type="date" required="true" placeholder="31/01/2017"></label>
+            <label><b>* Position title</b> <input name="1.04 Position Title" type="text" required="true" placeholder="Park Ranger"></label>
+            <label><b>* Position number</b> <input name="1.05 Position Number" type="text" required="true" placeholder="124567"></label>
+            <label><b>* Manager email</b> <input name="1.06 Manager Email" type="email" required="true" placeholder="managers.name@dbca.wa.gov.au"></label>
+            <label><b>* Division</b><select name="1.07 Division" id="id-select-division" required></select></label>
+            <label><b>* Organisation unit</b><select name="1.08 Organisation Unit" id="id-select-orgunit" required></select></label>
+			<label><b>* Cost Centre number</b> <input name="1.09 Cost Centre Number" type="text" required="true" placeholder="221"></label>
             <p class="help-text">Refer to chart of accounts</p>
-            <label>
-                <b>* Location / Site</b>
-                <select name="1.09 Location / Site" id="id-select-location"></select>
-            </label>
-            <label>
-                <b>* Organisation Unit</b>
-                <select name="1.10 Organisation Unit" id="id-select-orgunit"></select>
-            </label>
+            <label><b>* Location / Site</b><select name="1.10 Location / Site" id="id-select-location" required></select></label>
             <label>Allocated devices <textarea name="1.11 Allocated devices" placeholder="PC: DBCA-1AB2C, Tel: (08) 9219 0000, Mobile: 0400 000 000" aria-describedby="allocated-device-help"></textarea></label>
             <p class="help-text" id="allocated-device-help">Please provide the host name(s) of the department computers where available from asset register (see <a href="//intranet.dbca.wa.gov.au/csd/fs/Pages/Assets-Management.aspx">Assets Management</a>) as well as desk/mobile phone numbers.</p>
             <input name="1.12 User profile photo" value="Please attach a square JPG ( no larger than 1MB ) to this email of a passport style headshot." id="profilephoto" type="checkbox"><label for="profilephoto">User profile photo</label>
@@ -63,15 +55,27 @@
             </p>
         </div>
         <div class="columns">
-            <label><b>* Department Employee Number</b> <input name="2.01 Department Employee Number" type="text" required="true" placeholder="123456" aria-describedby="employee-number-help"></label>
+            <label><b>* Department employee number</b> <input name="2.01 Department Employee Number" type="text" required="true" placeholder="123456" aria-describedby="employee-number-help"></label>
             <p class="help-text" id="employee-number-help">Employee number or contract number if available. Mark N/A if unavailable.</p>
+            <legend><b>* Full / part time</b></legend>
             <fieldset>
-                <legend><b>* Employment type</b></legend>
-                <input type="radio" name="2.02 Employment Type" value="Department Employee" id="deptemployee" checked="true"><label for="deptemployee">Dept. Employee</label>
-                <input type="radio" name="2.02 Employment Type" value="Contractor" id="contractor"><label for="contractor">Contractor</label>
-                <input type="radio" name="2.02 Employment Type" value="Volunteer" id="volunteer"><label for="volunteer">Volunteer</label>
+                <input type="radio" name="2.02 Full part time" value="Full time" checked="true"><label>Full time</label>
+                <input type="radio" name="2.02 Full part time" value="Part time"><label>Part time</label>
             </fieldset>
-            <label>End Date <input name="2.03 End Date" type="date" placeholder="31/01/2018" id="input-end-date" disabled></label>
+            <label>
+                <b>* Employment type</b>
+                <select name="2.03 Employment type" id="id-select-employment-type" required>
+                    <option value="" disabled selected>Select employment type</option>
+                    <option>Permanent</option>
+                    <option>Agency Contract</option>
+                    <option>Department Fixed Term</option>
+                    <option>Seasonal</option>
+                    <option>Vendor</option>
+                    <option>Volunteer</option>
+                    <option>Other/Alumni</option>
+                </select>
+            </label>
+            <label>End date <input name="2.04 End Date" type="date" placeholder="31/01/2018" id="input-end-date" disabled></label>
             <fieldset class="fieldset">
                 <legend><b>* Minimum conditions of access</b></legend>
                 <p>Any person granted access to the department’s IT systems and assets are accountable for adhering to prescribed
@@ -79,7 +83,7 @@
                     individuals. Access is provisioned on the condition that the user understands and accepts the relevant
                     conditions outlined in the following policies, standards, procedures and guidelines. Please confirm the
                     new user will acknowledge the following upon commencement:</p>
-                <input name="2.04 Access Conditions Met" value="Code of Conduct, Corporate Policy 70, Operational Procedure - Acceptable use of IT, Information Security Awareness" required="true" id="codeofconduct" type="checkbox"><label
+                <input name="2.05 Access Conditions Met" value="Code of Conduct, Corporate Policy 70, Operational Procedure - Acceptable use of IT, Information Security Awareness" required="true" id="codeofconduct" type="checkbox"><label
                     for="codeofconduct">DBCA Charter of Values and entity Code of Conduct</label>
                 <br><input required="true" id="policy70" type="checkbox"><label
                     for="policy70"><a href="//oim.dbca.wa.gov.au/documents/387/Corporate_Policy_Statement_70_-_Information_Security_Management.pdf">Corporate policy statement no. 70 – Information security management</a></label>
@@ -93,8 +97,8 @@
             <fieldset class="fieldset">
                 <legend>Approval from Cost Centre Manager</legend>
                 <p> I confirm the minimum requirements for the registration of the new user account have been met and authorise the creation of the new IT User Account.</p>
-                <label><b>* Name</b> <input name="2.05 Cost Centre Manager approval" required="true" type="text" placeholder="CC Manager Name"></label>
-                <label><b>* Date</b> <input name="2.06 Date of approval" required="true" type="date" placeholder="31/01/2017"></label>
+                <label><b>* Name</b> <input name="2.06 Cost Centre Manager approval" required="true" type="text" placeholder="CC Manager Name"></label>
+                <label><b>* Date</b> <input name="2.07 Date of approval" required="true" type="date" placeholder="31/01/2017"></label>
             </fieldset>
         </div>
     </div>
@@ -165,15 +169,16 @@
             }
         });
 
-        // Change event for the employee type radio button group.
-        $("#new-user-form input[type=radio][name='2.02 Employment Type']").on("change", function() {
+        // Change event for the employment type select list
+        $("select#id-select-employment-type").on("change", function() {
             var el = $("#input-end-date").get(0);
-            if (this.value == "Contractor" || this.value == "Volunteer") {
-                el.disabled = false;
-                el.required = true;
-            } else {
+            if (this.value == "Permanent") {
+                el.value = '';
                 el.disabled = true;
                 el.required = false;
+            } else {
+                el.disabled = false;
+                el.required = true;
             }
         });
 
