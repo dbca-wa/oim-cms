@@ -63,7 +63,6 @@ INSTALLED_APPS = (
     'assets',
     'core',
     'mudmap',
-    'catalogue',
     'approvals',
     'knowledge',
 )
@@ -289,14 +288,3 @@ LOGGING = {
         }
     }
 }
-
-
-# Alter some settings in debug mode.
-if DEBUG:
-    # Developer local IP may be required for debug_toolbar to work/
-    if env('INTERNAL_IP', False):
-        INTERNAL_IPS.append(env('INTERNAL_IP'))
-    INSTALLED_APPS += (
-        'debug_toolbar',
-    )
-    MIDDLEWARE_CLASSES = ('debug_toolbar.middleware.DebugToolbarMiddleware',) + MIDDLEWARE_CLASSES

@@ -29,7 +29,7 @@ class FreshdeskTicketResourceTestCase(ApiTestCase):
         url = '/api/freshdesk_tickets/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.ticket.subject)
+        self.assertContains(response, self.ticket.freshdesk_requester.email)
 
     def test_list_filtering(self):
         """Test the FreshdeskTicketResource filtered list response
