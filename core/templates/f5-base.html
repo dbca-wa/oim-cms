@@ -15,11 +15,9 @@
         <script type="text/javascript" src="//static.dbca.wa.gov.au/static/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
         <script type="text/javascript" src="//static.dbca.wa.gov.au/static/libs/foundation/5.5.3/js/foundation.min.js"></script>
         <script type="text/javascript" src="//static.dbca.wa.gov.au/static/libs/foundation-datepicker/1.5.0/js/foundation-datepicker.min.js"></script>
-        <script type="text/javascript" src="//static.dbca.wa.gov.au/static/js/egg.js"></script>
-		<script type="text/javascript" src="{% static 'js/notification.js' %}"></script>
-		<script type="text/javascript" src="{% static 'js/validation.js' %}"></script>
-		<script type="text/javascript" src="{% static 'js/utils.js' %}"></script>
-
+        <script type="text/javascript" src="{% static 'js/notification.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/validation.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/utils.js' %}"></script>
 
         <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon.png' %}">
         <link rel="stylesheet" type="text/css" media="all" href="//static.dbca.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
@@ -29,12 +27,12 @@
 
         {% block extra_css %}{% endblock %}
     </head>
-	<div id='notification-topbar'></div>
+    <div id='notification-topbar'></div>
     <body class="{% block body_class %}{% endblock %}">
         {% if 'fullscreen' not in request.GET %}
         {% wagtailuserbar %}
         <div class="off-canvas-wrap" data-offcanvas>
-	        <div class="inner-wrap">
+            <div class="inner-wrap">
                 <div class="content" id="content">
                     {% block header %}
                     {% get_site_root as site_root %}
@@ -58,7 +56,6 @@
         {% endif %}
 
         <script type="text/javascript" src="{% static 'js/oim_cms.js' %}"></script>
-        <script type="text/javascript" src="{% static 'js/oim_cms_useradmin.js' %}"></script>
         <script type="text/javascript" src="{% static 'js/selectize.js' %}"></script>
 
         {% block extra_js %}{% endblock %}
