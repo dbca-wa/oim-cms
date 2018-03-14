@@ -10,11 +10,11 @@ from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
 from registers.models import ITSystem
 
 
-def random_dpaw_email():
-    """Return a random email address ending in dpaw.wa.gov.au
+def random_dbca_email():
+    """Return a random email address ending in dbca.wa.gov.au
     """
     s = ''.join(random.choice(string.ascii_letters) for i in range(20))
-    return '{}@dpaw.wa.gov.au'.format(s)
+    return '{}@dbca.wa.gov.au'.format(s)
 
 
 class ApiTestCase(TestCase):
@@ -24,7 +24,7 @@ class ApiTestCase(TestCase):
         # Generate some other DepartmentUser objects.
         mixer.cycle(8).blend(
             DepartmentUser, username=mixer.RANDOM, photo=None, active=True,
-            email=random_dpaw_email, org_unit=None,
+            email=random_dbca_email, org_unit=None,
             cost_centre=None, ad_guid=uuid1, o365_licence=False, in_sync=False)
         # Generate some locations.
         self.loc1 = mixer.blend(Location, manager=None)
@@ -92,7 +92,7 @@ class ApiTestCase(TestCase):
         self.user3.save()
         # Generate a test user for endpoint responses.
         self.testuser = User.objects.create_user(
-            username='testuser', email='user@dpaw.wa.gov.au.com', password='pass')
+            username='testuser', email='user@dbca.wa.gov.au.com', password='pass')
         # Create a DepartmentUser object for testuser.
         mixer.blend(
             DepartmentUser, username=mixer.RANDOM, photo=None, active=True, email=self.testuser.email,

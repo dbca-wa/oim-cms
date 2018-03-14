@@ -1,5 +1,5 @@
 from __future__ import unicode_literals, absolute_import
-from oim_cms.test_api import ApiTestCase, random_dpaw_email
+from oim_cms.test_api import ApiTestCase, random_dbca_email
 from mixer.backend.django import mixer
 
 from .models import FreshdeskTicket, FreshdeskContact
@@ -12,7 +12,7 @@ class FreshdeskTicketResourceTestCase(ApiTestCase):
         """
         super(FreshdeskTicketResourceTestCase, self).setUp()
         mixer.cycle(5).blend(
-            FreshdeskContact, email=random_dpaw_email)
+            FreshdeskContact, email=random_dbca_email)
         mixer.cycle(5).blend(
             FreshdeskTicket,
             subject=mixer.RANDOM, description_text=mixer.RANDOM, type='Test',
@@ -29,7 +29,7 @@ class FreshdeskTicketResourceTestCase(ApiTestCase):
         url = '/api/freshdesk_tickets/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.ticket.subject)
+        self.assertContains(response, self.ticket.freshdesk_requester.email)
 
     def test_list_filtering(self):
         """Test the FreshdeskTicketResource filtered list response

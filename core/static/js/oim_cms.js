@@ -13,7 +13,7 @@ $.urlParam = function(name, url) {
      url = window.location.href;
     }
     var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(url);
-    if (!results) { 
+    if (!results) {
         return undefined;
     }
     return results[1] || undefined;
@@ -42,7 +42,7 @@ window.loadDatalist = function(listid) {
             $("<option/>").text(value).appendTo(datalist);
         });
         $("body").append(datalist);
-    } 
+    }
     $.get("/api/options?list=" + listid, function(data) {
         localStorage.setItem("list_"+listid, JSON.stringify(data.objects));
         loadDatalist(listid);
@@ -62,7 +62,7 @@ window.upgradeForms = function() {
         } else {
           this.setCustomValidity('Please select a valid value.');
         }
-    }).each(function() { 
+    }).each(function() {
         if (this.list == null) { loadDatalist($(this).attr("list")); }
     });
 }
@@ -94,9 +94,3 @@ window.renderHandlebars = function() {
 }
 
 $(document).ready(renderHandlebars);
-
-var egg = new Egg("up,up,down,down,left,right,left,right,b,a", function() {
-    s=document.createElement('script');
-    s.src="//static.dpaw.wa.gov.au/static/js/kh.js";
-    document.body.appendChild(s)
-}).listen();

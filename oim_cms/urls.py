@@ -7,7 +7,6 @@ from wagtail.wagtaildocs import urls as wagtaildocs_urls
 from wagtail.wagtailcore import urls as wagtail_urls
 
 from approvals import urls as approvals_urls
-from catalogue import urls as catalogue_urls
 from core import views
 from knowledge import urls as knowledge_urls
 from oim_cms.api import api_urlpatterns
@@ -17,9 +16,9 @@ admin.site.site_header = 'OIM CMS Database Administration'
 urlpatterns = [
     url(r'^approvals/', include(approvals_urls)),
     url(r'^knowledge/', include(knowledge_urls)),
-    url(r'^catalogue/', include(catalogue_urls)),
     url(r'^django-admin/', include(admin.site.urls)),
     url(r'^admin/', include(wagtailadmin_urls)),
+    url(r'^admin/uwsgi/', include('django_uwsgi.urls')),
     url(r'^documents/', include(wagtaildocs_urls)),
     url(r'^api/', include(api_urlpatterns)),
     url(r'^draft/(?P<path>.*)', views.draft, name='draft'),

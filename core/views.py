@@ -237,7 +237,7 @@ def auth(request):
             "last_name", ""), headers.get(
             "first_name", ""))
     # TODO: use url reverse on logout alias
-    headers["logout_url"] = "https://oim.dpaw.wa.gov.au/logout"
+    headers["logout_url"] = "https://oim.dbca.wa.gov.au/logout"
     try:
         headers["kmi_roles"] = DepartmentUser.objects.get(
             email__iexact=headers["email"]).extra_data.get(
