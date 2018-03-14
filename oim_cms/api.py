@@ -8,7 +8,6 @@ from restless.resources import skip_prepare
 from approvals.api import ApprovalResource
 from assets.api import HardwareAssetResource, HardwareAssetCSV
 from core.models import UserSession
-from mudmap.models import MudMap
 from organisation.api import DepartmentUserResource, LocationResource, profile
 from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
 from registers.api import ITSystemResource, ITSystemHardwareResource, ITSystemEventResource
@@ -129,41 +128,6 @@ class WhoAmIResource(DjangoResource):
             session__session_key=self.request.session.session_key)
 
 
-class MudMapResource(CSVDjangoResource):
-    VALUES_ARGS = (
-        'pk', 'name', 'user', 'last_saved'
-    )
-
-    def is_authenticated(self):
-        return True
-        return self.data.get('name', '').startswith(
-            self.request.user.email.lower())
-
-    def list_qs(self):
-        FILTERS = {}
-        if 'mudmap_id' in self.request.GET:
-            FILTERS['pk'] = self.request.GET['mudmap_id']
-        return MudMap.objects.filter(**FILTERS).values(*self.VALUES_ARGS)
-
-    @skip_prepare
-    def list(self):
-        data = list(self.list_qs())
-        return data
-
-    @skip_prepare
-    def create(self):
-        mudmap, created = MudMap.objects.get_or_create(name=self.data['name'])
-        if 'delete' in self.data:
-            mudmap.delete()
-            return {'deleted': self.data['name']}
-        else:
-            mudmap.geojson = self.data['features']
-            mudmap.lastsave = self.data['lastsave']
-            mudmap.user = self.request.user
-            mudmap.save()
-            return {'saved': self.data['name']}
-
-
 api_urlpatterns = [
     url(r'^approvals/', include(ApprovalResource.urls())),
     url(r'^hardware-assets/csv/', HardwareAssetCSV.as_view()),
@@ -173,8 +137,6 @@ api_urlpatterns = [
     url(r'^itsystems/', include(ITSystemResource.urls())),
     url(r'^itsystems.csv', ITSystemResource.as_csv),
     url(r'^itsystem-hardware/', include(ITSystemHardwareResource.urls())),
-    url(r'^mudmaps', include(MudMapResource.urls())),
-    url(r'^mudmaps.csv', MudMapResource.as_csv),
     url(r'^locations/', include(LocationResource.urls())),
     url(r'^locations.csv', LocationResource.as_csv),
     url(r'^users/', include(DepartmentUserResource.urls())),
