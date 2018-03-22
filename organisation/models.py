@@ -224,7 +224,7 @@ class DepartmentUser(MPTTModel):
                 unit["unit_type"] = self.org_unit.TYPE_CHOICES_DICT[
                     unit["unit_type"]]
             self.org_data["cost_centre"] = {
-                "name": self.org_unit.name,
+                "name": self.cost_centre.org_position.name if self.cost_centre.org_position else '',
                 "code": self.cost_centre.code,
                 "cost_centre_manager": str(self.cost_centre.manager),
                 "business_manager": str(self.cost_centre.business_manager),
