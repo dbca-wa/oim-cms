@@ -78,9 +78,6 @@ class Computer(CommonFields):
     location = models.ForeignKey(
         Location, on_delete=models.PROTECT, null=True, blank=True,
         help_text='Physical location')
-    hardware_asset = models.ForeignKey(
-        'assets.HardwareAsset', on_delete=models.PROTECT, null=True, blank=True,
-        help_text='OIM hardware asset register.')
     ec2_instance = models.ForeignKey(
         'tracking.EC2Instance', on_delete=models.PROTECT, null=True, blank=True,
         verbose_name='EC2 instance')

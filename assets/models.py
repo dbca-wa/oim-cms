@@ -116,11 +116,6 @@ class HardwareModel(models.Model):
         max_length=50, verbose_name='model number',
         help_text='''The short model number (eg. '7945G' for a Cisco 7956G phone).
             Do not enter the class (eg. '7900 series') or the product code (eg. 'WS-7945G=')''')
-    lifecycle = models.IntegerField(
-        verbose_name='lifecycle (years)',
-        help_text='''Enter in years how long we should keep items of this model before
-            they get decomissioned. Desktops should generally be three years, servers and
-            networking equipment five years.''')
     notes = models.TextField(null=True, blank=True)
 
     class Meta:

@@ -18,15 +18,14 @@ class ComputerAdmin(ModelAdmin):
         }),
         ('Management', {
             'fields': (
-                'probable_owner', 'managed_by', 'location', 'hardware_asset')
+                'probable_owner', 'managed_by', 'location')
         }),
         ('Scan data', {
             'fields': ('date_pdq_updated', 'date_ad_updated')
         })
     )
     list_display = ['hostname', 'managed_by', 'probable_owner', 'os_name', 'ec2_instance']
-    raw_id_fields = (
-        'org_unit', 'cost_centre', 'probable_owner', 'managed_by', 'location', 'hardware_asset')
+    raw_id_fields = ('org_unit', 'cost_centre', 'probable_owner', 'managed_by', 'location')
     readonly_fields = ('date_pdq_updated', 'date_ad_updated')
     search_fields = ['sam_account_name', 'hostname']
 

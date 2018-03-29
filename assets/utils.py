@@ -172,8 +172,7 @@ def import_csv(fileobj):
     c = csv.DictReader(fileobj)
     unknown_vendor = Vendor.objects.get_or_create(name='Unknown Vendor')[0]
     unknown_model = HardwareModel.objects.get_or_create(
-        model_type='Other', vendor=unknown_vendor, model_no='Unknown model',
-        lifecycle=3)[0]
+        model_type='Other', vendor=unknown_vendor, model_no='Unknown model')[0]
     unknown_location = Location.objects.get_or_create(
         name='Unknown', address='Unknown')[0]
     assets_created = []
@@ -204,8 +203,7 @@ def import_csv(fileobj):
             if not HardwareModel.objects.filter(model_no__iexact=row['HARDWARE MODEL']).exists():
                 # Create a new hardware model (use the vendor as manufacturer).
                 asset.hardware_model = HardwareModel.objects.get_or_create(
-                    vendor=asset.vendor, model_no=row['HARDWARE MODEL'], model_type='Other',
-                    lifecycle=3)[0]
+                    vendor=asset.vendor, model_no=row['HARDWARE MODEL'], model_type='Other')[0]
             else:
                 # Use the existing hardware model.
                 asset.hardware_model = HardwareModel.objects.get(model_no__iexact=row['HARDWARE MODEL'])

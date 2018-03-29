@@ -77,17 +77,7 @@ class HardwareAssetAdmin(VersionAdmin):
         if not obj.date_purchased:
             return ''
         d = date.today() - obj.date_purchased
-        max_age = timedelta(days=obj.hardware_model.lifecycle * 365)
-
-        if d > max_age:
-            if obj.hardware_model.lifecycle == 1:
-                y = "year"
-            else:
-                y = "years"
-            return mark_safe('<font color="#FF0000"><b>{}</b></font> (max {} {})'.format(
-                humanise_age(d), obj.hardware_model.lifecycle, y))
-        else:
-            return humanise_age(d)
+        return humanise_age(d)
 
     def extra_data_ro(self, obj):
         return obj.get_extra_data_html()
