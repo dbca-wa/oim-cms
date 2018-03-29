@@ -16,21 +16,7 @@ django-ipware==2.0.1
 json2html==1.2.1
 openpyxl==2.5.1
 unicodecsv==0.14.1
-# fork of Microsoft Azure AD auth library with password authentication fix
+# Fork of Microsoft Azure AD auth library with password authentication fix:
 git+https://github.com/scottp-dpaw/azure-activedirectory-library-for-python.git@passwordauth#egg=adal
 restless==2.1.1
 Pillow==5.0.0
-
-#django-uwsgi==0.2.1  # Nice uWSGI status in Wagtail admin
-#git+https://github.com/parksandwildlife/dpaw-utils.git@0.3a16#egg=dpaw-utils
-#wagtailtinymce==4.2.1.5
-#django-queryset-csv==1.0.0
-#python-dateutil==2.7.0
-#django-model-utils==3.1.1
-#social-auth-core==1.4.0
-#Babel==2.2.0
-#openpyxl==2.3.5
-#unicodecsv==0.14.1
-#mixer==6.0.1
-#coverage==4.0.3
-#mock==2.0.0
