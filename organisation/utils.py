@@ -1,11 +1,10 @@
-from __future__ import unicode_literals, absolute_import
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.core.files.base import ContentFile
+from io import BytesIO
 import logging
 from openpyxl import load_workbook
 import os
-from six import BytesIO
 import subprocess
 import unicodecsv
 

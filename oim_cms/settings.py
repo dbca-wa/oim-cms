@@ -1,6 +1,5 @@
 import os
 from confy import env, database, cache
-from dj_database_url import parse
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -17,9 +16,6 @@ INTERNAL_IPS = ['127.0.0.1', '::1']
 # Base URL to use when referring to full URLs within the Wagtail admin backend
 # e.g. in notification emails. Don't include '/admin' or a trailing slash
 BASE_URL = env('BASE_URL', 'http://localhost:8000')
-BORG_URL = env('BORG_URL', 'https://borg.dpaw.wa.gov.au')
-if BORG_URL.endswith('/'):
-    BORG_URL = BORG_URL[:-1]
 
 # Application definition
 INSTALLED_APPS = (
@@ -31,38 +27,29 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.humanize',
 
-    'compressor',
+    'wagtail.contrib.forms',
+    'wagtail.contrib.redirects',
+    'wagtail.embeds',
+    'wagtail.sites',
+    'wagtail.users',
+    'wagtail.snippets',
+    'wagtail.documents',
+    'wagtail.images',
+    'wagtail.search',
+    'wagtail.admin',
+    'wagtail.core',
+
     'taggit',
     'modelcluster',
+    'compressor',
     'django_extensions',
     'reversion',
     'mptt',
-    'django_mptt_admin',
     'leaflet',
-
-    'wagtail.wagtailcore',
-    'wagtail.wagtailadmin',
-    'wagtail.wagtaildocs',
-    'wagtail.wagtailsnippets',
-    'wagtail.wagtailusers',
-    'wagtail.wagtailsites',
-    'wagtail.wagtailimages',
-    'wagtail.wagtailembeds',
-    'wagtail.wagtailsearch',
-    'wagtail.wagtailredirects',
-    'wagtail.wagtailforms',
-    'wagtail.contrib.postgres_search',
-    'wagtailtinymce',
-    'django_uwsgi',
-
     'social_django',
 
-    'organisation',
-    'tracking',
-    'registers',
-    'assets',
     'core',
-    'knowledge',
+    'organisation',
 )
 
 AUTHENTICATION_BACKENDS = (
@@ -101,32 +88,23 @@ SESSION_COOKIE_HTTPONLY = env('SESSION_COOKIE_HTTPONLY', False)
 SESSION_COOKIE_SECURE = env('SESSION_COOKIE_SECURE', False)
 CSRF_COOKIE_SECURE = env('CSRF_COOKIE_SECURE', False)
 CACHES = {'default': cache.config()}
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'wagtail.wagtailcore.middleware.SiteMiddleware',
-    'wagtail.wagtailredirects.middleware.RedirectMiddleware',
+    'wagtail.core.middleware.SiteMiddleware',
+    'wagtail.contrib.redirects.middleware.RedirectMiddleware',
     'dpaw_utils.middleware.SSOLoginMiddleware',
-)
+]
 ROOT_URLCONF = 'oim_cms.urls'
-APPLICATION_VERSION = '1.4.11'
+APPLICATION_VERSION = '1.5.0'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
 
 # Database configuration
 DATABASES = {'default': database.config()}
-# Optional extra database for RCS Assets (read-only):
-if env('DATABASE_URL_RCS', None):
-    INSTALLED_APPS += ('rcs_assets',)
-    DATABASES['rcs_assets'] = parse(env('DATABASE_URL_RCS'))
-    # The Oracle db port needs to be a string :/
-    DATABASES['rcs_assets']['PORT'] = str(DATABASES['rcs_assets']['PORT'])
-    # When running tests, configure the rcs_assets db as a mirror of default.
-    DATABASES['rcs_assets']['TEST'] = {'MIRROR': 'default'}
-    DATABASE_ROUTERS = ['rcs_assets.router.RCSAssetsRouter']
 
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
@@ -177,57 +155,28 @@ TEMPLATES = [
     },
 ]
 
-# Define the following in .env
-DOMAIN_SUFFIX = env('DOMAIN_SUFFIX', None)
-AD_FILTER_COMPUTERS = env('AD_FILTER_COMPUTERS', None)
-AD_FILTER_SOFTWARE = env('AD_FILTER_SOFTWARE', None)
-AD_FILTER_PUBLISHERS = env('AD_FILTER_PUBLISHERS', None)
-AD_FILTER_USERS = env('AD_FILTER_USERS', None)
-EXCH_REPORT_PATH = env('EXCH_REPORT_PATH', None)
-NETWORK_SCAN_PATH = env('NETWORK_SCAN_PATH', None)
-DNS_PATH = env('DNS_PATH', None)
-PDQ_INV_PATH = env('PDQ_INV_PATH', None)
-PDQ_DHCP_PATH = env('PDQ_DHCP_PATH', None)
-PEEPERS_URL = env('PEEPERS_URL', None)
-INTERNAL_USER = env('INTERNAL_USER', None)
-FRESHDESK_ENDPOINT = env('FRESHDESK_ENDPOINT', None)
-FRESHDESK_AUTH = (env('FRESHDESK_KEY'), 'X')
-POSTGREST_ROLE = env('POSTGREST_ROLE', 'postgrest')
-POSTGREST_BINARY = env('POSTGREST_BINARY', '/usr/local/bin/postgrest')
-API_RESPONSE_CACHE_SECONDS = env('API_RESPONSE_CACHE_SECONDS', None)
-
 # Email settings
-EMAIL_HOST = env('EMAIL_HOST', None)
-EMAIL_PORT = env('EMAIL_PORT', None)
-EMAIL_INCREDIBUS_LIST = env('EMAIL_INCREDIBUS_LIST', '')
-if not EMAIL_INCREDIBUS_LIST:
-    EMAIL_INCREDIBUS_LIST = []
-else:
-    EMAIL_INCREDIBUS_LIST = EMAIL_INCREDIBUS_LIST.split(',')
+EMAIL_HOST = env('EMAIL_HOST', 'email.host')
+EMAIL_PORT = env('EMAIL_PORT', 25)
 
 # Wagtail settings
-WAGTAIL_SITE_NAME = "OIM Content Management System"
-WAGTAILADMIN_NOTIFICATION_FROM_EMAIL ="oim_cms@dbca.wa.gov.au"
-# Use Postgres as the search backend:
-# http://docs.wagtail.io/en/v1.10.1/reference/contrib/postgres_search.html#postgres-search
+WAGTAIL_SITE_NAME = 'OIM Content Management System'
+WAGTAILADMIN_NOTIFICATION_FROM_EMAIL = 'oim_cms@dbca.wa.gov.au'
 WAGTAILSEARCH_BACKENDS = {
     'default': {
         'BACKEND': 'wagtail.contrib.postgres_search.backend',
         'SEARCH_CONFIG': 'english',
     },
 }
-# Use face/feature detection to improve image cropping (requires OpenCV)
-WAGTAILIMAGES_FEATURE_DETECTION_ENABLED = False
+#WAGTAILADMIN_RICH_TEXT_EDITORS = {
+#    'default': {
+#        'WIDGET': 'wagtail.admin.rich_text.HalloRichTextArea'
+#    }
+#}
 # Enable image usage stats in the admin
 WAGTAIL_USAGE_COUNT_ENABLED = True
 # We want a custom search result template
 WAGTAILSEARCH_RESULTS_TEMPLATE = 'core/search_results.html'
-WAGTAILADMIN_RICH_TEXT_EDITORS = {
-    'default': {
-        #'WIDGET': 'wagtailtinymce.rich_text.TinyMCERichTextArea'
-        'WIDGET': 'core.rich_text.CustomTinyMCERichTextArea'
-    },
-}
 
 
 # Logging settings
@@ -241,7 +190,7 @@ LOGGING = {
             'format': '%(levelname)s %(asctime)s %(module)s %(message)s'
         },
         'simple': {
-            'format': '%(levelname)s %(message)s'
+            'format': '%(levelname)s %(asctime)s %(message)s'
         },
     },
     'handlers': {
@@ -254,16 +203,8 @@ LOGGING = {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'cms.log'),
-            'formatter': 'verbose',
+            'formatter': 'simple',
             'maxBytes': 1024 * 1024 * 5,
-            'backupCount': 5,
-        },
-        'ad_file': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'ad_sync_actions.log'),
-            'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 25,
             'backupCount': 5,
         }
     },
@@ -274,14 +215,6 @@ LOGGING = {
         },
         'log': {
             'handlers': ['file'],
-            'level': 'INFO'
-        },
-        'organisation': {
-            'handlers': ['file'],
-            'level': 'DEBUG'
-        },
-        'ad_sync': {
-            'handlers': ['ad_file'],
             'level': 'INFO'
         }
     }

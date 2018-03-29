@@ -1,14 +1,12 @@
-from __future__ import absolute_import
 from django import forms
 from django.conf.urls import url
 from django.contrib import messages
 from django.contrib.admin import register, site, ModelAdmin
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils.html import format_html
-from django_mptt_admin.admin import DjangoMpttAdmin
 from leaflet.admin import LeafletGeoAdmin
 from reversion.admin import VersionAdmin
 from threading import Thread
@@ -208,7 +206,7 @@ class SecondaryLocationAdmin(ModelAdmin):
 
 
 @register(OrgUnit)
-class OrgUnitAdmin(DjangoMpttAdmin):
+class OrgUnitAdmin(ModelAdmin):
     tree_auto_open = True
     tree_load_on_demand = False
     list_display = (

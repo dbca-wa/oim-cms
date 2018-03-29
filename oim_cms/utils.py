@@ -1,4 +1,3 @@
-from __future__ import unicode_literals, absolute_import
 from django.http import HttpResponse
 from djqscsv import render_to_csv_response
 from restless.dj import DjangoResource

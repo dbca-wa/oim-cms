@@ -1,23 +1,21 @@
-from __future__ import unicode_literals, absolute_import
 from django.conf import settings
 from django.conf.urls import url
-from django.http import (
-    HttpResponse, HttpResponseForbidden, HttpResponseBadRequest)
+from django.core.cache import cache
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseBadRequest
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 import json
+import logging
 import pytz
 from restless.constants import OK
 from restless.dj import DjangoResource
 from restless.exceptions import BadRequest
 from restless.resources import skip_prepare
 from restless.utils import MoreTypesJSONEncoder
-from oim_cms.utils import FieldsFormatter, CSVDjangoResource
-import logging
-from django.core.cache import cache
 
-from .models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
+from oim_cms.utils import FieldsFormatter, CSVDjangoResource
+from organisation.models import DepartmentUser, Location, SecondaryLocation, OrgUnit, CostCentre
 
 
 ACCOUNT_TYPE_DICT = dict(DepartmentUser.ACCOUNT_TYPE_CHOICES)

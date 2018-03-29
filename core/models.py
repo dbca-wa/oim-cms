@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.signals import user_logged_in
@@ -14,14 +13,13 @@ from modelcluster.fields import ParentalKey
 from modelcluster.contrib.taggit import ClusterTaggableManager
 import os
 from taggit.models import TaggedItemBase
-from wagtail.wagtailadmin.edit_handlers import FieldPanel, StreamFieldPanel
-from wagtail.wagtailcore.models import Page
-from wagtail.wagtailcore import blocks
-from wagtail.wagtailcore.fields import StreamField
-from wagtail.wagtailimages.formats import Format, register_image_format
-from wagtail.wagtailsearch import index
+from wagtail.admin.edit_handlers import FieldPanel, StreamFieldPanel
+from wagtail.core import blocks, hooks
+from wagtail.core.models import Page
+from wagtail.core.fields import StreamField
+from wagtail.images.formats import Format, register_image_format
+from wagtail.search import index
 
-from wagtail.wagtailcore import hooks
 from django.shortcuts import render
 from django.core.mail import send_mail
 
@@ -44,9 +42,9 @@ register_image_format(Format('original', 'Original', 'richtext-image original', 
 
 
 class UserSession(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
-    department_user = models.ForeignKey(DepartmentUser, null=True)
-    session = models.ForeignKey(Session)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    department_user = models.ForeignKey(DepartmentUser, on_delete=models.PROTECT, null=True)
+    session = models.ForeignKey(Session, on_delete=models.PROTECT)
     ip = models.GenericIPAddressField(null=True)
 
     @property

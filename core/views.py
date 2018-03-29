@@ -1,22 +1,22 @@
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.contrib.auth import login, logout
-from django.core.cache import cache
-from django.shortcuts import render
 from django.conf import settings
+from django.core.cache import cache
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
+from django.shortcuts import render
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from ipware.ip import get_ip
 import json
 import base64
 import hashlib
 import adal
-from wagtail.wagtailcore.models import PageRevision
-from wagtail.wagtailsearch.models import Query
+from wagtail.core.models import PageRevision
+from wagtail.search.models import Query
 
 from core.models import Content, UserSession
 from oim_cms.api import WhoAmIResource
 from django.contrib.auth.models import User
-from tracking.models import DepartmentUser
-from django.views.decorators.cache import never_cache
+from organisation.models import DepartmentUser
 
 
 def force_email(username):

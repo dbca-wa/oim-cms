@@ -1,15 +1,17 @@
-from __future__ import unicode_literals
 from datetime import datetime
 from django.contrib.postgres.fields import JSONField
 from django.contrib.gis.db import models
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from io import BytesIO
 from json2html import json2html
 from mptt.models import MPTTModel, TreeForeignKey
 import os
+from PIL import Image
 import re
 
 from .utils import get_photo_path, get_photo_ad_path, convert_ad_timestamp
@@ -257,10 +259,6 @@ class DepartmentUser(MPTTModel):
                 self.photo_ad.delete()
             return
 
-        from PIL import Image
-        from six import BytesIO
-        from django.core.files.base import ContentFile
-
         if hasattr(self.photo.file, 'content_type'):
             PHOTO_TYPE = self.photo.file.content_type
 
@@ -403,7 +401,7 @@ class Location(models.Model):
 class SecondaryLocation(models.Model):
     """Represents a sub-location or place without physical infrastructure.
     """
-    location = models.ForeignKey(Location)
+    location = models.ForeignKey(Location, on_delete=models.PROTECT)
     name = models.CharField(max_length=256, unique=True)
     manager = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, null=True, blank=True)
@@ -517,9 +515,9 @@ class CostCentre(models.Model):
     chart_acct_name = models.CharField(
         max_length=256, blank=True, null=True, verbose_name='chart of accounts name')
     division = models.ForeignKey(
-        OrgUnit, null=True, editable=False, related_name='costcentres_in_division')
+        OrgUnit, on_delete=models.PROTECT, null=True, editable=False, related_name='costcentres_in_division')
     org_position = models.OneToOneField(
-        OrgUnit, unique=True, blank=True, null=True)
+        OrgUnit, on_delete=models.PROTECT, unique=True, blank=True, null=True)
     manager = models.ForeignKey(
         DepartmentUser, on_delete=models.PROTECT, related_name='manage_ccs',
         null=True, blank=True)
