@@ -62,7 +62,6 @@ INSTALLED_APPS = (
     'registers',
     'assets',
     'core',
-    'approvals',
     'knowledge',
 )
 
