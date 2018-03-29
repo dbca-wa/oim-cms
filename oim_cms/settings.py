@@ -168,14 +168,7 @@ WAGTAILSEARCH_BACKENDS = {
         'SEARCH_CONFIG': 'english',
     },
 }
-#WAGTAILADMIN_RICH_TEXT_EDITORS = {
-#    'default': {
-#        'WIDGET': 'wagtail.admin.rich_text.HalloRichTextArea'
-#    }
-#}
-# Enable image usage stats in the admin
 WAGTAIL_USAGE_COUNT_ENABLED = True
-# We want a custom search result template
 WAGTAILSEARCH_RESULTS_TEMPLATE = 'core/search_results.html'
 
 

@@ -63,12 +63,12 @@ def auth_get(request):
         return auth(request)
 
     if 'sso_user' in request.GET and 'sso_shared_id' in request.GET:
-        user = shared_id_authenticate(request.GET.get('sso_user'),
-            request.GET.get('sso_shared_id'))
+        user = shared_id_authenticate(
+            request.GET.get('sso_user'), request.GET.get('sso_shared_id'))
         if user:
-            response = HttpResponse(json.dumps(
-                {'email': user.email, 'shared_id': request.GET.get('sso_shared_id')
-                }), content_type='application/json')
+            response = HttpResponse(
+                json.dumps({'email': user.email, 'shared_id': request.GET.get('sso_shared_id')}),
+                content_type='application/json')
             response["X-email"] = user.email
             response["X-shared-id"] = request.GET.get('sso_shared_id')
             return response
@@ -206,11 +206,11 @@ def auth(request):
             # (hence it'll only work against certain endpoints)
             user = shared_id_authenticate(username, password)
             if user:
-                response = HttpResponse(json.dumps(
-                    {'email': user.email, 'shared_id': password
-                    }), content_type='application/json')
-                response["X-email"] = user.email
-                response["X-shared-id"] = password
+                response = HttpResponse(
+                    json.dumps({'email': user.email, 'shared_id': password}),
+                    content_type='application/json')
+                response['X-email'] = user.email
+                response['X-shared-id'] = password
                 return response
 
             # after that, check against Azure AD
