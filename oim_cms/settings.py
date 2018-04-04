@@ -48,8 +48,8 @@ INSTALLED_APPS = (
     'leaflet',
     'social_django',
 
-    'core',
     'organisation',
+    'core',
 )
 
 AUTHENTICATION_BACKENDS = (
