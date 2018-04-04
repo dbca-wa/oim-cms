@@ -1,22 +1,22 @@
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.contrib.auth import login, logout
-from django.core.cache import cache
-from django.shortcuts import render
 from django.conf import settings
+from django.core.cache import cache
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
+from django.shortcuts import render
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from ipware.ip import get_ip
 import json
 import base64
 import hashlib
 import adal
-from wagtail.wagtailcore.models import PageRevision
-from wagtail.wagtailsearch.models import Query
+from wagtail.core.models import PageRevision
+from wagtail.search.models import Query
 
 from core.models import Content, UserSession
 from oim_cms.api import WhoAmIResource
 from django.contrib.auth.models import User
-from tracking.models import DepartmentUser
-from django.views.decorators.cache import never_cache
+from organisation.models import DepartmentUser
 
 
 def force_email(username):
@@ -63,12 +63,12 @@ def auth_get(request):
         return auth(request)
 
     if 'sso_user' in request.GET and 'sso_shared_id' in request.GET:
-        user = shared_id_authenticate(request.GET.get('sso_user'),
-            request.GET.get('sso_shared_id'))
+        user = shared_id_authenticate(
+            request.GET.get('sso_user'), request.GET.get('sso_shared_id'))
         if user:
-            response = HttpResponse(json.dumps(
-                {'email': user.email, 'shared_id': request.GET.get('sso_shared_id')
-                }), content_type='application/json')
+            response = HttpResponse(
+                json.dumps({'email': user.email, 'shared_id': request.GET.get('sso_shared_id')}),
+                content_type='application/json')
             response["X-email"] = user.email
             response["X-shared-id"] = request.GET.get('sso_shared_id')
             return response
@@ -206,11 +206,11 @@ def auth(request):
             # (hence it'll only work against certain endpoints)
             user = shared_id_authenticate(username, password)
             if user:
-                response = HttpResponse(json.dumps(
-                    {'email': user.email, 'shared_id': password
-                    }), content_type='application/json')
-                response["X-email"] = user.email
-                response["X-shared-id"] = password
+                response = HttpResponse(
+                    json.dumps({'email': user.email, 'shared_id': password}),
+                    content_type='application/json')
+                response['X-email'] = user.email
+                response['X-shared-id'] = password
                 return response
 
             # after that, check against Azure AD

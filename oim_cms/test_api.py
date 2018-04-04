@@ -1,4 +1,3 @@
-from __future__ import unicode_literals, absolute_import
 from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from mixer.backend.django import mixer
@@ -7,7 +6,6 @@ import string
 from uuid import uuid1
 
 from organisation.models import DepartmentUser, Location, OrgUnit, CostCentre
-from registers.models import ITSystem
 
 
 def random_dbca_email():
@@ -99,8 +97,3 @@ class ApiTestCase(TestCase):
             org_unit=None, cost_centre=None, ad_guid=uuid1)
         # Log in testuser by default.
         self.client.login(username='testuser', password='pass')
-        # Generate some IT Systems.
-        self.it1 = mixer.blend(ITSystem, status=0, owner=self.user1)
-        self.it2 = mixer.blend(ITSystem, status=1, owner=self.user2)
-        self.it_leg = mixer.blend(ITSystem, status=2, owner=self.user2)
-        self.it_dec = mixer.blend(ITSystem, status=3, owner=self.user2)
