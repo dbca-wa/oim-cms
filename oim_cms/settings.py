@@ -43,9 +43,6 @@ INSTALLED_APPS = (
     'modelcluster',
     'compressor',
     'django_extensions',
-    'reversion',
-    'mptt',
-    'leaflet',
     'social_django',
 
     'organisation',
