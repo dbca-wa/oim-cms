@@ -16,13 +16,7 @@ urlpatterns = [
     path('django-admin/', admin.site.urls),
     re_path(r'^draft/(?P<path>.*)', views.draft, name='draft'),
     path('search', views.search, name='search'),
-    path('logout', views.logout_view, name='logout'),
     path('redirect/', views.redirect, name='redirect'),
-    path('auth', views.auth, name='auth'),
-    path('auth_dual', views.auth_dual, name='auth_dual'),
-    path('auth_ip', views.auth_ip, name='auth_ip'),
-    path('auth_get', views.auth_get, name='auth_get'),
-    path('', include('social_django.urls', namespace='social')),
     path('', include(wagtail_urls)),
 ]
 
