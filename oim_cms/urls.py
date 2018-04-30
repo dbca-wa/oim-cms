@@ -1,5 +1,4 @@
-from django.urls import re_path
-from django.conf.urls import include, url
+from django.urls import path, re_path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -12,21 +11,14 @@ from core import views
 admin.site.site_header = 'OIM CMS Database Administration'
 
 urlpatterns = [
-    re_path(r'^admin/', include(wagtailadmin_urls)),
-    re_path(r'^documents/', include(wagtaildocs_urls)),
-    url(r'^django-admin/', admin.site.urls),
-    #url(r'^admin/uwsgi/', include('django_uwsgi.urls')),
-    #url(r'', include('django.contrib.auth.urls', namespace='auth')),
-    url(r'^draft/(?P<path>.*)', views.draft, name='draft'),
-    url(r'^search', views.search, name='search'),
-    url(r'^logout', views.logout_view, name='logout'),
-    url(r'^redirect/', views.redirect, name='redirect'),
-    url(r'^auth$', views.auth, name='auth'),
-    url(r'^auth_dual$', views.auth_dual, name='auth_dual'),
-    url(r'^auth_ip$', views.auth_ip, name='auth_ip'),
-    url(r'^auth_get$', views.auth_get, name='auth_get'),
-    url(r'', include('social_django.urls', namespace='social')),
-    re_path(r'', include(wagtail_urls)),
+    path('admin/', include(wagtailadmin_urls)),
+    path('documents/', include(wagtaildocs_urls)),
+    path('django-admin/', admin.site.urls),
+    re_path(r'^draft/(?P<path>.*)', views.draft, name='draft'),
+    path('healthcheck/', views.HealthCheckView.as_view(), name='health_check'),
+    path('search', views.search, name='search'),
+    path('redirect/', views.redirect, name='redirect'),
+    path('', include(wagtail_urls)),
 ]
 
 if settings.DEBUG:  # Serve media locally in development.
