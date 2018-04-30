@@ -15,6 +15,7 @@ urlpatterns = [
     path('documents/', include(wagtaildocs_urls)),
     path('django-admin/', admin.site.urls),
     re_path(r'^draft/(?P<path>.*)', views.draft, name='draft'),
+    path('healthcheck/', views.HealthCheckView.as_view(), name='health_check'),
     path('search', views.search, name='search'),
     path('redirect/', views.redirect, name='redirect'),
     path('', include(wagtail_urls)),
