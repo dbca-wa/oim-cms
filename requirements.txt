@@ -1,33 +1,11 @@
-Django==1.11.10
-django-extensions==2.0.0
-django-reversion==2.0.13
-django-uwsgi==0.2.1  # Nice uWSGI status in Wagtail admin
-git+https://github.com/parksandwildlife/dpaw-utils.git@0.3a16#egg=dpaw-utils
-wagtail==1.13.1
-wagtailtinymce==4.2.1.5
-django-queryset-csv==1.0.0
-django-mptt==0.9.0
-django-mptt-admin==0.5.0
-django-leaflet==0.23.0
-python-dateutil==2.7.0
-django-model-utils==3.1.1
-django-compressor==2.0
-restless==2.1.1
-#cx-Oracle==5.2.1  # Leave commented so Travis CI doesn't break :/
-dj-database-url==0.5.0
-
-# fork of Microsoft Azure AD auth library with password authentication fix
-git+https://github.com/scottp-dpaw/azure-activedirectory-library-for-python.git@passwordauth#egg=adal
-django-ipware==2.0.1
-social-auth-app-django==1.2.0
-social-auth-core==1.4.0
-
-# Fork of JSON to HTML lib with python 3 fixes
-git+https://github.com/scottp-dpaw/json2html.git@py3#egg=json2html
-
-Babel==2.2.0
-openpyxl==2.3.5
-unicodecsv==0.14.1
-mixer==6.0.1
-coverage==4.0.3
-mock==2.0.0
+git+git://github.com/dbca-wa/dpaw-utils@minimal#egg=dpaw-utils
+psycopg2-binary==2.7.4
+Django==2.0.4
+django-confy==1.0.4
+django-extensions==2.0.6
+uWSGI==2.0.17
+gevent==1.2.2
+wagtail==2.0.1
+django-taggit==0.22.2
+django-modelcluster==4.1
+Pillow==5.0.0
