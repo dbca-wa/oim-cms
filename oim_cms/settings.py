@@ -91,15 +91,13 @@ DATE_FORMAT = 'd M Y'
 DATETIME_FORMAT = 'l d F Y, h:i A'
 
 
-# Static files (CSS, JavaScript, Images)
+# Static files configuration
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
-COMPRESS_ENABLED = False
-STATICFILES_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-)
-STATICFILES_DIRS = ['oim_cms/static']
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'oim_cms', 'static')]
+# Ensure that the media directory exists:
+if not os.path.exists(os.path.join(BASE_DIR, 'media')):
+    os.mkdir(os.path.join(BASE_DIR, 'media'))
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
