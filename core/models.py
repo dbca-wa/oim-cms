@@ -93,6 +93,7 @@ def submit_form(page, request, serve_args, serve_kwargs):
         subject = request.POST.get('Subject', "OIM Extranet Form")
         postdata = sorted(request.POST.items())
         email = render(request, "emailform.html", {"subject": subject, "email": True, "postdata": postdata}).content
+        email = email.decode('utf-8')
         send_mail(
             '{} ( {} )'.format(subject, request.path), email, 'OIM Extranet <oimsupport@dbca.wa.gov.au>',
             [request.user.email], html_message=email, fail_silently=False)
