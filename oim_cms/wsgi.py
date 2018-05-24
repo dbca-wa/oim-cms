@@ -3,10 +3,16 @@ WSGI config for oim_cms project.
 It exposes the WSGI callable as a module-level variable named ``application``.
 """
 import confy
-from django.core.wsgi import get_wsgi_application
 import os
+from unipath import Path
 
-confy.read_environment_file(".env")
+# These lines are required for interoperability between local and container environments.
+dot_env = os.path.join(Path(__file__).ancestor(2), '.env')
+if os.path.exists(dot_env):
+    confy.read_environment_file(dot_env)  # Must precede dj_static imports.
+
+from django.core.wsgi import get_wsgi_application
+from dj_static import Cling, MediaCling
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "oim_cms.settings")
-application = get_wsgi_application()
+application = Cling(MediaCling(get_wsgi_application()))
