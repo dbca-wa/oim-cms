@@ -1,8 +1,9 @@
 import os
 from confy import env, database, cache
+from unipath import Path
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_DIR = Path(__file__).ancestor(2)
 
 # Settings defined in environment variables.
 SECRET_KEY = env('SECRET_KEY')
