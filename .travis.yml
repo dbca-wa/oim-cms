@@ -18,18 +18,14 @@ env:
     global:
         - SECRET_KEY="SecretKeyForTravisCI"
         - DATABASE_URL="postgis://postgres@localhost:5432/travis_ci_test"
-        - AZUREAD_AUTHORITY="https://login.microsoftonline.com/thisisnotarealazureaudauthorityurl"
 install:
     - pip install --upgrade pip
     - pip install --upgrade setuptools
     - pip install six
     - pip install -r requirements.txt
-    - pip install coveralls
 before_script:
     - psql -c 'create extension postgis' -U postgres
     - psql -c 'create database travis_ci_test;' -U postgres
     - python manage.py migrate --noinput
 script:
-    - coverage run --source="." manage.py test
-after_success:
-    - coveralls
+    - python manage.py test
