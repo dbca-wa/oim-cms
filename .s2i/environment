@@ -1,1 +1,2 @@
 APP_MODULE=oim_cms.wsgi
+APP_CONFIG=gunicorn.ini
