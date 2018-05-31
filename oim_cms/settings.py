@@ -1,9 +1,9 @@
 import os
 from confy import env, database, cache
-from unipath import Path
+from pathlib import Path
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = Path(__file__).ancestor(2)
+BASE_DIR = str(Path(__file__).resolve().parents[1])
 
 # Settings defined in environment variables.
 SECRET_KEY = env('SECRET_KEY')
@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'core',
 ]
 MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
