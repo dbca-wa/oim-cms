@@ -6,7 +6,7 @@ from pathlib import Path
 BASE_DIR = str(Path(__file__).resolve().parents[1])
 
 # Settings defined in environment variables.
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = env('SECRET_KEY', 'PlaceholderSecretKey')
 DEBUG = env('DEBUG', False)
 CSRF_COOKIE_SECURE = env('CSRF_COOKIE_SECURE', False)
 SESSION_COOKIE_SECURE = env('SESSION_COOKIE_SECURE', False)
