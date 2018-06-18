@@ -125,40 +125,29 @@ WAGTAILSEARCH_RESULTS_TEMPLATE = 'core/search_results.html'
 BASE_URL = env('BASE_URL', 'https://oim.dbca.wa.gov.au')
 
 
-# Logging settings
-# Ensure that the logs directory exists:
-if not os.path.exists(os.path.join(BASE_DIR, 'logs')):
-    os.mkdir(os.path.join(BASE_DIR, 'logs'))
+# Logging settings - log to stdout/stderr
 LOGGING = {
     'version': 1,
+    'disable_existing_loggers': False,
     'formatters': {
-        'simple': {
-            'format': '%(levelname)s %(asctime)s %(message)s'
-        },
+        'console': {'format': '%(name)-12s %(message)s'},
+        'verbose': {'format': '%(asctime)s %(levelname)-8s %(message)s'},
     },
     'handlers': {
         'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple'
-        },
-        'file': {
             'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'cms.log'),
-            'formatter': 'simple',
-            'maxBytes': 1024 * 1024 * 5,
-            'backupCount': 5,
-        }
+            'class': 'logging.StreamHandler',
+            'formatter': 'console'
+        },
     },
     'loggers': {
-        'django.request': {
-            'handlers': ['file'],
+        'cms': {
+            'handlers': ['console'],
             'level': 'INFO'
         },
-        'log': {
-            'handlers': ['file'],
-            'level': 'INFO'
-        }
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'WARNING'
+        },
     }
 }
