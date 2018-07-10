@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'raven.contrib.django.raven_compat',
     'wagtail.contrib.forms',
     'wagtail.contrib.redirects',
     'wagtail.embeds',
@@ -139,15 +140,29 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'console'
         },
+		'sentry': {
+            'level': 'WARNING',
+            'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+        },
     },
     'loggers': {
+        'django': {
+            'handlers': ['console'],
+			'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['console', 'sentry'],
+            'level': 'WARNING',
+			'propagate': False,
+        },
         'cms': {
             'handlers': ['console'],
             'level': 'INFO'
         },
-        'django.request': {
-            'handlers': ['console'],
-            'level': 'WARNING'
-        },
     }
 }
+
+
+# Sentry configuration
+if env('RAVEN_DSN', False):
+    RAVEN_CONFIG = {'dsn': env('RAVEN_DSN')}
