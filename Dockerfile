@@ -13,5 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN python manage.py collectstatic --noinput
 RUN apk del .build-deps
 
+HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/healthcheck/"]
 EXPOSE 8080
 CMD ["gunicorn", "oim_cms.wsgi", "--config", "gunicorn.ini"]
