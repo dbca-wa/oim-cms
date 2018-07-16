@@ -78,7 +78,7 @@ TEMPLATES = [
         },
     },
 ]
-APPLICATION_VERSION = '2.0.4'
+APPLICATION_VERSION = '2.0.6'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 
