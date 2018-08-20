@@ -24,4 +24,4 @@ urlpatterns = [
 if settings.DEBUG:  # Serve media locally in development.
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-handler404 = views.error404
+#handler404 = views.error404
