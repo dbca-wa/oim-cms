@@ -1,3 +1,0 @@
-UPGRADE_PIP_TO_LATEST=1
-APP_MODULE=oim_cms.wsgi
-APP_CONFIG=gunicorn.ini
