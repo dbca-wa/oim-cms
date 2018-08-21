@@ -53,7 +53,7 @@ def search(request):
     })
 
 
-def error404(request):
+def error404(request, exception=None):
     search_query = " ".join(request.get_full_path().split("/"))
     search_results = search_content(search_query)
     if search_results.count() == 1:
