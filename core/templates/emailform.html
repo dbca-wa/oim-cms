@@ -20,7 +20,7 @@
         font-size: 14px;
         line-height: 1.4;
         margin: 0;
-        padding: 0; 
+        padding: 0;
         -ms-text-size-adjust: 100%;
         -webkit-text-size-adjust: 100%; }
 
@@ -260,7 +260,7 @@
           font-size: inherit !important;
           font-weight: inherit !important;
           line-height: inherit !important;
-          text-decoration: none !important; } 
+          text-decoration: none !important; }
         .btn-primary table td:hover {
           background-color: #34495e !important; }
         .btn-primary a:hover {
@@ -276,35 +276,45 @@
         <td class="container">
           <div class="content">
 
-            <!-- START CENTERED WHITE CONTAINER -->
             <span class="preheader">{{ subject}} form ( {{ request.user.email.lower }} )</span>
+            <br>
+            <!-- START CENTERED WHITE CONTAINER -->
             <table class="main">
-
-              <!-- START MAIN CONTENT AREA -->
               <tr>
                 <td class="wrapper">
                   <table border="0" cellpadding="0" cellspacing="0">
                     <tr>
                       <td>
-                            {% if email != True %}<p><i>The form info below has been sent to {{ request.user.email.lower }}</i></p>{% endif %}
-                            <p>This <a href="{{ request.build_absolute_uri }}"><b>{{ subject }}</b></a> form was populated by <a href="mailto:{{ request.user.email.lower }}">{{ request.user.first_name }} {{ request.user.last_name }}</a>.</p>
-                            <p>{{ request.POST.helptext }}</p>
-                            <dl>
-                            {% for key, value in postdata %}{% if key != 'csrfmiddlewaretoken' and key.lower != "helptext" and key.lower != 'subject'%}
-                              <dt><b>{{ key }}</b></dt>
-                              <dd>{{ value }}</dd>
-                            {% endif %}{% endfor %}
-                            </dl>
-                        </td>
+                        {% if email != True %}
+                          <p><i>The form information below has been sent to {{ request.user.email.lower }}</i></p>
+                        {% endif %}
+                        <p>This <a href="{{ request.build_absolute_uri }}"><b>{{ subject }}</b></a> form was populated by
+                            <a href="mailto:{{ request.user.email.lower }}">{{ request.user.get_full_name }}</a>.
+                        </p>
+                        <p>{{ request.POST.helptext }}</p>
+                        <dl>
+                        {% for key, value in postdata %}
+                          {% if key != 'csrfmiddlewaretoken' and key.lower != "helptext" and key.lower != 'subject'%}
+                            <dt><b>{{ key }}</b></dt>
+                            <dd>{{ value }}</dd>
+                          {% endif %}
+                        {% endfor %}
+                        </dl>
+                      </td>
                     </tr>
                   </table>
                 </td>
               </tr>
+            </table>
+            <!-- END CENTERED WHITE CONTAINER -->
 
-              <!-- END MAIN CONTENT AREA -->
-              </table>
+            {% if additional_instructions %}
+            <br>
+            <p><strong>Additional instructions</strong></p>
+            <p>{{ additional_instructions }}</p>
+            {% endif %}
 
-<!-- END CENTERED WHITE CONTAINER --></div>
+          </div>
         </td>
         <td>&nbsp;</td>
       </tr>

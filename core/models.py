@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.http import HttpResponseRedirect
-from django.utils import timezone
+from django.utils import safestring, timezone
 from modelcluster.fields import ParentalKey
 from modelcluster.contrib.taggit import ClusterTaggableManager
 import os
@@ -89,13 +89,32 @@ class Content(Page):
 
 @hooks.register('before_serve_page')
 def submit_form(page, request, serve_args, serve_kwargs):
+
     if request.method == 'POST':
-        subject = request.POST.get('Subject', "OIM Extranet Form")
+        subject = request.POST.get('Subject', 'OIM Extranet Form')
         postdata = sorted(request.POST.items())
-        email = render(request, "emailform.html", {"subject": subject, "email": True, "postdata": postdata}).content
-        email = email.decode('utf-8')
+        # Infer any additional instructions based on the request path.
+        # HACK: this is tightly coupled to the form submit path :|
+        path = request.META['PATH_INFO'].split('/')
+        instructions = None
+        if 'transfer-user-account' in path:
+            instructions = safestring.mark_safe('''
+                Please forward this form to the receiving Cost Centre Manager for approval and submission to
+                OIM Service Desk (<a href="mailto:oim.servicedesk@dbca.wa.gov.au">oim.servicedesk@dbca.wa.gov.au</a>).
+                Authorisation from the previous Cost Centre manager is also required to be attached.
+            ''')
+        elif 'suspend-user-account' in path:
+            instructions = safestring.mark_safe('''
+                Please forward this form to the Cost Centre Manager for approval and submission to
+                OIM Service Desk (<a href="mailto:oim.servicedesk@dbca.wa.gov.au">oim.servicedesk@dbca.wa.gov.au</a>).
+            ''')
+        response = render(
+            request,
+            'emailform.html',
+            {'subject': subject, 'email': True, 'postdata': postdata, 'additional_instructions': instructions}
+        )
+        email = response.content.decode('utf-8')
         send_mail(
-            '{} ( {} )'.format(subject, request.path), email, 'OIM Extranet <oimsupport@dbca.wa.gov.au>',
+            '{} ( {} )'.format(subject, request.path), email, 'OIM Service Desk <oim.servicedesk@dbca.wa.gov.au>',
             [request.user.email], html_message=email, fail_silently=False)
-        response = render(request, "emailform.html", {"subject": subject, "postdata": postdata})
         return response
