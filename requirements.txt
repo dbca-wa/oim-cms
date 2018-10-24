@@ -1,12 +1,12 @@
 git+git://github.com/dbca-wa/dpaw-utils@minimal
 psycopg2-binary==2.7.5
-Django==2.0.8
+Django==2.0.9
 django-confy==1.0.4
 django-extensions==2.0.7
 gunicorn==19.8.1
 whitenoise==3.3.1
 dj-static==0.0.6
-wagtail==2.2.2
+wagtail==2.3
 django-taggit==0.23.0
 django-modelcluster==4.2
 Pillow==5.2.0
