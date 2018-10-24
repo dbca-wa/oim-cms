@@ -1,20 +1,18 @@
 from django.conf import settings
 from django.db import models
 from django.http import HttpResponseRedirect
-from django.utils import safestring, timezone
+from django.utils import timezone
 from modelcluster.fields import ParentalKey
 from modelcluster.contrib.taggit import ClusterTaggableManager
 import os
 from taggit.models import TaggedItemBase
 from wagtail.admin.edit_handlers import FieldPanel, StreamFieldPanel
-from wagtail.core import blocks, hooks
+from wagtail.core import blocks
 from wagtail.core.models import Page
 from wagtail.core.fields import StreamField
 from wagtail.images.formats import Format, register_image_format
 from wagtail.search import index
 
-from django.shortcuts import render
-from django.core.mail import send_mail
 
 '''To add a new size format use the following format
    register_image_format(Format('name', 'label', 'class_names', 'filter_spec'))
@@ -85,36 +83,3 @@ class Content(Page):
 
     class Meta:
         ordering = ('date',)
-
-
-@hooks.register('before_serve_page')
-def submit_form(page, request, serve_args, serve_kwargs):
-
-    if request.method == 'POST':
-        subject = request.POST.get('Subject', 'OIM Extranet Form')
-        postdata = sorted(request.POST.items())
-        # Infer any additional instructions based on the request path.
-        # HACK: this is tightly coupled to the form submit path :|
-        path = request.META['PATH_INFO'].split('/')
-        instructions = None
-        if 'transfer-user-account' in path:
-            instructions = safestring.mark_safe('''
-                Please forward this form to the receiving Cost Centre Manager for approval and submission to
-                OIM Service Desk (<a href="mailto:oim.servicedesk@dbca.wa.gov.au">oim.servicedesk@dbca.wa.gov.au</a>).
-                Authorisation from the previous Cost Centre manager is also required to be attached.
-            ''')
-        elif 'suspend-user-account' in path:
-            instructions = safestring.mark_safe('''
-                Please forward this form to the Cost Centre Manager for approval and submission to
-                OIM Service Desk (<a href="mailto:oim.servicedesk@dbca.wa.gov.au">oim.servicedesk@dbca.wa.gov.au</a>).
-            ''')
-        response = render(
-            request,
-            'emailform.html',
-            {'subject': subject, 'email': True, 'postdata': postdata, 'additional_instructions': instructions}
-        )
-        email = response.content.decode('utf-8')
-        send_mail(
-            '{} ( {} )'.format(subject, request.path), email, 'OIM Service Desk <oim.servicedesk@dbca.wa.gov.au>',
-            [request.user.email], html_message=email, fail_silently=False)
-        return response
