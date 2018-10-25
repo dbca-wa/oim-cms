@@ -7,14 +7,12 @@ from modelcluster.contrib.taggit import ClusterTaggableManager
 import os
 from taggit.models import TaggedItemBase
 from wagtail.admin.edit_handlers import FieldPanel, StreamFieldPanel
-from wagtail.core import blocks, hooks
+from wagtail.core import blocks
 from wagtail.core.models import Page
 from wagtail.core.fields import StreamField
 from wagtail.images.formats import Format, register_image_format
 from wagtail.search import index
 
-from django.shortcuts import render
-from django.core.mail import send_mail
 
 '''To add a new size format use the following format
    register_image_format(Format('name', 'label', 'class_names', 'filter_spec'))
@@ -85,17 +83,3 @@ class Content(Page):
 
     class Meta:
         ordering = ('date',)
-
-
-@hooks.register('before_serve_page')
-def submit_form(page, request, serve_args, serve_kwargs):
-    if request.method == 'POST':
-        subject = request.POST.get('Subject', "OIM Extranet Form")
-        postdata = sorted(request.POST.items())
-        email = render(request, "emailform.html", {"subject": subject, "email": True, "postdata": postdata}).content
-        email = email.decode('utf-8')
-        send_mail(
-            '{} ( {} )'.format(subject, request.path), email, 'OIM Extranet <oimsupport@dbca.wa.gov.au>',
-            [request.user.email], html_message=email, fail_silently=False)
-        response = render(request, "emailform.html", {"subject": subject, "postdata": postdata})
-        return response
