@@ -36,15 +36,19 @@
     </head>
 	<div id='notification-topbar'></div>
     <body class="{% block body_class %}{% endblock %}">
+        <div class="callout alert">
+            <p class="text-center">Please note that some uploaded documents and images are currently unavailable due to a technical issue.
+                OIM is currently working to resolve this issue, and apologises for the inconvenience.</p>
+        </div>
         {% wagtailuserbar %}
         <div class="inner-wrap">
             <div class="content">
                 {% if 'fullscreen' not in request.GET %}
                     {% block header %}
                     <div class="row header_row align-justify">
-                        <div class="columns show-for-large hide-for-print"><a target="_blank" href="//www.dbca.wa.gov.au"><img src="//static.dbca.wa.gov.au/images/oimlogo_left.svg" alt="Department of Biodiversity, Conservation and Attractions"></a></div>
-                        <div class="columns"><a href="/"><img src="//static.dbca.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a></div>
-                        <div class="columns show-for-large hide-for-print"><a class="float-right" href="/"><img src="//static.dbca.wa.gov.au/images/oim_tree.svg"></a></div>
+                        <div class="columns show-for-large hide-for-print"><a target="_blank" href="https://www.dbca.wa.gov.au"><img src="{% static 'images/dbca_logo.png' %}" alt="Department of Biodiversity, Conservation and Attractions"></a></div>
+                        <!--<div class="columns"><a href="/"><img src="//static.dbca.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a></div>-->
+                        <div class="columns show-for-large hide-for-print"><a class="float-right" href="/"><img src="{% static 'images/oim_tree.png' %}" alt="Office for Information Management"></a></div>
                     </div>
                     <div class="main_menu">
                         <div class="row">

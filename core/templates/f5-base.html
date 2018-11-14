@@ -23,12 +23,15 @@
         <link rel="stylesheet" type="text/css" media="all" href="//static.dbca.wa.gov.au/static/fonts/Lato2OFLWeb/Lato/latofonts.css" />
         <link rel="stylesheet" type="text/css" media="all" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.5.0/css/font-awesome.min.css" />
         <link rel="stylesheet" type="text/css" media="all" href="https://cdnjs.cloudflare.com/ajax/libs/foundation-datepicker/1.5.0/css/foundation-datepicker.min.css" />
-        <!--<link rel="stylesheet" type="text/css" media="all" href="//static.dbca.wa.gov.au/static/css/foundation/stylesheets/oim_cms_v1.css" />-->
 
         {% block extra_css %}{% endblock %}
     </head>
     <div id='notification-topbar'></div>
     <body class="{% block body_class %}{% endblock %}">
+        <div class="callout alert">
+            <p class="text-center">Please note that some uploaded documents and images are currently unavailable due to a technical issue.
+                OIM is currently working to resolve this issue, and apologises for the inconvenience.</p>
+        </div>
         {% if 'fullscreen' not in request.GET %}
         {% wagtailuserbar %}
         <div class="off-canvas-wrap" data-offcanvas>
