@@ -1,4 +1,4 @@
-{% extends "f5-base.html" %}
+{% extends "f6-base.html" %}
 {% load core_tags wagtailcore_tags humanize %}
 
 {% block title %}{% if http_error_code %}{{ http_error_code }} - {{ request.get_full_path }}{% else %}Search{% if search_results %} Results{% endif %}{% endif %}{% endblock %}

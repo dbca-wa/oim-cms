@@ -60,7 +60,8 @@ def page_menuitems(x):
         menuitems.append(x)
         x = x.get_parent()
 
-    menuitems.pop()
+    if menuitems:
+        menuitems.pop()
     menuitems.reverse()
     return menuitems
 
@@ -73,7 +74,8 @@ def breadcrumbs(context, calling_page):
         menuitems.append(x)
         x = x.get_parent()
 
-    menuitems.pop()
+    if menuitems:
+        menuitems.pop()
     menuitems.reverse()
     return {
         'menuitems': menuitems,
