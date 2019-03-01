@@ -1,19 +1,23 @@
-FROM python:3.6.6-slim-stretch
+# Prepare the base environment.
+FROM python:3.7.2-slim-stretch as builder_base_oimcms
 MAINTAINER asi@dbca.wa.gov.au
-
-# Install base image requirements.
 RUN apt-get update -y \
-  && apt-get install -y wget git libmagic-dev gcc binutils libproj-dev gdal-bin \
-  && rm -rf /var/lib/{apt,dpkg,cache,log}/ /tmp/* /var/tmp/*
+  && apt-get install --no-install-recommends -y wget git libmagic-dev gcc binutils libproj-dev gdal-bin python3-dev \
+  && rm -rf /var/lib/apt/lists/* \
+  && pip install --upgrade pip
 
-# Copy project files and install requirements.
-WORKDIR /usr/src/app
-COPY gunicorn.ini manage.py requirements.txt ./
+# Install Python libs from requirements.txt.
+FROM builder_base_oimcms as python_libs_oimcms
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install the project.
+FROM python_libs_oimcms
+COPY gunicorn.ini manage.py ./
 COPY core ./core
 COPY oim_cms ./oim_cms
-RUN pip install --no-cache-dir -r requirements.txt \
-  && python manage.py collectstatic --noinput
-
-HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/healthcheck/"]
+RUN python manage.py collectstatic --noinput
 EXPOSE 8080
+HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/healthcheck/"]
 CMD ["gunicorn", "oim_cms.wsgi", "--config", "gunicorn.ini"]

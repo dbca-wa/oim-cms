@@ -87,12 +87,13 @@
                 {% endif %}
             </div>
         </div>
-        {% block extra_js %}
-        {% endblock %}
+
+        {% block extra_js %}{% endblock %}
+
         <script>
             $(document).ready(function() {
                 // setup csrf token on page rendered forms
-                $('form[method="POST"]').prepend("{% csrf_token %}");
+                $('form[method="POST"]').prepend('{% csrf_token %}');
             });
         </script>
     </body>
