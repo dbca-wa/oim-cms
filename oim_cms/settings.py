@@ -1,5 +1,6 @@
+from dbca_utils.utils import env
+import dj_database_url
 import os
-from confy import env, database, cache
 from pathlib import Path
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -82,7 +83,10 @@ APPLICATION_VERSION = '2.5'
 STATIC_CONTEXT_VARS = {}
 
 # Database configuration
-DATABASES = {'default': database.config()}
+DATABASES = {
+    # Defined in the DATABASE_URL env variable.
+    'default': dj_database_url.config(),
+}
 
 # Internationalization
 LANGUAGE_CODE = 'en-AU'
@@ -139,7 +143,7 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'console'
         },
-		'sentry': {
+        'sentry': {
             'level': 'WARNING',
             'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
         },
@@ -147,12 +151,12 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'],
-			'propagate': True,
+            'propagate': True,
         },
         'django.request': {
             'handlers': ['console', 'sentry'],
             'level': 'WARNING',
-			'propagate': False,
+            'propagate': False,
         },
         'cms': {
             'handlers': ['console'],
