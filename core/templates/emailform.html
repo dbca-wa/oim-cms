@@ -291,7 +291,9 @@
                         <p>This <a href="{{ request.build_absolute_uri }}"><b>{{ subject }}</b></a> form was populated by
                             <a href="mailto:{{ request.user.email.lower }}">{{ request.user.get_full_name }}</a>.
                         </p>
-                        <p>{{ request.POST.helptext }}</p>
+                        {% if instructions %}
+                        <p>{{ instructions }}</p>
+                        {% endif %}
                         <dl>
                         {% for key, value in postdata %}
                           {% if key != 'csrfmiddlewaretoken' and key.lower != "helptext" and key.lower != 'subject'%}
@@ -307,12 +309,6 @@
               </tr>
             </table>
             <!-- END CENTERED WHITE CONTAINER -->
-
-            {% if additional_instructions %}
-            <br>
-            <p><strong>Additional instructions</strong></p>
-            <p>{{ additional_instructions }}</p>
-            {% endif %}
 
           </div>
         </td>

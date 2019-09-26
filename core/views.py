@@ -82,22 +82,20 @@ def submit_form(page, request, serve_args, serve_kwargs):
         # Infer any additional instructions based on the request path.
         # HACK: this is tightly coupled to the form submit path :|
         path = request.META['PATH_INFO'].split('/')
-        instructions = None
+        instructions = mark_safe('''
+            Please forward this form to the Cost Centre Manager for approval and submission to
+            OIM Service Desk (<a href="mailto:oim.servicedesk@dbca.wa.gov.au">oim.servicedesk@dbca.wa.gov.au</a>).
+        ''')
         if 'transfer-user-account' in path:
             instructions = mark_safe('''
                 Please forward this form to the receiving Cost Centre Manager for approval and submission to
                 OIM Service Desk (<a href="mailto:oim.servicedesk@dbca.wa.gov.au">oim.servicedesk@dbca.wa.gov.au</a>).
                 Authorisation from the previous Cost Centre manager is also required to be attached.
             ''')
-        elif 'suspend-user-account' in path:
-            instructions = mark_safe('''
-                Please forward this form to the Cost Centre Manager for approval and submission to
-                OIM Service Desk (<a href="mailto:oim.servicedesk@dbca.wa.gov.au">oim.servicedesk@dbca.wa.gov.au</a>).
-            ''')
         response = render(
             request,
             'emailform.html',
-            {'subject': subject, 'email': True, 'postdata': postdata, 'additional_instructions': instructions}
+            {'subject': subject, 'email': True, 'postdata': postdata, 'instructions': instructions}
         )
         email = response.content.decode('utf-8')
         send_mail(
