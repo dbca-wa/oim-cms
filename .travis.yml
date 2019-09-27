@@ -1,17 +1,17 @@
 sudo: false
 language: python
 cache: pip
-dist: trusty
+dist: xenial
 python:
-    - 3.6
+    - 3.7
 services:
     - postgresql
     - docker
 addons:
-    postgresql: 9.6
+    postgresql: 10
     apt:
         packages:
-            - postgresql-9.6-postgis-2.3
+            - postgresql-10-postgis-2.4
 branches:
     only:
         - master
