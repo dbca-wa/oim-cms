@@ -9,5 +9,5 @@ dj-static==0.0.6
 wagtail==2.6.2
 django-taggit==0.23  # wagtail not yet compatible with 1.1.0
 django-modelcluster==4.2
-Pillow==6.1.0
+Pillow==6.2.0
 sentry-sdk==0.10.2
