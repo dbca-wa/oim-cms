@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Install the project.
 FROM python_libs_oimcms
-COPY gunicorn.ini manage.py ./
+COPY gunicorn.py manage.py ./
 COPY core ./core
 COPY oim_cms ./oim_cms
 RUN python manage.py collectstatic --noinput
@@ -23,4 +23,4 @@ RUN python manage.py collectstatic --noinput
 USER www-data
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/healthcheck/"]
-CMD ["gunicorn", "oim_cms.wsgi", "--config", "gunicorn.ini"]
+CMD ["gunicorn", "oim_cms.wsgi", "--config", "gunicorn.py"]
