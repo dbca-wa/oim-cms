@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "oim-cms"
+version = "2.7.2"
+description = "This project contains the CMS to provide the OIM Extranet site, which is based upon the Wagtail CMS."
+authors = ["Your Name <you@example.com>"]
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+Django = "2.2.10"
+psycopg2-binary = "2.8.3"
+dbca-utils = {git = "https://github.com/dbca-wa/dbca-utils.git", rev = "1.0.0"}
+django-extensions = "2.2.5"
+dj-database-url = "0.5.0"
+gunicorn = "20.0.4"
+dj-static = "0.0.6"
+wagtail = "2.7.2"
+django-taggit = "1.2.0"
+django-modelcluster = "5.0.1"
+Pillow = "6.2.2"
+sentry-sdk = "0.13.5"
+django-dotenv = "1.4.2"
+
+[tool.poetry.dev-dependencies]
+ipython = "^7.17.0"
+ipdb = "^0.13.3"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
