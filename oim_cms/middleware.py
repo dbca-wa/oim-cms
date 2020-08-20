@@ -1,4 +1,6 @@
 from django import http
+from django.utils.deprecation import MiddlewareMixin
+from wagtail.core.models import Site
 
 try:
     from django.conf import settings
@@ -11,6 +13,18 @@ except AttributeError:
     XS_SHARING_ALLOWED_METHODS = ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE']
     XS_SHARING_ALLOWED_HEADERS = ['Content-Type', '*']
     XS_SHARING_ALLOWED_CREDENTIALS = 'true'
+
+
+class SiteMiddleware(MiddlewareMixin):
+
+    def process_request(self, request):
+        """
+        Set request.site to contain the Site object responsible for handling this request.
+        """
+        try:
+            request.site = Site.find_for_request(request)
+        except Site.DoesNotExist:
+            request.site = None
 
 
 class XsSharing(object):
