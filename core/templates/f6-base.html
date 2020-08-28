@@ -62,12 +62,14 @@
                                 <i class="fi-arrows-expand"></i></a>
                             </li>
                         </ul>
+                        {% comment %}
                         <div class="columns large-3">
                             <ul class="breadcrumbs float-right">
                                 <li>{{ request.user.first_name }}</li>
                                 <li><a href="/profile/">My Profile</a></li>
                             </ul>
                         </div>
+                        {% endcomment %}
                     </div>
                     {% endblock %}
                 {% endif %}
