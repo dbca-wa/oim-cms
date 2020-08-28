@@ -51,7 +51,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'wagtail.core.middleware.SiteMiddleware',
+    'oim_cms.middleware.SiteMiddleware',
     'wagtail.contrib.redirects.middleware.RedirectMiddleware',
     'dbca_utils.middleware.SSOLoginMiddleware',
 ]
@@ -77,7 +77,7 @@ TEMPLATES = [
         },
     },
 ]
-APPLICATION_VERSION = '2.7.1'
+APPLICATION_VERSION = '2.10.1'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 
@@ -159,8 +159,3 @@ LOGGING = {
         },
     }
 }
-
-
-# Sentry configuration
-if env('SENTRY_DSN', False):
-    SENTRY_CONFIG = {'dsn': env('SENTRY_DSN')}
