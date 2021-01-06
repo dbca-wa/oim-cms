@@ -8,6 +8,7 @@ venv/
 *.sw[po]
 gmon.out
 .sass-cache/
+.python-version
 
 # Database/fixture dumps
 *.pgdump
