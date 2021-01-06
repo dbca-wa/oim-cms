@@ -36,7 +36,7 @@ class ContentTag(TaggedItemBase):
 
 class Content(Page):
     body = StreamField([
-        ('heading', blocks.CharBlock(classname='full title')),
+        ('heading', blocks.CharBlock(form_classname='full title')),
         ('rich_text', blocks.RichTextBlock()),
         ('raw', blocks.RawHTMLBlock()),
         ('include_content', blocks.CharBlock()),
