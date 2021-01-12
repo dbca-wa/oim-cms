@@ -22,7 +22,7 @@ before_install:
     - docker build -t dbcawa/oim-cms .
     - pip install poetry
 install:
-    - poetry install --verbose --no-interaction --no-ansi
+    - poetry install --no-dev --no-interaction --no-ansi
 before_script:
     - psql -U postgres -c "create database travis_ci_test;"
     - psql -U postgres -d travis_ci_test -c "create extension postgis;"
