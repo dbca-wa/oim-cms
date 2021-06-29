@@ -5,7 +5,6 @@ python:
     - "3.8"
 services:
     - postgresql
-    - docker
 addons:
     postgresql: "11"
     apt:
@@ -19,7 +18,6 @@ env:
         - SECRET_KEY="SecretKeyForTravis"
         - DATABASE_URL="postgis://postgres@localhost:5432/travis_ci_test"
 before_install:
-    - docker build -t dbcawa/oim-cms .
     - pip install poetry
 install:
     - poetry install --no-dev --no-interaction --no-ansi
