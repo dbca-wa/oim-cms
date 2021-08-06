@@ -29,6 +29,7 @@ html, body {
 @media all {
   .page-break {
     display: none; } }
+
 @media print {
   html {
     height: inherit; }
@@ -60,7 +61,21 @@ html, body {
 
   .page-break {
     display: block;
-    page-break-before: always; } }
+    page-break-before: always; }
+
+  ::-webkit-input-placeholder { /* WebKit browsers */
+      color: transparent;
+  }
+  :-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+      color: transparent;
+  }
+  ::-moz-placeholder { /* Mozilla Firefox 19+ */
+      color: transparent;
+  }
+  :-ms-input-placeholder { /* Internet Explorer 10+ */
+      color: transparent;
+  }
+}
 body, h1, h2, h3, h4, h5, h6 {
   font-family: "LatoWeb", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif; }
 
