@@ -19,6 +19,7 @@ INTERNAL_IPS = ['127.0.0.1', '::1']
 ROOT_URLCONF = 'oim_cms.urls'
 WSGI_APPLICATION = 'oim_cms.wsgi.application'
 INSTALLED_APPS = [
+    'whitenoise.runserver_nostatic',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,7 +45,9 @@ INSTALLED_APPS = [
     'core',
 ]
 MIDDLEWARE = [
+    'oim_cms.middleware.HealthCheckMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -77,9 +80,10 @@ TEMPLATES = [
         },
     },
 ]
-APPLICATION_VERSION = '2.13'
+APPLICATION_VERSION = '2.14.2'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # Database configuration
 DATABASES = {
@@ -98,14 +102,16 @@ DATETIME_FORMAT = 'l d F Y, h:i A'
 
 
 # Static files configuration
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'oim_cms', 'static')]
 # Ensure that the media directory exists:
 if not os.path.exists(os.path.join(BASE_DIR, 'media')):
     os.mkdir(os.path.join(BASE_DIR, 'media'))
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'oim_cms', 'static')]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_ROOT = STATIC_ROOT
 
 
 # Email settings

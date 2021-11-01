@@ -1,5 +1,5 @@
 from django import template
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 import json
 
 register = template.Library()
@@ -7,9 +7,11 @@ register = template.Library()
 
 @register.filter
 def get_excerpt(page):
-    result = render_to_response('core/tags/include_content.html', context={
+    result = render(
+        None, 'core/tags/include_content.html', context={
         "self": page,
-        "embed": True})
+        "embed": True}
+    )
     return result.content
 
 
