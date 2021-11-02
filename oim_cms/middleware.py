@@ -1,6 +1,11 @@
-from django import http
+from django.http import HttpResponse, HttpResponseServerError
 from django.utils.deprecation import MiddlewareMixin
 from wagtail.core.models import Site
+import logging
+
+
+LOGGER = logging.getLogger("healthcheck")
+
 
 try:
     from django.conf import settings
@@ -38,7 +43,7 @@ class XsSharing(object):
     """
     def process_request(self, request):
         if 'HTTP_ACCESS_CONTROL_REQUEST_METHOD' in request.META:
-            response = http.HttpResponse()
+            response = HttpResponse()
             response['Access-Control-Allow-Origin'] = XS_SHARING_ALLOWED_ORIGINS
             response['Access-Control-Allow-Methods'] = ",".join(XS_SHARING_ALLOWED_METHODS)
             response['Access-Control-Allow-Headers'] = ",".join(XS_SHARING_ALLOWED_HEADERS)
@@ -54,3 +59,41 @@ class XsSharing(object):
         response['Access-Control-Allow-Credentials'] = XS_SHARING_ALLOWED_CREDENTIALS
 
         return response
+
+
+class HealthCheckMiddleware(object):
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.method == "GET":
+            if request.path == "/readiness":
+                return self.readiness(request)
+            elif request.path == "/liveness":
+                return self.liveness(request)
+        return self.get_response(request)
+
+    def liveness(self, request):
+        """Returns that the server is alive.
+        """
+        return HttpResponse("OK")
+
+    def readiness(self, request):
+        """Connect to each database and do a generic standard SQL query
+        that doesn't write any data and doesn't depend on any tables
+        being present.
+        """
+        try:
+            from django.db import connections
+            for name in connections:
+                cursor = connections[name].cursor()
+                cursor.execute("SELECT 1;")
+                row = cursor.fetchone()
+                if row is None:
+                    return HttpResponseServerError("db: invalid response")
+        except Exception as e:
+            LOGGER.exception(e)
+            return HttpResponseServerError("db: cannot connect to database.")
+
+        return HttpResponse("OK")
