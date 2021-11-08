@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: oim-cms
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "false"
+spec:
+  rules:
+  - host: oim-uat.dbca.wa.gov.au
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ingress-oim-cms-uat
+            port:
+              number: 8080
+      - path: /media
+        pathType: Prefix
+        backend:
+          service:
+            name: ingress-oim-cms-nginx-uat
+            port:
+              number: 80

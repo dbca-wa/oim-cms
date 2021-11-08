@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: oim-cms-db-statefulset
+spec:
+  replicas: 1
+  template:
+    spec:
+      restartPolicy: Always
+      volumes:
+      - name: oim-cms-pg14-data
+        persistentVolumeClaim:
+          # Override the claimName in the overlay patch
+          claimName: oim-cms-pg14-data-pvc
+      initContainers:
+      - name: oim-cms-db-init
+        image: postgres:14-alpine
+        command:
+        - /bin/bash
+        - -c
+        - mkdir -p /data/data; mkdir -p /data/archivedir; chown -R postgres:postgres /data
+        volumeMounts:
+        - mountPath: /data
+          name: oim-cms-pg14-data
+      containers:
+      - name: oim-cms-db
+        image: postgres:14-alpine
+        args:
+        - -c
+        - max_connections=1000
+        - -c
+        - archive_mode=on
+        - -c
+        - archive_command=find /archivedir -mtime +7 -delete; lzma -c %p > /archivedir/%f.lzma
+        env:
+        - name: POSTGRES_USER
+          value: oim_cms
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: oim-cms-pg14-data
+          subPath: data
+        - mountPath: /archivedir
+          name: oim-cms-pg14-data
+          subPath: archivedir
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "25m"
+          limits:
+            memory: "8192Mi"
+            cpu: "1000m"
+  updateStrategy:
+    type: RollingUpdate

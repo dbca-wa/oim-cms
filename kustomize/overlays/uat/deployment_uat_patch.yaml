@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oim-cms-deployment
+  labels:
+    app: oim-cms-uat
+spec:
+  selector:
+    matchLabels:
+      app: oim-cms-uat
+  template:
+    metadata:
+      labels:
+        app: oim-cms-uat
+    spec:
+      containers:
+      - name: oim-cms
+        image: ghcr.io/dbca-wa/oim-cms:latest
+        imagePullPolicy: Always
+        env:
+        - name: BASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: oim-cms-env-uat
+              key: BASE_URL
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: oim-cms-env-uat
+              key: DATABASE_URL
+        - name: DEBUG
+          valueFrom:
+            secretKeyRef:
+              name: oim-cms-env-uat
+              key: DEBUG
+        - name: EMAIL_HOST
+          valueFrom:
+            secretKeyRef:
+              name: oim-cms-env-uat
+              key: EMAIL_HOST
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: oim-cms-env-uat
+              key: SECRET_KEY
+        volumeMounts:
+        - mountPath: /app/media
+          name: oim-cms-media-uat
+      volumes:
+      - name: oim-cms-media-uat
+        persistentVolumeClaim:
+          claimName: oim-cms-media-pvc-uat
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oim-cms-nginx
+  labels:
+    app: oim-cms-nginx-uat
+spec:
+  selector:
+    matchLabels:
+      app: oim-cms-nginx-uat
+  template:
+    metadata:
+      labels:
+        app: oim-cms-nginx-uat
+    spec:
+      containers:
+      - name: oim-cms-nginx
+        volumeMounts:
+        - name: oim-cms-media-uat
+          mountPath: /usr/share/nginx/html/media
+          readOnly: true
+        - name: nginx-conf-uat
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+          readOnly: true
+      volumes:
+      - name: oim-cms-media-uat
+        persistentVolumeClaim:
+          claimName: oim-cms-media-pvc-uat
+      - name: nginx-conf-uat
+        configMap:
+          name: nginx-conf-uat
+          items:
+            - key: nginx.conf
+              path: nginx.conf
