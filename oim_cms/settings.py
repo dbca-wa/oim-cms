@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'wagtail.search',
     'wagtail.admin',
     'wagtail.core',
-    'wagtail.contrib.postgres_search',
     'taggit',
     'modelcluster',
     'django_extensions',
@@ -126,7 +125,7 @@ WAGTAIL_SITE_NAME = 'OIM Content Management System'
 WAGTAILADMIN_NOTIFICATION_FROM_EMAIL = 'oim_cms@dbca.wa.gov.au'
 WAGTAILSEARCH_BACKENDS = {
     'default': {
-        'BACKEND': 'wagtail.contrib.postgres_search.backend',
+        'BACKEND': 'wagtail.search.backends.database',
         'SEARCH_CONFIG': 'english',
     },
 }
