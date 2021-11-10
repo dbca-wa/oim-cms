@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'wagtail.search',
     'wagtail.admin',
     'wagtail.core',
-    'wagtail.contrib.postgres_search',
     'taggit',
     'modelcluster',
     'django_extensions',
@@ -84,6 +83,9 @@ APPLICATION_VERSION = '2.14.2'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+WAGTAILIMAGES_MAX_UPLOAD_SIZE = 10 * 1024 * 1204
+DATA_UPLOAD_MAX_MEMORY_SIZE = WAGTAILIMAGES_MAX_UPLOAD_SIZE
+FILE_UPLOAD_MAX_MEMORY_SIZE = WAGTAILIMAGES_MAX_UPLOAD_SIZE
 
 # Database configuration
 DATABASES = {
@@ -123,7 +125,7 @@ WAGTAIL_SITE_NAME = 'OIM Content Management System'
 WAGTAILADMIN_NOTIFICATION_FROM_EMAIL = 'oim_cms@dbca.wa.gov.au'
 WAGTAILSEARCH_BACKENDS = {
     'default': {
-        'BACKEND': 'wagtail.contrib.postgres_search.backend',
+        'BACKEND': 'wagtail.search.backends.database',
         'SEARCH_CONFIG': 'english',
     },
 }

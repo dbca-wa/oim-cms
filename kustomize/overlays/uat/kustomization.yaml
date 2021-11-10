@@ -1,0 +1,19 @@
+bases:
+- ../../base
+nameSuffix: -uat
+secretGenerator:
+- name: oim-cms-env
+  envs:
+  - .env
+- name: oim-cms-azurefile
+  envs:
+  - .env.azurefile
+commonLabels:
+  variant: uat
+resources:
+- service.yaml
+- ingress.yaml
+patchesStrategicMerge:
+- deployment_uat_patch.yaml
+- statefulset_uat_patch.yaml
+- persistentvolumeclaim_uat_patch.yaml

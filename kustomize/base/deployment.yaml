@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oim-cms-deployment
+spec:
+  strategy:
+    type: RollingUpdate
+  template:
+    spec:
+      containers:
+      - name: oim-cms
+        env:
+        - name: ALLOWED_DOMAINS
+          value: ".dbca.wa.gov.au"
+        - name: TZ
+          value: "Australia/Perth"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "25m"
+          limits:
+            memory: "4096Mi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          failureThreshold: 3
+          timeoutSeconds: 2
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          failureThreshold: 3
+          timeoutSeconds: 2
+      restartPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oim-cms-nginx
+spec:
+  strategy:
+    type: RollingUpdate
+  template:
+    spec:
+      containers:
+      - name: oim-cms-nginx
+        image: nginx:1.21
+        imagePullPolicy: IfNotPresent
+      restartPolicy: Always

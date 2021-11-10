@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: oim-cms-media-pv
+  labels:
+    usage: oim-cms-media-volume-uat
+spec:
+  azureFile:
+    shareName: oim-cms-media-uat
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oim-cms-media-pvc
+spec:
+  selector:
+    matchLabels:
+      usage: oim-cms-media-volume-uat

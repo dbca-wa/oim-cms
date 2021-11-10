@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: oim-cms-db-statefulset
+spec:
+  serviceName: oim-cms-db-uat
+  selector:
+    matchLabels:
+      workloadselector: oim-cms-db-uat
+  template:
+    metadata:
+      labels:
+        workloadselector: oim-cms-db-uat
+    spec:
+      containers:
+      - name: oim-cms-db
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: oim-cms-env-uat
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          value: oim_cms_uat
+      volumes:
+      - name: oim-cms-pg14-data
+        persistentVolumeClaim:
+          claimName: oim-cms-pg14-data-pvc-uat
