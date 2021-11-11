@@ -36,7 +36,7 @@ spec:
       storage: 1Gi
   # To make sure we match the claim with the exact volume, match the label.
   # Define this selector in the overlay patch
-  ---
+---
 # NOTE: Azure File shares can't be used to run a PostgreSQL workload.
 # The resource below allow this PVC to dynamically create a matched PersistentVolume object.
 # NOTE 2: if we're re-using an existing (retained) PV, comment out the resource below
