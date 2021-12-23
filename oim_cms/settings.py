@@ -131,9 +131,6 @@ WAGTAILSEARCH_BACKENDS = {
 }
 WAGTAIL_USAGE_COUNT_ENABLED = True
 WAGTAILSEARCH_RESULTS_TEMPLATE = 'core/search_results.html'
-# Base URL to use when referring to full URLs within the Wagtail admin backend
-# e.g. in notification emails. Don't include '/admin' or a trailing slash
-BASE_URL = env('BASE_URL', 'https://oim.dbca.wa.gov.au')
 
 
 # Logging settings - log to stdout/stderr
