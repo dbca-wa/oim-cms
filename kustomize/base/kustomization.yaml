@@ -1,5 +1,4 @@
 resources:
 - deployment.yaml
 - persistentvolumeclaim.yaml
-- statefulset.yaml
 - configmap.yaml

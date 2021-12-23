@@ -30,35 +30,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: oim-cms-db
-spec:
-  type: ClusterIP
-  clusterIP: None
-  ports:
-  - name: default
-    port: 42
-    targetPort: 42
-    protocol: TCP
-  selector:
-    workloadselector: oim-cms-db-uat
----
-# NOTE: after migration of any database, the LB service below can be deleted.
-apiVersion: v1
-kind: Service
-metadata:
-  name: oim-cms-lb-db
-spec:
-  type: LoadBalancer
-  ports:
-  - name: 5432tcp
-    port: 5432
-    targetPort: 5432
-  selector:
-    workloadselector: oim-cms-db-uat
----
-apiVersion: v1
-kind: Service
-metadata:
   name: oim-cms-nginx
 spec:
   type: ClusterIP
