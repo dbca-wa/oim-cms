@@ -18,11 +18,6 @@ spec:
         image: ghcr.io/dbca-wa/oim-cms:latest
         imagePullPolicy: Always
         env:
-        - name: BASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: oim-cms-env-uat
-              key: BASE_URL
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:

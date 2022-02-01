@@ -3,17 +3,18 @@ kind: PersistentVolume
 metadata:
   name: oim-cms-media-pv
   # Labels will be used by the claim to match the PV.
-  # Define labels in the overlay patch
+  # Define labels in the overlay patch.
 spec:
   capacity:
-    storage: 1Gi
+    storage: 2Gi
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   azureFile:
     secretName: oim-cms-azurefile
     secretNamespace: oim-cms
-    # Define shareName in the overlay patch
+    # Define shareName in the overlay patch.
+    # It needs to match the name of the file share exactly.
     readOnly: false
   mountOptions:
   - file_mode=0755
@@ -33,21 +34,6 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
-  # To make sure we match the claim with the exact volume, match the label.
-  # Define this selector in the overlay patch
-  ---
-# NOTE: Azure File shares can't be used to run a PostgreSQL workload.
-# The resource below allow this PVC to dynamically create a matched PersistentVolume object.
-# NOTE 2: if we're re-using an existing (retained) PV, comment out the resource below
-# (it is assumed that the PV and the PVC will already exist in that instance).
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: oim-cms-pg14-data-pvc
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
+      storage: 2Gi
+  # To make sure we match the claim with the exact volume, match the `usage` label.
+  # Define this selector in the overlay patch.

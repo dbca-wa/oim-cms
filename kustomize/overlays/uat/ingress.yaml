@@ -6,6 +6,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/use-regex: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
 spec:
   rules:
   - host: oim-uat.dbca.wa.gov.au

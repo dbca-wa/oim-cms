@@ -79,7 +79,7 @@ TEMPLATES = [
         },
     },
 ]
-APPLICATION_VERSION = '2.14.2'
+APPLICATION_VERSION = '2.15.3'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
@@ -131,9 +131,6 @@ WAGTAILSEARCH_BACKENDS = {
 }
 WAGTAIL_USAGE_COUNT_ENABLED = True
 WAGTAILSEARCH_RESULTS_TEMPLATE = 'core/search_results.html'
-# Base URL to use when referring to full URLs within the Wagtail admin backend
-# e.g. in notification emails. Don't include '/admin' or a trailing slash
-BASE_URL = env('BASE_URL', 'https://oim.dbca.wa.gov.au')
 
 
 # Logging settings - log to stdout/stderr
