@@ -79,7 +79,7 @@ TEMPLATES = [
         },
     },
 ]
-APPLICATION_VERSION = '2.14.2'
+APPLICATION_VERSION = '2.15.3'
 # This is required to add context variables to all templates:
 STATIC_CONTEXT_VARS = {}
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

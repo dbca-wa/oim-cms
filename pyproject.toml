@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "oim-cms"
-version = "2.14.2"
+version = "2.15.3"
 description = "This project contains the CMS to provide the OIM Extranet site, which is based upon the Wagtail CMS."
 authors = ["ASI <asi@dbca.wa.gov.au>"]
 license = "Apache-2.0"
