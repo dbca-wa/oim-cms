@@ -1,0 +1,47 @@
+{% load core_tags static wagtailcore_tags wagtailuserbar %}
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <title>{% block title %}{% if self.seo_title %}{{ self.seo_title }}{% else %}{{ self.title }}{% endif %}{% endblock %}{% block title_suffix %} - Office for Information Management - Department of Biodiversity, Conservation and Attractions{% endblock %}</title>
+        <meta name="description" content="" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        {% block head_js %}
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.1.2/foundation.min.js"></script>
+        <script type="text/javascript" src="{% static 'js/f6_oim_cms.js' %}"></script>
+        {% endblock %}
+
+        {% block head_css %}
+        <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon.png' %}">
+        <link rel="stylesheet" type="text/css" media="all" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.1.2/foundation-flex.css">
+        <link rel="stylesheet" type="text/css" media="all" href="{% static 'css/f6_oim_cms.css' %}" />
+        {% endblock %}
+    </head>
+    <body class="{% block body_class %}{% endblock %}">
+        <div class="inner-wrap">
+            <div class="content">
+                {% block header %}
+                <div class="row header_row align-justify">
+                    <div class="columns show-for-large hide-for-print"><a target="_blank" href="https://www.dbca.wa.gov.au"><img src="{% static 'images/dbca_logo.png' %}" alt="Department of Biodiversity, Conservation and Attractions"></a></div>
+                    <div class="columns show-for-large hide-for-print"><a class="float-right" href="/"><img src="{% static 'images/oim_tree.png' %}" alt="Office for Information Management"></a></div>
+                </div>
+                <div class="main_menu">
+                    <div class="row">
+                        {% get_site_root as site_root %}
+                        {% f6_top_menu parent=site_root calling_page=self %}
+                    </div>
+                </div>
+                {% endblock %}
+                <div class="main">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+
+    </body>
+</html>

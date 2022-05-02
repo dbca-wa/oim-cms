@@ -43,7 +43,6 @@
                     {% block header %}
                     <div class="row header_row align-justify">
                         <div class="columns show-for-large hide-for-print"><a target="_blank" href="https://www.dbca.wa.gov.au"><img src="{% static 'images/dbca_logo.png' %}" alt="Department of Biodiversity, Conservation and Attractions"></a></div>
-                        <!--<div class="columns"><a href="/"><img src="//static.dbca.wa.gov.au/images/oimlogo_right.svg" alt="Office for Information Management Extranet"></a></div>-->
                         <div class="columns show-for-large hide-for-print"><a class="float-right" href="/"><img src="{% static 'images/oim_tree.png' %}" alt="Office for Information Management"></a></div>
                     </div>
                     <div class="main_menu">
@@ -62,14 +61,6 @@
                                 <i class="fi-arrows-expand"></i></a>
                             </li>
                         </ul>
-                        {% comment %}
-                        <div class="columns large-3">
-                            <ul class="breadcrumbs float-right">
-                                <li>{{ request.user.first_name }}</li>
-                                <li><a href="/profile/">My Profile</a></li>
-                            </ul>
-                        </div>
-                        {% endcomment %}
                     </div>
                     {% endblock %}
                 {% endif %}

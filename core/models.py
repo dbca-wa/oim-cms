@@ -46,6 +46,7 @@ class Content(Page):
     template_filename = models.CharField(max_length=64, choices=(
         ('content.html', 'content.html'),
         ('f6-content.html', 'f6-content.html'),
+        ('f6-content-minimal.html', 'f6-content-minimal.html'),
         ('f6-vue.html', 'f6-vue.html'),
     ), default='f6-content.html')
     tags = ClusterTaggableManager(through=ContentTag, blank=True)
